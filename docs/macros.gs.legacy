@@ -1,0 +1,251 @@
+/** @OnlyCurrentDoc */
+
+// ====== CONFIG ======
+const TASK_SHEET_NAME = "ADMIN";  // <-- change if your tab name differs
+const HEADER_ROW = 2;
+const FIRST_DATA_ROW = 3;
+
+// Column indexes (1=A, 2=B, 3=C...)
+const COL_CATEGORY = 1;     // A
+const COL_TIME = 2;         // B
+const COL_URGENT = 3;       // C
+const COL_TODAYS = 4;       // D
+const COL_MUST = 5;         // E
+
+// Categories used in column A
+const CATEGORIES = ["home", "eco", "health", "travel", "FF", "finance", "swb"];
+
+
+// ====== HELPERS ======
+
+function sheet_() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(TASK_SHEET_NAME);
+  if (!sh) throw new Error("Sheet not found: " + TASK_SHEET_NAME);
+  return sh;
+}
+
+function clearFilter_(sh) {
+  const f = sh.getFilter();
+  if (f) f.remove();
+}
+
+function bounds_(sh, lastColOverride) {
+  const lastRow = sh.getLastRow();
+  const lastCol = lastColOverride || sh.getLastColumn();
+  if (lastRow < FIRST_DATA_ROW) return null;
+
+  return {
+    lastRow: lastRow,
+    lastCol: lastCol,
+    filterRange: sh.getRange(HEADER_ROW, 1, lastRow - HEADER_ROW + 1, lastCol),
+    dataRange: sh.getRange(FIRST_DATA_ROW, 1, lastRow - FIRST_DATA_ROW + 1, lastCol),
+  };
+}
+
+function applyFilter_(sh, lastColOverride) {
+  clearFilter_(sh);
+  const b = bounds_(sh, lastColOverride);
+  if (!b) return null;
+  b.filterRange.createFilter();
+  return b;
+}
+
+function sortData_(b, col, ascending) {
+  b.dataRange.sort({ column: col, ascending: ascending });
+}
+
+function hideValues_(sh, col, values) {
+  const criteria = SpreadsheetApp.newFilterCriteria()
+    .setHiddenValues(values)
+    .build();
+  sh.getFilter().setColumnFilterCriteria(col, criteria);
+}
+
+function notBlank_(sh, col) {
+  const criteria = SpreadsheetApp.newFilterCriteria()
+    .whenCellNotEmpty()
+    .build();
+  sh.getFilter().setColumnFilterCriteria(col, criteria);
+}
+
+
+// ====== BUTTON FUNCTIONS ======
+
+function all() {
+  clearFilter_(sheet_());
+}
+
+function ByTime() {
+  const sh = sheet_();
+  const b = bounds_(sh);
+  if (!b) return;
+  sortData_(b, COL_TIME, true);
+}
+
+function ByDrawer() {
+  const sh = sheet_();
+  const b = bounds_(sh);
+  if (!b) return;
+  sortData_(b, COL_CATEGORY, true);
+}
+
+
+// ====== CATEGORY BUTTONS ======
+
+function filterCategory_(category) {
+  const sh = sheet_();
+  const b = applyFilter_(sh); // dynamic range
+  if (!b) return;
+
+  // Hide blanks + all other categories so only chosen category remains visible
+  const hidden = [''].concat(CATEGORIES.filter(c => c !== category));
+  hideValues_(sh, COL_CATEGORY, hidden);
+
+  // Sort by time (column B)
+  sortData_(b, COL_TIME, true);
+}
+
+function home()    { filterCategory_("home"); }
+function eco()     { filterCategory_("eco"); }
+function health()  { filterCategory_("health"); }
+function travel()  { filterCategory_("travel"); }
+function FF()      { filterCategory_("FF"); }
+function finance() { filterCategory_("finance"); }
+function swb()     { filterCategory_("swb"); }
+
+
+// ====== SPECIAL FILTER BUTTONS ======
+
+function urgent() {
+  const sh = sheet_();
+  const b = applyFilter_(sh); // dynamic range
+  if (!b) return;
+
+  // Column C not blank
+  notBlank_(sh, COL_URGENT);
+
+  // Sort by column A
+  sortData_(b, COL_CATEGORY, true);
+}
+
+function TodaysOrder() {
+  const sh = sheet_();
+
+  // Preserve prior A:I behavior
+  const b = applyFilter_(sh, 9);
+  if (!b) return;
+
+  // Column D not blank
+  notBlank_(sh, COL_TODAYS);
+
+  // Sort by column D
+  sortData_(b, COL_TODAYS, true);
+}
+
+function must() {
+  const sh = sheet_();
+
+  // Preserve prior A:N behavior
+  const b = applyFilter_(sh, 14);
+  if (!b) return;
+
+  // Column E not blank
+  notBlank_(sh, COL_MUST);
+
+  // Sort by column A
+  sortData_(b, COL_CATEGORY, true);
+}
+
+function All5to15() {
+  const sh = sheet_();
+
+  // Preserve prior A:F behavior
+  const b = applyFilter_(sh, 6);
+  if (!b) return;
+
+  // Column B between 5 and 15
+  const criteria = SpreadsheetApp.newFilterCriteria()
+    .whenNumberBetween(5, 15)
+    .build();
+
+  sh.getFilter().setColumnFilterCriteria(COL_TIME, criteria);
+
+  // Sort by column B
+  sortData_(b, COL_TIME, true);
+}
+
+function stress() { 
+  const sh = sheet_();
+
+  // Preserve prior A:N behavior
+  const b = applyFilter_(sh, 14);
+  if (!b) return;
+
+  // Column E not blank
+  notBlank_(sh, COL_MUST);
+
+  // Column C not blank
+  notBlank_(sh, COL_URGENT);
+
+  // Sort by column A
+  sortData_(b, COL_CATEGORY, true);
+}
+
+
+// ====== DELETE ROWS BUTTON ======
+
+function deleterow() {
+  const sh = sheet_();
+  const r = sh.getActiveRange();
+  sh.deleteRows(r.getRow(), r.getNumRows());
+}
+
+// ====== TOP FILTER CHECKBOXES (ROW 1) ======
+
+const TOP_FILTER_URGENT = "C1";
+const TOP_FILTER_TODAYS = "D1";
+
+function setupTopFilterCheckboxes() {
+  const sh = sheet_();
+
+  sh.getRange(TOP_FILTER_URGENT).insertCheckboxes();
+  sh.getRange(TOP_FILTER_TODAYS).insertCheckboxes();
+
+  sh.getRange(TOP_FILTER_URGENT).setValue(false);
+  sh.getRange(TOP_FILTER_TODAYS).setValue(false);
+}
+
+function handleTopFilterEdit(e) {
+  if (!e || !e.range) return;
+
+  const sh = e.range.getSheet();
+  if (sh.getName() !== TASK_SHEET_NAME) return;
+
+  const a1 = e.range.getA1Notation();
+  if (a1 !== TOP_FILTER_URGENT && a1 !== TOP_FILTER_TODAYS) return;
+
+  applyTopCheckboxFilters_();
+}
+
+function applyTopCheckboxFilters_() {
+  const sh = sheet_();
+  const b = bounds_(sh, 14);
+  if (!b) return;
+
+  const urgentOn = sh.getRange(TOP_FILTER_URGENT).getValue() === true;
+  const todaysOn = sh.getRange(TOP_FILTER_TODAYS).getValue() === true;
+
+  clearFilter_(sh);
+
+  if (!urgentOn && !todaysOn) return;
+
+  b.filterRange.createFilter();
+
+  if (urgentOn) {
+    notBlank_(sh, COL_URGENT);
+  }
+
+  if (todaysOn) {
+    notBlank_(sh, COL_TODAYS);
+  }
+}
