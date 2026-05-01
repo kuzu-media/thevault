@@ -63,13 +63,15 @@ const num = (v: string | undefined) => {
 };
 
 type Insert = {
+  vault_id: string;
   user_id: string;
   box: string;
   title: string;
   area?: string | null;
   minutes?: number | null;
-  urgent?: boolean;
-  must?: boolean;
+  urgent: boolean;
+  must: boolean;
+  pinned: boolean;
   today_order?: number | null;
   energy?: string | null;
   category?: string | null;
@@ -80,6 +82,8 @@ type Insert = {
   body?: string | null;
 };
 
+const baseFlags = { urgent: false, must: false, pinned: false } as const;
+
 function fromAdmin(rows: Row[]): Insert[] {
   // Layout: A=area, B=minutes, C=urgent, D=today's-order, E=must, F=description
   const out: Insert[] = [];
@@ -87,6 +91,8 @@ function fromAdmin(rows: Row[]): Insert[] {
     const desc = (r[5] ?? "").trim();
     if (!desc) return;
     out.push({
+      ...baseFlags,
+      vault_id: vaultId,
       user_id: userId,
       box: "DRAWER",
       title: desc,
@@ -107,6 +113,8 @@ function fromMenu(rows: Row[]): Insert[] {
     const task = (r[3] ?? "").trim();
     if (!task) return;
     out.push({
+      ...baseFlags,
+      vault_id: vaultId,
       user_id: userId,
       box: "TILL",
       title: task,
@@ -127,6 +135,8 @@ function fromPcsIdeas(rows: Row[]): Insert[] {
     const potRaw = num(r[0]);
     const potential = potRaw && potRaw >= 1 && potRaw <= 5 ? potRaw : null;
     out.push({
+      ...baseFlags,
+      vault_id: vaultId,
       user_id: userId,
       box: "PCS_IDEAS",
       title: task,
@@ -150,6 +160,8 @@ function fromGenericList(rows: Row[], box: string): Insert[] {
     if (!cells.length) return;
     const [title, ...rest] = cells;
     out.push({
+      ...baseFlags,
+      vault_id: vaultId,
       user_id: userId,
       box,
       title,
@@ -163,6 +175,8 @@ function fromRecord(rows: Row[], title: string, box: string): Insert {
   // Whole-tab → single Record row, body = TSV preserving structure.
   const body = rows.map((r) => r.join("\t")).join("\n");
   return {
+    ...baseFlags,
+    vault_id: vaultId,
     user_id: userId,
     box,
     title,
@@ -170,7 +184,36 @@ function fromRecord(rows: Row[], title: string, box: string): Insert {
   };
 }
 
+let vaultId = "";
+
+async function resolveVault() {
+  const { data: existing } = await sb
+    .from("vault_members")
+    .select("vault_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing?.vault_id) return existing.vault_id;
+
+  // No membership yet — create a vault for this user.
+  const { data: v, error: ve } = await sb
+    .from("vaults")
+    .insert({ name: "The Vault", owner_id: userId })
+    .select("id")
+    .single();
+  if (ve || !v) throw ve ?? new Error("vault create failed");
+  await sb.from("vault_members").insert({
+    vault_id: v.id,
+    user_id: userId,
+    role: "owner",
+  });
+  return v.id;
+}
+
 async function main() {
+  vaultId = await resolveVault();
+  console.log("Vault:", vaultId);
   console.log("Reading sheet…");
   const [
     admin,

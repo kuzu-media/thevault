@@ -1,20 +1,26 @@
 // The Docket — today's timed schedule. App home.
+//
+// If today's day_inputs row hasn't been built yet, show a single calm
+// "Build my day" entry. Once she's been through the wizard, show the schedule.
 
+import Link from "next/link";
 import {
   classify,
   buildSchedule,
-  thresholdCallout,
   pickTillCandidates,
 } from "@/lib/daily-plan";
-import { getItemsByBox, getDayInputs, defaultDayInputs } from "@/lib/data";
-import { fixtureItems } from "@/lib/fixtures";
-import { ScheduleBlock } from "@/components/schedule-block";
+import { getItemsByBox, getDayInputs } from "@/lib/data";
+import { CustomBlockForm } from "@/components/custom-block-form";
+import { ScheduleWithNowLine } from "@/components/now-line";
+import { UnsealGlow } from "@/components/unseal-glow";
 import type { DayInputs } from "@/lib/types";
 
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+const DAY_GREETINGS = ["Today", "What we're holding today", "Just for today"];
 
 export default async function DocketPage() {
   const date = todayISO();
@@ -24,101 +30,98 @@ export default async function DocketPage() {
     getDayInputs(date),
   ]);
 
-  const drawerItems = drawer.length ? drawer : fixtureItems.filter((i) => i.box === "DRAWER");
-  const tillItems = till.length ? till : fixtureItems.filter((i) => i.box === "TILL");
-  const dayRaw = dayRow ?? defaultDayInputs(date);
+  // No day built yet → calm entry.
+  if (!dayRow) {
+    return <BuildPrompt />;
+  }
+
   const inputs: DayInputs = {
     date,
-    hoursAvailable: Number(dayRaw.hours_available),
-    creative: dayRaw.creative as DayInputs["creative"],
-    probSolv: dayRaw.prob_solv as DayInputs["probSolv"],
-    tieBreak: dayRaw.tie_break as DayInputs["tieBreak"],
-    endOfDay: dayRaw.end_of_day,
+    hoursAvailable: Number(dayRow.hours_available),
+    creative: dayRow.creative as DayInputs["creative"],
+    probSolv: dayRow.prob_solv as DayInputs["probSolv"],
+    tieBreak: dayRow.tie_break as DayInputs["tieBreak"],
+    endOfDay: dayRow.end_of_day,
   };
 
-  const classified = classify(drawerItems);
-  const tillPicks = pickTillCandidates(tillItems, inputs).slice(0, 2);
+  const classified = classify(drawer);
+  // Only schedule Till items the user actually picked today.
+  const tillPicks = till
+    .filter((i) => i.todayOrder !== null)
+    .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0));
   const blocks = buildSchedule({ classified, tillPicks, inputs });
-  const callout = thresholdCallout(classified, inputs);
+  const stateById = new Map(
+    [...drawer, ...till].map((i) => [i.id, i.state ?? "upcoming"]),
+  );
+
+  const greeting = DAY_GREETINGS[new Date().getDate() % DAY_GREETINGS.length];
 
   return (
-    <div className="mx-auto max-w-[1440px] px-10 py-8">
-      <DayInputsBar inputs={inputs} />
-
-      <div className="mt-8 grid grid-cols-[600px_1fr] gap-8">
-        <aside>
-          <h2 className="eyebrow">— What has to happen —</h2>
-          <p className="mt-2 text-ink-dim">{callout}</p>
-
-          <Section title="Stressors" tone="rust">
-            {classified.stressors.length === 0 && <Empty />}
-            {classified.stressors.map((it) => (
-              <DrawerRow
-                key={it.id}
-                title={it.title}
-                area={it.area}
-                minutes={it.minutes}
-              />
-            ))}
-          </Section>
-          <Section title="Time-sensitive" tone="rust-soft">
-            {classified.timeSensitive.length === 0 && <Empty />}
-            {classified.timeSensitive.map((it) => (
-              <DrawerRow
-                key={it.id}
-                title={it.title}
-                area={it.area}
-                minutes={it.minutes}
-              />
-            ))}
-          </Section>
-          <Section title="Must-do" tone="brass">
-            {classified.mustDo.length === 0 && <Empty />}
-            {classified.mustDo.map((it) => (
-              <DrawerRow
-                key={it.id}
-                title={it.title}
-                area={it.area}
-                minutes={it.minutes}
-              />
-            ))}
-          </Section>
-
-          <h2 className="eyebrow mt-8">— From the Till —</h2>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {tillItems.map((it) => (
-              <div
-                key={it.id}
-                className="rounded-sm border border-vault-line bg-vault-panel/40 p-3"
-              >
-                <div className="eyebrow">
-                  {it.category} · {it.minutes} min
-                </div>
-                <div className="mt-1 serif-h text-[15px]">{it.title}</div>
-              </div>
-            ))}
+    <div className="mx-auto max-w-[820px] px-4 py-6 md:px-10 md:py-10">
+      <UnsealGlow />
+      <div className="flex items-baseline justify-between">
+        <div>
+          <div className="serif-h text-[28px] text-ink md:text-[32px]">
+            {greeting}.
           </div>
-        </aside>
-
-        <section>
-          <h2 className="serif-h text-[22px]">Today&rsquo;s Schedule</h2>
-          <p className="eyebrow mt-1">
-            {fmt12(blocks[0]?.start)} → {fmt12(blocks[blocks.length - 1]?.end)} ·{" "}
-            {inputs.hoursAvailable} HRS
+          <p className="mt-1 text-[12px] text-ink-mute">
+            {fmt12(blocks[0]?.start)} – {fmt12HHMM(inputs.endOfDay, inputs.date)}
           </p>
-          <div className="mt-4 space-y-2">
-            {blocks.map((b) => (
-              <ScheduleBlock key={b.itemId} block={b} />
-            ))}
-            <button className="w-full rounded-sm border border-dashed border-brass/40 py-3 font-mono text-[10px] tracking-[0.24em] text-brass/70 hover:border-brass">
-              + ADD A CUSTOM BLOCK
-            </button>
-            <div className="mt-4 flex items-center gap-3 border-t border-brass/30 pt-3 text-[11px] text-ink-mute">
-              <span className="eyebrow">END OF DAY</span>
-              <span>{inputs.endOfDay}</span>
-            </div>
-          </div>
-        </section>
+        </div>
+        <Link
+          href="/build?step=1"
+          className="font-mono text-[10px] tracking-[0.18em] text-ink-mute hover:text-brass"
+        >
+          ↻ REBUILD DAY
+        </Link>
+      </div>
+
+      <div className="mt-8 space-y-2">
+        {blocks.length === 0 && (
+          <p className="rounded-sm border border-dashed border-vault-line/60 bg-vault-panel/20 px-4 py-6 text-center text-ink-mute">
+            Nothing scheduled. Add a custom block below, or rebuild the day.
+          </p>
+        )}
+        {blocks.map((b, i) => (
+          <ScheduleWithNowLine
+            key={b.itemId}
+            block={b}
+            nextStart={blocks[i + 1]?.start}
+            state={(stateById.get(b.itemId) as any) ?? "upcoming"}
+          />
+        ))}
+        <CustomBlockForm date={inputs.date} />
+      </div>
+    </div>
+  );
+}
+
+function BuildPrompt() {
+  return (
+    <div className="relative mx-auto flex min-h-[80vh] max-w-[640px] flex-col items-start justify-center px-4 md:px-10">
+      <div className="absolute inset-0 -z-0 lamp-glow opacity-50" />
+      <div className="relative">
+        <div className="eyebrow">— Good morning —</div>
+        <h1 className="serif-h mt-3 text-[36px] leading-tight text-ink md:text-[48px]">
+          Let&rsquo;s build today.
+        </h1>
+        <p className="mt-3 max-w-[480px] text-ink-dim">
+          Six quick questions, the same ones you&rsquo;ve been answering each
+          morning. The schedule comes from your answers.
+        </p>
+        <Link
+          href="/build?step=1"
+          className="brass-button mt-10 inline-block px-8 py-3 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08]"
+        >
+          BUILD TODAY
+        </Link>
+        <p className="mt-4 font-mono text-[10px] tracking-[0.18em] text-ink-mute">
+          Or{" "}
+          <Link href="/vault" className="hover:text-brass">
+            open the vault
+          </Link>{" "}
+          to browse without building.
+        </p>
       </div>
     </div>
   );
@@ -134,79 +137,10 @@ function fmt12(iso?: string) {
   return `${h}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
-function DayInputsBar({ inputs }: { inputs: DayInputs }) {
-  return (
-    <div className="flex flex-wrap items-end gap-6 rounded-sm border border-vault-line bg-vault-panel/40 p-4">
-      <Pill label="Hours available" value={`${inputs.hoursAvailable} hrs`} />
-      <Pill label="Creative" value={`${inputs.creative} / 5`} />
-      <Pill label="Problem-solv" value={`${inputs.probSolv} / 5`} />
-      <Pill label="If equal" value={inputs.tieBreak} />
-      <Pill label="End of day" value={inputs.endOfDay} />
-    </div>
-  );
-}
-
-function Pill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="eyebrow">{label}</span>
-      <span className="serif-h text-[18px] text-ink">{value}</span>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  tone,
-  children,
-}: {
-  title: string;
-  tone: "rust" | "rust-soft" | "brass";
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mt-6">
-      <div className="flex items-center gap-2">
-        <span
-          className={
-            tone === "rust"
-              ? "h-2 w-2 rounded-full bg-rust"
-              : tone === "rust-soft"
-                ? "h-2 w-2 rounded-full bg-rust/50"
-                : "h-2 w-2 rounded-sm bg-brass"
-          }
-        />
-        <h3 className="eyebrow">{title}</h3>
-      </div>
-      <div className="mt-2 space-y-2">{children}</div>
-    </div>
-  );
-}
-
-function DrawerRow({
-  title,
-  area,
-  minutes,
-}: {
-  title: string;
-  area?: string | null;
-  minutes?: number | null;
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-sm border border-vault-line/60 bg-vault-panel/40 px-3 py-2">
-      <div className="flex items-center gap-3">
-        {area && (
-          <span className="rounded-sm border border-brass/40 px-1.5 py-0.5 font-mono text-[9px] tracking-wider text-brass">
-            {area}
-          </span>
-        )}
-        <span className="text-ink">{title}</span>
-      </div>
-      <span className="font-mono text-[11px] text-ink-mute">{minutes} min</span>
-    </div>
-  );
-}
-
-function Empty() {
-  return <div className="text-[12px] italic text-ink-mute">(none)</div>;
+// "16:30" / "4:30 PM" → "4:30 PM"
+function fmt12HHMM(t: string, date: string) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+  if (!m) return t;
+  const iso = `${date}T${t.padStart(5, "0")}:00`;
+  return fmt12(iso);
 }

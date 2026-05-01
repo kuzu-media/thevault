@@ -1,77 +1,157 @@
+import Link from "next/link";
+import clsx from "clsx";
 import { getItemsByBox } from "@/lib/data";
-import { fixtureItems } from "@/lib/fixtures";
+import { EditableText, EditableFlag } from "@/components/editable-text";
+import { AreaPill } from "@/components/area-pill";
+import { NewItemRow } from "@/components/new-item-row";
+import { SortableList } from "@/components/sortable-list";
+import type { Item } from "@/lib/types";
 
-const FILTERS = [
-  "All",
-  "Stress",
-  "Urgent",
-  "Must",
-  "Today's",
-  "Quick (5–15)",
-  "By area",
+type Filter =
+  | "all"
+  | "stress"
+  | "urgent"
+  | "must"
+  | "today"
+  | "quick"
+  | "byarea";
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "stress", label: "Stress" },
+  { key: "urgent", label: "Urgent" },
+  { key: "must", label: "Must" },
+  { key: "today", label: "Today's" },
+  { key: "quick", label: "Quick (5–15)" },
 ];
 
-export default async function DrawerPage() {
-  const items = await getItemsByBox("DRAWER");
-  const list = items.length ? items : fixtureItems.filter((i) => i.box === "DRAWER");
+function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
+  switch (f) {
+    case "stress":
+      return items.filter((i) => i.urgent && i.must);
+    case "urgent":
+      return items.filter((i) => i.urgent);
+    case "must":
+      return items.filter((i) => i.must);
+    case "today":
+      return items.filter((i) => (i.todayOrder ?? null) !== null);
+    case "quick":
+      return items.filter(
+        (i) => (i.minutes ?? 0) >= 5 && (i.minutes ?? 0) <= 15,
+      );
+    case "byarea":
+      return area ? items.filter((i) => i.area === area) : items;
+    case "all":
+    default:
+      return items;
+  }
+}
+
+export default async function DrawerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string; area?: string }>;
+}) {
+  const sp = await searchParams;
+  const active = (sp.filter ?? "all") as Filter;
+  const area = sp.area;
+  const all = await getItemsByBox("DRAWER");
+  const filtered = applyFilter(all, active, area);
+  const areas = Array.from(
+    new Set(all.map((i) => i.area).filter(Boolean)),
+  ) as string[];
 
   return (
-    <div className="mx-auto max-w-[1200px] px-10 py-8">
-      <div className="eyebrow">— Counter station № 04 —</div>
-      <h1 className="serif-h mt-2 text-[40px] leading-tight">The Drawer</h1>
-      <p className="text-ink-dim">
-        Admin obligations pulled onto the counter. Filter the way the macros used to.
-      </p>
+    <div className="mx-auto max-w-[1200px] px-4 py-8 md:px-10">
+      <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
+        The Drawer
+      </h1>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        {FILTERS.map((f, i) => (
-          <button
-            key={f}
-            className={
-              "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider " +
-              (i === 0
-                ? "border-brass bg-brass/10 text-brass"
-                : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass")
-            }
-          >
-            {f.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
-      <table className="mt-6 w-full text-left">
-        <thead>
-          <tr className="eyebrow text-ink-mute">
-            <th className="py-2 font-normal">U</th>
-            <th className="py-2 font-normal">M</th>
-            <th className="py-2 font-normal">#</th>
-            <th className="py-2 font-normal">Area</th>
-            <th className="py-2 font-normal">Min</th>
-            <th className="py-2 font-normal">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          {list.map((it) => (
-            <tr
-              key={it.id}
-              className="border-t border-vault-line/40 hover:bg-vault-panel/40"
+      <details className="group mt-6">
+        <summary className="cursor-pointer list-none font-mono text-[10px] tracking-[0.24em] text-ink-mute hover:text-brass">
+          <span className="inline-block transition-transform group-open:rotate-90">
+            ›
+          </span>{" "}
+          {active === "all" ? "FILTER" : `FILTER · ${active.toUpperCase()}`}
+        </summary>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
+            <Link
+              key={f.key}
+              href={f.key === "all" ? "/drawer" : `/drawer?filter=${f.key}`}
+              className={clsx(
+                "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider",
+                active === f.key
+                  ? "border-brass bg-brass/10 text-brass"
+                  : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
+              )}
             >
-              <td className="py-2 text-rust">{it.urgent ? "●" : ""}</td>
-              <td className="py-2 text-brass">{it.must ? "■" : ""}</td>
-              <td className="py-2 font-mono text-[11px] text-ink-mute">
-                {it.todayOrder ?? ""}
-              </td>
-              <td className="py-2 font-mono text-[11px] text-brass">
-                {it.area ?? ""}
-              </td>
-              <td className="py-2 font-mono text-[11px] text-ink-mute">
-                {it.minutes ?? ""}
-              </td>
-              <td className="py-2">{it.title}</td>
-            </tr>
+              {f.label}
+            </Link>
           ))}
-        </tbody>
-      </table>
+          {areas.map((a) => (
+            <Link
+              key={a}
+              href={`/drawer?filter=byarea&area=${encodeURIComponent(a)}`}
+              className={clsx(
+                "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider",
+                active === "byarea" && area === a
+                  ? "border-brass bg-brass/10 text-brass"
+                  : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
+              )}
+            >
+              {a}
+            </Link>
+          ))}
+        </div>
+      </details>
+
+      <div className="mt-6">
+        <SortableList
+          items={filtered.map((it) => ({
+            id: it.id,
+            content: (
+              <div className="flex flex-wrap items-center gap-3 rounded-sm border border-vault-line/60 bg-vault-panel/40 px-4 py-2.5 hover:border-brass/30">
+                <EditableFlag
+                  itemId={it.id}
+                  field="urgent"
+                  initial={it.urgent}
+                  glyph="●"
+                  className="text-rust"
+                />
+                <EditableFlag
+                  itemId={it.id}
+                  field="must"
+                  initial={it.must}
+                  glyph="■"
+                  className="text-brass"
+                />
+                <AreaPill itemId={it.id} initial={it.area} />
+                <EditableText
+                  itemId={it.id}
+                  field="title"
+                  initial={it.title}
+                  className="min-w-0 flex-1"
+                />
+                <span className="flex items-baseline gap-1 font-mono text-[11px] text-ink-mute">
+                  <EditableText
+                    itemId={it.id}
+                    field="minutes"
+                    initial={it.minutes}
+                    className="w-12 text-right"
+                    numeric
+                    placeholder="—"
+                  />
+                  <span>min</span>
+                </span>
+              </div>
+            ),
+          }))}
+        />
+        <div className="mt-2">
+          <NewItemRow box="DRAWER" placeholder="+ New admin item" />
+        </div>
+      </div>
     </div>
   );
 }

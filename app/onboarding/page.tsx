@@ -1,70 +1,77 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import { supabaseServer } from "@/lib/supabase/server";
+import { createMyVault } from "@/lib/actions";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const sb = await supabaseServer();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: membership } = await sb
+    .from("vault_members")
+    .select("vault_id")
+    .limit(1)
+    .maybeSingle();
+
+  if (membership) redirect("/");
+
   return (
-    <div className="mx-auto max-w-[720px] px-10 py-16">
+    <div className="mx-auto max-w-[640px] px-6 py-16 md:px-10">
       <div className="eyebrow">— First run —</div>
-      <h1 className="serif-h mt-2 text-[44px] leading-tight">
+      <h1 className="serif-h mt-2 text-[36px] leading-tight md:text-[44px]">
         Welcome to your vault.
       </h1>
       <p className="mt-3 text-ink-dim">
-        Three quick questions, then the door opens.
+        You don&rsquo;t belong to a vault yet. Either start a fresh one of your own,
+        or wait for someone to invite you to theirs.
       </p>
 
-      <ol className="mt-10 space-y-6">
-        <Step
-          n={1}
-          title="Migrate from the Sheet"
-          body="One-time pull from the Google Sheet that's been your Vault. Nothing is changed in the sheet — read-only."
-          cta="Run import"
-        />
-        <Step
-          n={2}
-          title="Set today's answers"
-          body="The five morning questions you've been answering forever. Same questions, just typed in once instead of in a Word doc."
-          cta="Open day inputs"
-        />
-        <Step
-          n={3}
-          title="Set up phone capture"
-          body="An Apple Shortcut on your Action Button. Press, talk or type, deposit. Always lands in The Drop."
-          cta="Set up Shortcut"
-        />
-      </ol>
+      <form
+        action={async (fd) => {
+          "use server";
+          await createMyVault((fd.get("name") as string) ?? "The Vault");
+          redirect("/");
+        }}
+        className="mt-10 rounded-sm border border-vault-line bg-vault-panel/40 p-5"
+      >
+        <h2 className="serif-h text-[22px]">Start a new vault</h2>
+        <p className="mt-1 text-[12px] text-ink-mute">
+          You&rsquo;ll be the owner. You can invite others under Settings → Members.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <input
+            name="name"
+            placeholder="The Vault"
+            defaultValue="The Vault"
+            className="flex-1 min-w-[200px] rounded-sm border border-vault-line bg-vault-bg/60 px-3 py-2 text-ink outline-none focus:border-brass"
+          />
+          <button
+            type="submit"
+            className="brass-button px-6 py-2 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08]"
+          >
+            CREATE VAULT
+          </button>
+        </div>
+      </form>
+
+      <div className="mt-8 rounded-sm border border-dashed border-vault-line p-5 text-[13px] text-ink-mute">
+        Waiting on an invite? Ask the vault owner to add you under{" "}
+        <span className="text-brass">Settings → Members</span>. The link will
+        come to your email.
+      </div>
 
       <div className="mt-12 flex justify-end">
         <Link
-          href="/"
-          className="brass-button px-6 py-2 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08]"
+          href="/auth/signout"
+          className="text-[11px] text-ink-mute underline hover:text-ink"
         >
-          OPEN THE VAULT →
+          Sign out
         </Link>
       </div>
     </div>
-  );
-}
-
-function Step({
-  n,
-  title,
-  body,
-  cta,
-}: {
-  n: number;
-  title: string;
-  body: string;
-  cta: string;
-}) {
-  return (
-    <li className="rounded-sm border border-vault-line bg-vault-panel/40 p-5">
-      <div className="flex items-baseline gap-3">
-        <span className="plaque">№ 0{n}</span>
-        <h3 className="serif-h text-[22px]">{title}</h3>
-      </div>
-      <p className="mt-2 text-ink-dim">{body}</p>
-      <button className="mt-4 rounded-sm border border-brass/40 px-3 py-1.5 font-mono text-[10px] tracking-wider text-brass hover:bg-brass/10">
-        {cta}
-      </button>
-    </li>
   );
 }

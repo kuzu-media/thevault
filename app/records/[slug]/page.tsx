@@ -1,6 +1,5 @@
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { getItemsByBox } from "@/lib/data";
+import { RecordsEditor } from "@/components/records-editor";
 import type { BoxKey } from "@/lib/types";
 
 const SLUG_TO_BOX: Record<string, { box: BoxKey; title: string }> = {
@@ -25,17 +24,9 @@ export default async function RecordPage({
     <div className="mx-auto max-w-[800px] px-10 py-8">
       <div className="eyebrow">— Record —</div>
       <h1 className="serif-h mt-2 text-[40px] leading-tight">{meta.title}</h1>
-      <article className="prose prose-invert prose-headings:font-serif mt-8 max-w-none text-ink">
-        {record?.body ? (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {record.body}
-          </ReactMarkdown>
-        ) : (
-          <p className="italic text-ink-mute">
-            Empty record. Open in editor to start writing.
-          </p>
-        )}
-      </article>
+      <div className="mt-8">
+        <RecordsEditor box={meta.box} initial={record?.body ?? ""} title={meta.title} />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { TopBar } from "@/components/top-bar";
+import { TopBarShell } from "@/components/top-bar-shell";
+import { CmdK } from "@/components/cmd-k";
 
 export const metadata: Metadata = {
   title: "The Vault",
@@ -22,8 +25,23 @@ export default function RootLayout({
       </head>
       <body className="bg-vault-bg text-ink min-h-screen">
         <div className="absolute inset-0 lamp-glow pointer-events-none" />
-        <TopBar />
+        <TopBarShell>
+          <TopBar />
+        </TopBarShell>
         <main className="relative">{children}</main>
+        <CmdK />
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "#1f2228",
+              border: "1px solid #2e2722",
+              color: "#e8ddc4",
+              fontFamily: "var(--font-mono)",
+            },
+          }}
+        />
       </body>
     </html>
   );

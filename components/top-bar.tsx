@@ -1,36 +1,62 @@
 import Link from "next/link";
+import { getSettings } from "@/lib/data";
+import { supabaseServer } from "@/lib/supabase/server";
+import { TopBarNav } from "./top-bar-nav";
+import { SealToggle } from "./seal-toggle";
 
-export function TopBar() {
+// Top bar is a Server Component so we can read settings (sealed flag).
+// The nav itself is a Client Component because it needs usePathname.
+// We render nothing for unauthed users — login/onboarding stand alone.
+
+export async function TopBar() {
+  const sb = await supabaseServer();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return null;
+
+  const { data: membership } = await sb
+    .from("vault_members")
+    .select("vault_id")
+    .limit(1)
+    .maybeSingle();
+  if (!membership) return null;
+
+  const settings = await getSettings();
+  const sealed = !!settings?.sealed;
+
   return (
-    <header className="relative z-10 flex items-center justify-between border-b border-[#3a322b]/40 bg-vault-bg/80 px-10 py-4 backdrop-blur">
-      <Link href="/" className="flex items-center gap-2.5">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+    <header className="relative z-10 flex items-center justify-between gap-3 border-b border-[#3a322b]/30 bg-vault-bg/80 px-4 py-3 backdrop-blur md:px-10 md:py-4">
+      <Link href="/" className="flex shrink-0 items-center gap-2.5">
+        <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
           <circle cx="11" cy="11" r="9.5" stroke="#B5853A" strokeWidth="1.4" />
           <circle cx="11" cy="11" r="4" stroke="#B5853A" strokeWidth="1.4" />
         </svg>
-        <span className="serif-h text-[22px] text-ink">The Vault</span>
+        <span className="serif-h hidden text-[20px] text-ink md:inline md:text-[22px]">
+          The Vault
+        </span>
       </Link>
-      <nav className="flex items-center gap-8 eyebrow">
-        <Link href="/" className="text-brass-bright border-b-2 border-brass pb-3 -mb-3">
-          Today
-        </Link>
-        <Link href="/vault" className="text-ink-mute hover:text-ink">
-          Vault
-        </Link>
-        <Link href="/settings" className="text-ink-mute hover:text-ink">
-          Settings
-        </Link>
-      </nav>
-      <div className="flex items-center gap-3.5">
+
+      <TopBarNav />
+
+      <div className="flex shrink-0 items-center gap-2">
         <Link
           href="/deposit"
-          className="brass-button px-4 py-2 text-[10px] font-mono tracking-[0.24em] text-[#2a1c08]"
+          className="rounded-sm border border-brass/40 px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] text-brass hover:bg-brass/10"
+          title="Deposit"
         >
-          + DEPOSIT · ⌘K
+          + DEPOSIT
         </Link>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#3a322b] bg-vault-panel text-brass-bright">
-          T
-        </div>
+        <SealToggle sealed={sealed} />
+        <form action="/auth/signout" method="post">
+          <button
+            type="submit"
+            title="Sign out"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#3a322b] bg-vault-panel text-brass-bright hover:border-brass"
+          >
+            T
+          </button>
+        </form>
       </div>
     </header>
   );

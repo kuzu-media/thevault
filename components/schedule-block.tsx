@@ -1,4 +1,7 @@
+"use client";
 import clsx from "clsx";
+import { useState, useTransition } from "react";
+import { setItemState, setItemPinned, startItem } from "@/lib/actions";
 import type { ScheduledBlock } from "@/lib/daily-plan";
 
 const BUCKET_COLOR: Record<string, string> = {
@@ -19,6 +22,8 @@ function fmtTime(iso: string) {
   return `${h}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
+// Calmer block: one click marks done. Secondary actions (Start / Pin / Skip)
+// hidden under a quiet "···" — discoverable but not visible at rest.
 export function ScheduleBlock({
   block,
   state = "upcoming",
@@ -26,45 +31,125 @@ export function ScheduleBlock({
   block: ScheduledBlock;
   state?: "upcoming" | "active" | "done" | "skipped" | "overrun";
 }) {
+  const [pending, startTransition] = useTransition();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isDone = state === "done";
+
   return (
     <div
       className={clsx(
-        "group relative flex items-center gap-4 rounded-sm border-l-4 bg-vault-panel/80 px-4 py-3 transition",
+        "group relative flex items-center gap-4 rounded-sm border-l-2 bg-vault-panel/60 px-4 py-3 transition",
         BUCKET_COLOR[block.bucket] ?? "border-l-ink-mute",
-        state === "done" && "opacity-50",
-        state === "active" && "ring-1 ring-brass shadow-[0_0_24px_rgba(224,185,99,0.18)]",
+        isDone && "opacity-50",
+        state === "active" &&
+          "ring-1 ring-brass/70 shadow-[0_0_20px_rgba(224,185,99,0.14)]",
         state === "skipped" && "border-dashed opacity-40",
+        pending && "opacity-70",
       )}
     >
-      <div className="flex w-20 flex-col items-end font-mono text-[11px] tracking-wider text-ink-mute">
+      <div className="flex w-16 shrink-0 flex-col items-end font-mono text-[11px] tracking-wider text-ink-mute">
         <span>{fmtTime(block.start)}</span>
-        <span className="text-[9px] text-ink-mute/60">→ {fmtTime(block.end)}</span>
+        {block.overflow && (
+          <span className="mt-0.5 text-[9px] tracking-wider text-rust/80">
+            past EOD
+          </span>
+        )}
       </div>
       <button
+        title={isDone ? "Mark not done" : "Mark done"}
+        onClick={() =>
+          startTransition(async () => {
+            await setItemState(block.itemId, isDone ? "upcoming" : "done");
+          })
+        }
         className={clsx(
           "h-5 w-5 shrink-0 rounded-full border transition",
-          state === "done"
+          isDone
             ? "border-brass bg-brass"
             : "border-brass/40 hover:border-brass",
         )}
         aria-label="Mark done"
       />
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <div
           className={clsx(
-            "serif-h text-[16px]",
-            state === "done" && "line-through text-ink-mute",
+            "serif-h text-[16px] truncate",
+            isDone && "line-through text-ink-mute",
           )}
         >
           {block.title}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-[11px] text-ink-mute">
-          {block.area && <span className="eyebrow">{block.area}</span>}
-          <span>·</span>
+          {block.area && (
+            <span className="font-mono text-[10px] tracking-wider">
+              {block.area.toLowerCase()}
+            </span>
+          )}
           <span>{block.minutes} min</span>
-          {block.pinned && <span className="text-brass">📌</span>}
         </div>
       </div>
+      <div className="relative">
+        <button
+          title="More"
+          onClick={() => setMenuOpen((v) => !v)}
+          className="flex h-8 w-8 items-center justify-center rounded-sm font-mono text-[14px] text-ink-mute opacity-30 transition hover:bg-vault-bg/40 hover:text-brass group-hover:opacity-100"
+        >
+          ···
+        </button>
+        {menuOpen && (
+          <div
+            onClick={() => setMenuOpen(false)}
+            className="absolute right-0 top-9 z-10 flex w-32 flex-col gap-px rounded-sm border border-vault-line bg-vault-panel shadow-xl"
+          >
+            {state !== "active" && state !== "done" && (
+              <MenuButton
+                onClick={() =>
+                  startTransition(async () => {
+                    await startItem(block.itemId);
+                  })
+                }
+              >
+                Start
+              </MenuButton>
+            )}
+            <MenuButton
+              onClick={() =>
+                startTransition(async () => {
+                  await setItemPinned(block.itemId, !block.pinned);
+                })
+              }
+            >
+              {block.pinned ? "Unpin" : "Pin time"}
+            </MenuButton>
+            <MenuButton
+              onClick={() =>
+                startTransition(async () => {
+                  await setItemState(block.itemId, "skipped");
+                })
+              }
+            >
+              Skip today
+            </MenuButton>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+function MenuButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-3 py-2 text-left text-[12px] text-ink hover:bg-vault-bg/60 hover:text-brass"
+    >
+      {children}
+    </button>
   );
 }

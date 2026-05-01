@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "thevault",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,9 +7,15 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "lint": "next lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "migrate:sheet": "tsx scripts/migrate-from-sheet.ts"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.1",
     "clsx": "^2.1.1",
@@ -19,16 +25,23 @@
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "sonner": "^2.0.7",
     "zod": "^4.4.1"
   },
   "devDependencies": {
+    "@next/eslint-plugin-next": "^16.2.4",
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/ui": "^4.1.5",
     "dotenv": "^17.4.2",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.4",
     "googleapis": "^171.4.0",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",

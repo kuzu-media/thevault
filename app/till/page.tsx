@@ -1,46 +1,73 @@
 import { getItemsByBox } from "@/lib/data";
-import { fixtureItems } from "@/lib/fixtures";
+import { EditableText } from "@/components/editable-text";
+import { NewItemRow } from "@/components/new-item-row";
+import { TillPickButton } from "@/components/till-pick-button";
 
 export default async function TillPage() {
-  const items = await getItemsByBox("TILL");
-  const list = items.length ? items : fixtureItems.filter((i) => i.box === "TILL");
+  const list = await getItemsByBox("TILL");
 
   const groups = new Map<string, typeof list>();
   for (const it of list) {
-    const key = it.category ?? "Uncategorized";
+    const key = it.category ?? "Other";
     if (!groups.has(key)) groups.set(key, [] as any);
     groups.get(key)!.push(it as any);
   }
 
   return (
-    <div className="mx-auto max-w-[1440px] px-10 py-8">
-      <div className="eyebrow">— Counter station № 03 —</div>
-      <h1 className="serif-h mt-2 text-[40px] leading-tight">The Till</h1>
-      <p className="text-ink-dim">
-        Energy-matched options for today. Pick what feels right; nothing here is an obligation.
+    <div className="mx-auto max-w-[960px] px-4 py-8 md:px-10">
+      <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
+        The Till
+      </h1>
+      <p className="mt-1 text-[12px] text-ink-mute">
+        Pick what feels right. Nothing here is an obligation.
       </p>
 
       {[...groups.entries()].map(([cat, rows]) => (
         <section key={cat} className="mt-8">
-          <h2 className="eyebrow text-brass">— {cat} —</h2>
-          <div className="mt-3 grid grid-cols-3 gap-3">
+          <h2 className="eyebrow">— {cat.toLowerCase()} —</h2>
+          <div className="mt-3 space-y-2">
             {rows.map((it: any) => (
               <div
                 key={it.id}
-                className="rounded-sm border border-vault-line bg-vault-panel/40 p-4 transition hover:border-brass/40"
+                className="flex flex-wrap items-center gap-3 rounded-sm border border-vault-line/60 bg-vault-panel/40 px-4 py-2.5 hover:border-brass/30"
               >
-                <div className="eyebrow">
-                  {it.energy ?? ""} · {it.minutes ?? "—"} min
-                </div>
-                <div className="mt-2 serif-h text-[18px]">{it.title}</div>
-                <button className="mt-3 rounded-sm border border-brass/40 px-3 py-1 font-mono text-[10px] tracking-wider text-brass hover:bg-brass/10">
-                  + Pick
-                </button>
+                <span className="font-mono text-[10px] tracking-wider text-ink-mute">
+                  {(it.energy ?? "").toLowerCase()}
+                </span>
+                <EditableText
+                  itemId={it.id}
+                  field="title"
+                  initial={it.title}
+                  className="min-w-0 flex-1"
+                />
+                <span className="flex items-baseline gap-1 font-mono text-[11px] text-ink-mute">
+                  <EditableText
+                    itemId={it.id}
+                    field="minutes"
+                    initial={it.minutes}
+                    className="w-12 text-right"
+                    numeric
+                    placeholder="—"
+                  />
+                  <span>min</span>
+                </span>
+                <TillPickButton
+                  itemId={it.id}
+                  picked={it.todayOrder !== null}
+                />
               </div>
             ))}
           </div>
         </section>
       ))}
+
+      <div className="mt-10">
+        <NewItemRow
+          box="TILL"
+          placeholder="+ New till option"
+          defaults={{ energy: "CREATIVE" }}
+        />
+      </div>
     </div>
   );
 }

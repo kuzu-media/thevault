@@ -90,6 +90,20 @@ export async function getSettings() {
   return data;
 }
 
+export async function getCurrentVault() {
+  if (!envReady()) return null;
+  const sb = await supabaseServer();
+  const { data } = await sb
+    .from("vault_members")
+    .select("vault_id, role, vault:vaults(id, name)")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  const v = data.vault as unknown as { id: string; name: string } | null;
+  return v ? { id: v.id, name: v.name, role: data.role as "owner" | "editor" } : null;
+}
+
 // Fixture day used when no `day_inputs` row exists yet.
 export function defaultDayInputs(date: string) {
   return {

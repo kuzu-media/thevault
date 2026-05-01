@@ -103,6 +103,7 @@ export type ScheduledBlock = {
   end: string; // ISO
   pinned: boolean;
   area?: string | null;
+  overflow?: boolean;
 };
 
 export type BuildScheduleArgs = {

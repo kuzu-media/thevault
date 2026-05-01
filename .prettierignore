@@ -1,0 +1,6 @@
+node_modules
+.next
+public
+docs/screens
+*.md
+package-lock.json

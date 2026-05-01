@@ -1,0 +1,483 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
+
+async function requireUser() {
+  const sb = await supabaseServer();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  return { sb, user };
+}
+
+async function currentVaultId() {
+  const { sb } = await requireUser();
+  const { data } = await sb
+    .from("vault_members")
+    .select("vault_id")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.vault_id as string | undefined;
+}
+
+// ─── Day inputs ────────────────────────────────────────────────────────────
+
+const DayInputsSchema = z.object({
+  date: z.string(),
+  hours_available: z.coerce.number().min(0).max(24),
+  creative: z.coerce.number().int().min(1).max(5),
+  prob_solv: z.coerce.number().int().min(1).max(5),
+  tie_break: z.enum(["CREATIVE", "PROB-SOLV"]),
+  end_of_day: z.string(),
+});
+
+export async function saveDayInputs(formData: FormData) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const parsed = DayInputsSchema.parse(Object.fromEntries(formData));
+  await sb.from("day_inputs").upsert({ ...parsed, vault_id: vaultId });
+  revalidatePath("/");
+}
+
+// Wizard partial save — only the fields you've answered so far. Used by the
+// /build wizard so each step persists immediately.
+const PartialDayInputs = z.object({
+  date: z.string(),
+  hours_available: z.coerce.number().min(0).max(24).optional(),
+  creative: z.coerce.number().int().min(1).max(5).optional(),
+  prob_solv: z.coerce.number().int().min(1).max(5).optional(),
+  tie_break: z.enum(["CREATIVE", "PROB-SOLV"]).optional(),
+  end_of_day: z.string().optional(),
+});
+
+export async function saveDayInputsPartial(
+  patch: z.input<typeof PartialDayInputs>,
+) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const parsed = PartialDayInputs.parse(patch);
+
+  // Upsert with sensible defaults so the row exists after the very first step.
+  await sb.from("day_inputs").upsert(
+    {
+      vault_id: vaultId,
+      date: parsed.date,
+      hours_available: parsed.hours_available ?? 7,
+      creative: parsed.creative ?? 3,
+      prob_solv: parsed.prob_solv ?? 3,
+      tie_break: parsed.tie_break ?? "PROB-SOLV",
+      end_of_day: parsed.end_of_day ?? "16:30",
+    },
+    { onConflict: "vault_id,date", ignoreDuplicates: false },
+  );
+
+  // Then patch only the fields the caller passed (so we don't overwrite
+  // earlier answers with defaults on subsequent steps).
+  const onlyProvided: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(parsed)) {
+    if (v !== undefined && k !== "date") onlyProvided[k] = v;
+  }
+  if (Object.keys(onlyProvided).length) {
+    await sb
+      .from("day_inputs")
+      .update(onlyProvided)
+      .eq("vault_id", vaultId)
+      .eq("date", parsed.date);
+  }
+  revalidatePath("/", "layout");
+}
+
+// ─── Items: state, flags, box, captures ────────────────────────────────────
+
+export async function setItemState(
+  itemId: string,
+  state: "upcoming" | "active" | "done" | "skipped" | "overrun",
+) {
+  const { sb } = await requireUser();
+  const patch: Record<string, unknown> = { state };
+  if (state === "active") patch.actual_start = new Date().toISOString();
+  if (state === "done" || state === "skipped" || state === "overrun") {
+    patch.actual_end = new Date().toISOString();
+  }
+  await sb.from("items").update(patch).eq("id", itemId);
+  revalidatePath("/");
+}
+
+export async function toggleDone(itemId: string, currentlyDone: boolean) {
+  await setItemState(itemId, currentlyDone ? "upcoming" : "done");
+}
+
+export async function setItemPinned(itemId: string, pinned: boolean) {
+  const { sb } = await requireUser();
+  await sb.from("items").update({ pinned }).eq("id", itemId);
+  revalidatePath("/");
+}
+
+export async function moveItemToBox(itemId: string, box: string) {
+  const { sb } = await requireUser();
+  await sb.from("items").update({ box }).eq("id", itemId);
+  revalidatePath("/");
+  revalidatePath("/drop");
+  revalidatePath("/drawer");
+  revalidatePath("/till");
+  revalidatePath("/vault");
+}
+
+export async function softDeleteItem(itemId: string) {
+  const { sb } = await requireUser();
+  await sb
+    .from("items")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", itemId);
+  revalidatePath("/");
+}
+
+const ItemPatch = z.object({
+  title: z.string().min(1).max(500).optional(),
+  area: z.string().max(40).nullable().optional(),
+  minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
+  urgent: z.coerce.boolean().optional(),
+  must: z.coerce.boolean().optional(),
+  energy: z
+    .enum(["CREATIVE", "PROB-SOLV", "LEISURE", "PHYSICAL"])
+    .nullable()
+    .optional(),
+  category: z.string().max(40).nullable().optional(),
+  potential: z.coerce.number().int().min(1).max(5).nullable().optional(),
+  person: z.string().max(40).nullable().optional(),
+  tag: z.string().max(40).nullable().optional(),
+  notes: z.string().nullable().optional(),
+  body: z.string().nullable().optional(),
+  today_order: z.coerce.number().int().nullable().optional(),
+  pinned: z.coerce.boolean().optional(),
+});
+
+export async function updateItem(
+  itemId: string,
+  patch: z.input<typeof ItemPatch>,
+) {
+  const { sb } = await requireUser();
+  const parsed = ItemPatch.parse(patch);
+  await sb.from("items").update(parsed).eq("id", itemId);
+  revalidatePath("/", "layout");
+}
+
+export async function createItem(box: string, title: string, extras: z.input<typeof ItemPatch> = {}) {
+  const { sb, user } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const parsed = ItemPatch.parse(extras);
+  const { data } = await sb
+    .from("items")
+    .insert({
+      vault_id: vaultId,
+      user_id: user.id,
+      box,
+      title: title.trim(),
+      urgent: parsed.urgent ?? false,
+      must: parsed.must ?? false,
+      pinned: parsed.pinned ?? false,
+      ...parsed,
+    })
+    .select("id")
+    .single();
+  revalidatePath("/", "layout");
+  return data?.id;
+}
+
+export async function startItem(itemId: string) {
+  await setItemState(itemId, "active");
+}
+
+// Reorder items by setting today_order to the array index.
+export async function reorderItems(itemIds: string[]) {
+  const { sb } = await requireUser();
+  await Promise.all(
+    itemIds.map((id, i) =>
+      sb.from("items").update({ today_order: i + 1 }).eq("id", id),
+    ),
+  );
+  revalidatePath("/", "layout");
+}
+
+// Till "pick" — mark for today by giving it a today_order rank.
+export async function pickFromTill(itemId: string, picked: boolean) {
+  const { sb } = await requireUser();
+  if (picked) {
+    const { data: max } = await sb
+      .from("items")
+      .select("today_order")
+      .eq("box", "TILL")
+      .not("today_order", "is", null)
+      .order("today_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const next = (max?.today_order ?? 0) + 1;
+    await sb.from("items").update({ today_order: next }).eq("id", itemId);
+  } else {
+    await sb.from("items").update({ today_order: null }).eq("id", itemId);
+  }
+  revalidatePath("/");
+  revalidatePath("/till");
+  revalidatePath("/build");
+}
+
+// Custom block on the Docket — creates a pinned, scheduled DRAWER item.
+export async function addCustomBlock(opts: {
+  title: string;
+  minutes: number;
+  startISO?: string;
+}) {
+  const { sb, user } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const start = opts.startISO ? new Date(opts.startISO) : null;
+  const end = start
+    ? new Date(start.getTime() + opts.minutes * 60_000)
+    : null;
+  await sb.from("items").insert({
+    vault_id: vaultId,
+    user_id: user.id,
+    box: "DRAWER",
+    title: opts.title.trim(),
+    minutes: opts.minutes,
+    urgent: false,
+    must: true,
+    pinned: !!start,
+    scheduled_start: start?.toISOString() ?? null,
+    scheduled_end: end?.toISOString() ?? null,
+  });
+  revalidatePath("/");
+}
+
+// Records: write markdown body for the single record row in a Records box.
+export async function saveRecord(box: string, body: string, title?: string) {
+  const { sb, user } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const { data: existing } = await sb
+    .from("items")
+    .select("id")
+    .eq("box", box)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (existing) {
+    await sb
+      .from("items")
+      .update({ body, ...(title ? { title } : {}) })
+      .eq("id", existing.id);
+  } else {
+    await sb.from("items").insert({
+      vault_id: vaultId,
+      user_id: user.id,
+      box,
+      title: title ?? box,
+      body,
+      urgent: false,
+      must: false,
+      pinned: false,
+    });
+  }
+  revalidatePath(`/records`, "layout");
+}
+
+// Vault & box config.
+export async function renameVault(name: string) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  await sb.from("vaults").update({ name }).eq("id", vaultId);
+  revalidatePath("/", "layout");
+}
+
+export async function createMyVault(name: string) {
+  const { sb, user } = await requireUser();
+  const { data: v, error } = await sb
+    .from("vaults")
+    .insert({ name: name.trim() || "The Vault", owner_id: user.id })
+    .select("id")
+    .single();
+  if (error) throw error;
+  await sb
+    .from("vault_members")
+    .insert({ vault_id: v.id, user_id: user.id, role: "owner" });
+  revalidatePath("/", "layout");
+  return v.id;
+}
+
+const BoxConfig = z.object({
+  key: z.string().min(1).max(40),
+  title: z.string().min(1).max(60),
+  meta: z.string().max(40).optional().default(""),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+});
+
+export async function saveBoxConfig(boxes: z.input<typeof BoxConfig>[]) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const parsed = boxes.map((b) => BoxConfig.parse(b));
+  await sb.from("settings").upsert({ vault_id: vaultId, boxes: parsed });
+  revalidatePath("/", "layout");
+}
+
+// Capture token — generated, persisted on the settings row, surfaced in /settings.
+export async function rotateCaptureToken() {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const token =
+    "vault_" +
+    crypto.getRandomValues(new Uint8Array(24))
+      .reduce((s, b) => s + b.toString(16).padStart(2, "0"), "");
+  await sb
+    .from("settings")
+    .upsert({ vault_id: vaultId, capture_token: token });
+  revalidatePath("/settings");
+  return token;
+}
+
+// Sealed state — persisted on the settings row so the door stays shut on refresh.
+export async function setSealed(sealed: boolean) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  await sb.from("settings").upsert({ vault_id: vaultId, sealed });
+  revalidatePath("/", "layout");
+}
+
+// ─── Capture (real session — used by /deposit Mail Slot) ───────────────────
+
+export async function depositText(text: string, source: string = "mailslot") {
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  const { sb, user } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+
+  const { data: item } = await sb
+    .from("items")
+    .insert({
+      vault_id: vaultId,
+      user_id: user.id,
+      box: "DROP",
+      title: trimmed.slice(0, 200),
+      urgent: false,
+      must: false,
+      pinned: false,
+    })
+    .select("id")
+    .single();
+
+  await sb.from("captures").insert({
+    vault_id: vaultId,
+    user_id: user.id,
+    raw: trimmed,
+    source,
+    item_id: item?.id,
+  });
+  revalidatePath("/drop");
+}
+
+// ─── Settings ─────────────────────────────────────────────────────────────
+
+const SettingsSchema = z.object({
+  stressor_anchor_minutes: z.coerce.number().int().min(0).max(480),
+  default_end_of_day: z.string(),
+  default_hours: z.coerce.number().min(0).max(24),
+  show_annual_budget: z
+    .union([z.literal("on"), z.literal("off"), z.literal("true"), z.literal("false")])
+    .transform((v) => v === "on" || v === "true")
+    .optional()
+    .default("off" as any),
+  annual_hours: z.coerce.number().int().min(0).max(8760),
+});
+
+export async function saveSettings(formData: FormData) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const raw = Object.fromEntries(formData);
+  const parsed = SettingsSchema.parse(raw);
+  await sb.from("settings").upsert({ ...parsed, vault_id: vaultId });
+  revalidatePath("/settings");
+}
+
+// ─── Vault members (invite / role / remove) ────────────────────────────────
+
+const InviteSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(["owner", "editor"]).default("editor"),
+});
+
+export async function inviteMember(formData: FormData) {
+  const { user } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+
+  const parsed = InviteSchema.parse(Object.fromEntries(formData));
+  const admin = supabaseAdmin();
+
+  const { data: list } = await admin.auth.admin.listUsers();
+  const existing = list?.users.find(
+    (u: any) => u.email?.toLowerCase() === parsed.email.toLowerCase(),
+  );
+
+  let invitedUserId: string | null = existing?.id ?? null;
+  if (!invitedUserId) {
+    const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(
+      parsed.email,
+      {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3002"}/auth/callback`,
+      },
+    );
+    if (error) throw error;
+    invitedUserId = invited.user.id;
+  }
+
+  await admin.from("vault_members").upsert({
+    vault_id: vaultId,
+    user_id: invitedUserId,
+    role: parsed.role,
+  });
+  void user;
+  revalidatePath("/settings/members");
+}
+
+export async function setMemberRole(
+  memberUserId: string,
+  role: "owner" | "editor",
+) {
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const admin = supabaseAdmin();
+  await admin
+    .from("vault_members")
+    .update({ role })
+    .eq("vault_id", vaultId)
+    .eq("user_id", memberUserId);
+  revalidatePath("/settings/members");
+}
+
+export async function removeMember(memberUserId: string) {
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const admin = supabaseAdmin();
+  await admin
+    .from("vault_members")
+    .delete()
+    .eq("vault_id", vaultId)
+    .eq("user_id", memberUserId);
+  revalidatePath("/settings/members");
+}
+
+void redirect;

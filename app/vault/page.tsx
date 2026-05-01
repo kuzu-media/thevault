@@ -1,29 +1,26 @@
+import Link from "next/link";
 import { getAllItems } from "@/lib/data";
 import { fixtureItems } from "@/lib/fixtures";
 import { BoxCard } from "@/components/box-card";
 
-const COUNTER = [
-  { key: "DROP", title: "The Drop", meta: "Unsorted thoughts", number: "№ 01", href: "/drop", accent: "rust" as const },
-  { key: "DOCKET", title: "The Docket", meta: "On the counter", number: "№ 02", href: "/", accent: "rust" as const },
-  { key: "TILL", title: "The Till", meta: "Options", number: "№ 03", href: "/till", accent: "teal" as const },
-  { key: "DRAWER", title: "The Drawer", meta: "Admin pull", number: "№ 04", href: "/drawer", accent: "teal" as const },
-];
+// Vault interior — STORAGE ONLY. Counter stations (Drop / Docket / Till /
+// Drawer) live in the top nav; here we only show the things you put away.
 
 const BOXES = [
-  { key: "SWB_PLAN", title: "SWB Plan", meta: "Strategic rows", number: "№ 05" },
-  { key: "PCS_DELEGATION", title: "PCS Delegation", meta: "For Ron", number: "№ 06" },
-  { key: "PCS_IDEAS", title: "PCS Ideas", meta: "Work ideas", number: "№ 07" },
-  { key: "READ_RESEARCH", title: "Read & Research", meta: "URLs & refs", number: "№ 08" },
-  { key: "HEALTH_IDEAS", title: "Health Ideas", meta: "Aspirational", number: "№ 09" },
-  { key: "MISC_IDEAS", title: "Misc Ideas", meta: "Aspirational", number: "№ 10" },
-  { key: "RON", title: "Ron's Queue", meta: "Delegation", number: "№ 11" },
+  { key: "SWB_PLAN", title: "SWB Plan", meta: "Strategic rows" },
+  { key: "PCS_DELEGATION", title: "PCS Delegation", meta: "For Ron" },
+  { key: "PCS_IDEAS", title: "PCS Ideas", meta: "Work ideas" },
+  { key: "READ_RESEARCH", title: "Read & Research", meta: "URLs & refs" },
+  { key: "HEALTH_IDEAS", title: "Health Ideas", meta: "Aspirational" },
+  { key: "MISC_IDEAS", title: "Misc Ideas", meta: "Aspirational" },
+  { key: "RON", title: "Ron's Queue", meta: "Delegation" },
 ];
 
 const RECORDS = [
-  { key: "MEASUREMENTS", title: "Measurements", meta: "Weekly log", number: "№ 12", href: "/records/measurements" },
-  { key: "LIFTING", title: "Lifting", meta: "Workout plan", number: "№ 13", href: "/records/lifting" },
-  { key: "PCS_MISC", title: "PCS Misc", meta: "Promo schedule", number: "№ 14", href: "/records/pcs-misc" },
-  { key: "NOTES", title: "Notes", meta: "Manifesto", number: "№ 15", href: "/records/notes" },
+  { key: "MEASUREMENTS", title: "Measurements", meta: "Weekly log", href: "/records/measurements" },
+  { key: "LIFTING", title: "Lifting", meta: "Workout plan", href: "/records/lifting" },
+  { key: "PCS_MISC", title: "PCS Misc", meta: "Promo schedule", href: "/records/pcs-misc" },
+  { key: "NOTES", title: "Notes", meta: "Manifesto", href: "/records/notes" },
 ];
 
 export default async function VaultInteriorPage() {
@@ -33,36 +30,21 @@ export default async function VaultInteriorPage() {
   for (const it of source) counts.set(it.box, (counts.get(it.box) ?? 0) + 1);
 
   return (
-    <div className="mx-auto max-w-[1440px] px-10 py-8">
-      <div className="eyebrow">— 4 Stations · 7 Boxes · 4 Records —</div>
-      <h1 className="serif-h mt-2 text-[40px] leading-tight">Welcome to the bank.</h1>
-      <p className="text-ink-dim">
-        {source.length} items in safe storage. Browse to find, open to work.
+    <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
+      <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
+        The vault.
+      </h1>
+      <p className="mt-1 text-[12px] text-ink-mute">
+        Storage. Long-term places for ideas, plans, and reference.
       </p>
 
-      <Header label="The Counter" sub="where today's plan comes from" />
-      <Grid>
-        {COUNTER.map((c) => (
-          <BoxCard
-            key={c.key}
-            title={c.title}
-            meta={c.meta}
-            number={c.number}
-            count={counts.get(c.key) ?? 0}
-            href={c.href}
-            accent={c.accent}
-          />
-        ))}
-      </Grid>
-
-      <Header label="The Boxes" sub="categorized task collections · backlog you draw from" />
+      <Header label="The Boxes" />
       <Grid>
         {BOXES.map((b) => (
           <BoxCard
             key={b.key}
             title={b.title}
             meta={b.meta}
-            number={b.number}
             count={counts.get(b.key) ?? 0}
             href={`/vault/${b.key.toLowerCase().replace(/_/g, "-")}`}
           />
@@ -70,29 +52,18 @@ export default async function VaultInteriorPage() {
         <NewBoxTile />
       </Grid>
 
-      <Header label="The Records" sub="reference, logs, manifesto · not tasks, don't roll up" />
+      <Header label="The Records" />
       <Grid>
         {RECORDS.map((r) => (
-          <BoxCard
-            key={r.key}
-            title={r.title}
-            meta={r.meta}
-            number={r.number}
-            href={r.href}
-          />
+          <BoxCard key={r.key} title={r.title} meta={r.meta} href={r.href} />
         ))}
       </Grid>
     </div>
   );
 }
 
-function Header({ label, sub }: { label: string; sub: string }) {
-  return (
-    <div className="mt-10 flex items-baseline gap-3">
-      <span className="eyebrow text-rust">— {label} —</span>
-      <span className="text-[12px] italic text-ink-mute">{sub}</span>
-    </div>
-  );
+function Header({ label }: { label: string }) {
+  return <div className="mt-10 eyebrow text-ink-mute">— {label} —</div>;
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
@@ -101,13 +72,11 @@ function Grid({ children }: { children: React.ReactNode }) {
 
 function NewBoxTile() {
   return (
-    <div className="flex h-[200px] w-[260px] flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-brass/40 text-brass/60 transition hover:border-brass">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="10" stroke="currentColor" />
-        <path d="M11 6v10M6 11h10" stroke="currentColor" />
-      </svg>
-      <div className="serif-h text-[18px]">New deposit box</div>
-      <div className="font-mono text-[10px] text-ink-mute">give it a number, name, color</div>
-    </div>
+    <Link
+      href="/settings/boxes"
+      className="flex h-[140px] w-full flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line text-ink-mute transition hover:border-brass/40 hover:text-brass sm:w-[240px]"
+    >
+      <span className="serif-h text-[16px]">+ New box</span>
+    </Link>
   );
 }
