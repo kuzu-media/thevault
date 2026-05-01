@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   DndContext,
   closestCenter,
@@ -25,6 +25,24 @@ export type SortableItem = { id: string; content: React.ReactNode };
 export function SortableList({ items }: { items: SortableItem[] }) {
   const [order, setOrder] = useState(items);
   const [, startTransition] = useTransition();
+
+  // Re-sync when the parent re-renders with a different list (e.g. after
+  // a + New row inserts a new item, or a row is moved to another box).
+  // Compare ids so we don't trigger when only content (e.g. an EditableText
+  // re-renders with a fresh closure) changes.
+  useEffect(() => {
+    const currentIds = order.map((i) => i.id).join(",");
+    const incomingIds = items.map((i) => i.id).join(",");
+    if (currentIds !== incomingIds) setOrder(items);
+    else if (order.length === items.length) {
+      // Same ids in the same order — refresh content references in case
+      // titles or other cell contents changed.
+      const sameContent = order.every(
+        (o, i) => o.content === items[i].content,
+      );
+      if (!sameContent) setOrder(items);
+    }
+  }, [items, order]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
