@@ -1,10 +1,12 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import clsx from "clsx";
 import { triageDropItem, softDeleteItem } from "@/lib/actions";
 import { EditableText } from "@/components/editable-text";
 import { FlagIcon, type FlagKind } from "@/components/flag-icons";
+import { Kbd } from "@/components/kbd";
+import { useShortcut } from "@/lib/shortcuts";
 import type { Box, Destination, EnergyType } from "@/lib/categories";
 import type { Item } from "@/lib/types";
 
@@ -39,6 +41,53 @@ export function DropTriageRow({
   const [urgent, setUrgent] = useState(item.urgent);
   const [must, setMust] = useState(item.must);
   const [pending, startTransition] = useTransition();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [focused, setFocused] = useState(false);
+
+  // Track whether the focused element lives inside this row so per-row
+  // shortcuts only fire on the row Tracy is looking at.
+  useEffect(() => {
+    function check() {
+      const el = document.activeElement;
+      setFocused(!!wrapperRef.current?.contains(el));
+    }
+    document.addEventListener("focusin", check);
+    document.addEventListener("focusout", check);
+    return () => {
+      document.removeEventListener("focusin", check);
+      document.removeEventListener("focusout", check);
+    };
+  }, []);
+
+  // The row-level shortcuts. Only one row's listeners fire because they're
+  // all gated on `focused`. Inputs auto-skip — typing "u" in the title
+  // contenteditable won't toggle Urgent.
+  useShortcut("1", () => setDest("ATM"), {
+    label: "Send to ATM",
+    group: "Drop",
+    options: { enabled: focused },
+  });
+  useShortcut("2", () => setDest("COUNTER"), {
+    label: "Send to Counter",
+    group: "Drop",
+    options: { enabled: focused },
+  });
+  useShortcut("u", () => dest === "COUNTER" && setUrgent((v) => !v), {
+    label: "Toggle Urgent",
+    group: "Drop",
+    options: { enabled: focused && dest === "COUNTER" },
+  });
+  useShortcut("m", () => dest === "COUNTER" && setMust((v) => !v), {
+    label: "Toggle Must",
+    group: "Drop",
+    options: { enabled: focused && dest === "COUNTER" },
+  });
+  useShortcut("enter", () => send(), {
+    label: "Send",
+    group: "Drop",
+    // Allow in inputs so Enter from the title field also sends.
+    options: { enabled: focused, allowInInputs: true },
+  });
 
   function send() {
     if (!boxKey) {
@@ -77,8 +126,10 @@ export function DropTriageRow({
 
   return (
     <div
+      ref={wrapperRef}
+      tabIndex={-1}
       className={clsx(
-        "group relative overflow-hidden rounded-sm border bg-vault-panel/40 transition hover:bg-vault-panel/60",
+        "group relative overflow-hidden rounded-sm border bg-vault-panel/40 transition hover:bg-vault-panel/60 focus-within:ring-1 focus-within:ring-brass/30",
         dest === "COUNTER" ? "border-rust/30" : "border-teal/30",
       )}
     >
@@ -153,14 +204,14 @@ export function DropTriageRow({
               on={urgent}
               onChange={setUrgent}
               kind="urgent"
-              label="Urgent"
+              label="Urgent (U)"
               color="text-rust"
             />
             <FlagToggle
               on={must}
               onChange={setMust}
               kind="must"
-              label="Must"
+              label="Must (M)"
               color="text-brass"
             />
           </div>
@@ -178,9 +229,17 @@ export function DropTriageRow({
           <button
             onClick={send}
             disabled={pending || !boxKey}
-            className="brass-button px-3 py-1 font-mono text-[10px] tracking-[0.18em] text-[#2a1c08] disabled:opacity-40"
+            title="Press Enter"
+            className="brass-button flex items-center gap-1.5 px-3 py-1 font-mono text-[10px] tracking-[0.18em] text-[#2a1c08] disabled:opacity-40"
           >
-            {pending ? "..." : "→ SEND"}
+            {pending ? (
+              "..."
+            ) : (
+              <>
+                <span>→ SEND</span>
+                {focused && <Kbd keys="enter" size="xs" className="text-[#2a1c08]/70" />}
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -203,6 +262,7 @@ function DestSegment({
         active={dest === "ATM"}
         onClick={() => onChange("ATM")}
         accent="teal"
+        hint="1"
       >
         ATM
       </SegmentButton>
@@ -210,6 +270,7 @@ function DestSegment({
         active={dest === "COUNTER"}
         onClick={() => onChange("COUNTER")}
         accent="rust"
+        hint="2"
       >
         COUNTER
       </SegmentButton>
@@ -221,16 +282,19 @@ function SegmentButton({
   active,
   onClick,
   accent,
+  hint,
   children,
 }: {
   active: boolean;
   onClick: () => void;
   accent: "teal" | "rust";
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <button
       onClick={onClick}
+      title={hint ? `Press ${hint}` : undefined}
       className={clsx(
         "px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] transition",
         active && accent === "teal" && "bg-teal text-vault-bg",

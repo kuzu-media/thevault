@@ -80,3 +80,28 @@ export async function getEnergies(): Promise<EnergyType[]> {
     .map(normalizeEnergy)
     .filter((e): e is EnergyType => e !== null);
 }
+
+// Records are text-first storage categories (Notes, Measurements, Read &
+// Research, Health Ideas…) — separately configured from Boxes. Same shape;
+// kept distinct so the Vault page can render them in their own section and
+// route them through /records/<slug> instead of /vault/<slug>.
+export type RecordType = {
+  key: string;
+  label: string;
+  color?: string;
+  meta?: string;
+};
+
+export const DEFAULT_RECORDS: RecordType[] = [];
+
+export async function getRecords(): Promise<RecordType[]> {
+  const sb = await supabaseServer();
+  const { data } = await sb
+    .from("settings")
+    .select("records")
+    .maybeSingle();
+  const raw = (data?.records as any[]) ?? null;
+  if (!raw || !Array.isArray(raw)) return [];
+  // Same shape as Box, so reuse the box normalizer.
+  return raw.map(normalize).filter((r): r is RecordType => r !== null);
+}

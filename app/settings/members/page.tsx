@@ -74,10 +74,22 @@ export default async function MembersPage() {
           BOXES
         </a>
         <a
+          href="/settings/records"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          RECORDS
+        </a>
+        <a
           href="/settings/energies"
           className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
         >
           ENERGIES
+        </a>
+        <a
+          href="/settings/connect"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          CONNECT
         </a>
       </div>
 

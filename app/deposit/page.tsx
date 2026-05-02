@@ -1,8 +1,25 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function DepositPage() {
+  return (
+    <Suspense fallback={null}>
+      <DepositInner />
+    </Suspense>
+  );
+}
+
+function DepositInner() {
+  const params = useSearchParams();
   const [text, setText] = useState("");
+
+  // Bookmarklet drops the page title + URL via ?t=
+  useEffect(() => {
+    const t = params.get("t");
+    if (t && !text) setText(decodeURIComponent(t));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
 
   async function deposit(e: React.FormEvent) {

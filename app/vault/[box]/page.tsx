@@ -1,18 +1,9 @@
 import { getItemsByBox } from "@/lib/data";
+import { getBoxes } from "@/lib/categories";
 import { TriageChips } from "@/components/triage-chips";
 import { EditableText } from "@/components/editable-text";
 import { NewItemRow } from "@/components/new-item-row";
 import type { BoxKey } from "@/lib/types";
-
-const TITLES: Record<string, string> = {
-  "swb-plan": "SWB Plan",
-  "pcs-delegation": "PCS Delegation",
-  "pcs-ideas": "PCS Ideas",
-  "read-research": "Read & Research",
-  "health-ideas": "Health Ideas",
-  "misc-ideas": "Misc Ideas",
-  ron: "Ron's Queue",
-};
 
 export default async function BoxPage({
   params,
@@ -21,8 +12,12 @@ export default async function BoxPage({
 }) {
   const { box } = await params;
   const key = box.toUpperCase().replace(/-/g, "_") as BoxKey;
-  const list = await getItemsByBox(key);
-  const title = TITLES[box] ?? box.replace(/-/g, " ");
+  const [list, configuredBoxes] = await Promise.all([
+    getItemsByBox(key),
+    getBoxes(),
+  ]);
+  const title =
+    configuredBoxes.find((b) => b.key === key)?.label ?? prettify(key);
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
@@ -83,4 +78,11 @@ export default async function BoxPage({
       </div>
     </div>
   );
+}
+
+function prettify(key: string): string {
+  return key
+    .split("_")
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(" ");
 }

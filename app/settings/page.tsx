@@ -46,10 +46,22 @@ export default async function SettingsPage() {
           BOXES
         </Link>
         <Link
+          href="/settings/records"
+          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
+        >
+          RECORDS
+        </Link>
+        <Link
           href="/settings/energies"
           className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
         >
           ENERGIES
+        </Link>
+        <Link
+          href="/settings/connect"
+          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
+        >
+          CONNECT
         </Link>
       </div>
 
@@ -137,6 +149,14 @@ export default async function SettingsPage() {
       <div className="mt-12">
         <Group title="Capture (Apple Shortcut)">
           <CaptureTokenRow token={row?.capture_token ?? null} />
+          <div className="border-t border-vault-line/40 px-4 py-3 text-[12px] text-ink-mute">
+            Want a step-by-step?{" "}
+            <Link href="/settings/connect" className="text-brass hover:underline">
+              Connect your iPhone &amp; Mac →
+            </Link>{" "}
+            walks through Add-to-Home-Screen, Siri capture, Mac quick-capture,
+            and a one-click bookmarklet.
+          </div>
         </Group>
       </div>
     </div>

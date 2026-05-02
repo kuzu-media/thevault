@@ -4,12 +4,12 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
 const ITEMS = [
-  { href: "/", label: "Today", match: (p: string) => p === "/" || p.startsWith("/build") },
-  { href: "/drop", label: "Drop", match: (p: string) => p.startsWith("/drop") },
-  { href: "/atm", label: "ATM", match: (p: string) => p.startsWith("/atm") },
-  { href: "/counter", label: "Counter", match: (p: string) => p.startsWith("/counter") },
-  { href: "/vault", label: "Vault", match: (p: string) => p.startsWith("/vault") || p.startsWith("/records") },
-  { href: "/settings", label: "Settings", match: (p: string) => p.startsWith("/settings") },
+  { href: "/", label: "Today", hint: "g d", match: (p: string) => p === "/" || p.startsWith("/build") },
+  { href: "/drop", label: "Drop", hint: "g r", match: (p: string) => p.startsWith("/drop") },
+  { href: "/atm", label: "ATM", hint: "g a", match: (p: string) => p.startsWith("/atm") },
+  { href: "/counter", label: "Counter", hint: "g c", match: (p: string) => p.startsWith("/counter") },
+  { href: "/vault", label: "Vault", hint: "g v", match: (p: string) => p.startsWith("/vault") || p.startsWith("/records") },
+  { href: "/settings", label: "Settings", hint: "g s", match: (p: string) => p.startsWith("/settings") },
 ];
 
 export function TopBarNav() {
@@ -22,8 +22,9 @@ export function TopBarNav() {
           <Link
             key={item.href}
             href={item.href}
+            title={`Press ${item.hint}`}
             className={clsx(
-              "shrink-0 whitespace-nowrap pb-3 -mb-3 transition",
+              "group shrink-0 whitespace-nowrap pb-3 -mb-3 transition",
               active
                 ? "border-b-2 border-brass text-brass-bright"
                 : "text-ink-mute hover:text-ink",

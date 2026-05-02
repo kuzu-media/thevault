@@ -405,6 +405,20 @@ export async function saveEnergyConfig(
   revalidatePath("/", "layout");
 }
 
+// Records share the box shape — same validation rules.
+const RecordConfig = BoxConfig;
+
+export async function saveRecordConfig(
+  records: z.input<typeof RecordConfig>[],
+) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const parsed = records.map((r) => RecordConfig.parse(r));
+  await sb.from("settings").upsert({ vault_id: vaultId, records: parsed });
+  revalidatePath("/", "layout");
+}
+
 // Capture token — generated, persisted on the settings row, surfaced in /settings.
 export async function rotateCaptureToken() {
   const { sb } = await requireUser();

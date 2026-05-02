@@ -3,6 +3,9 @@ import { useRef, useState, useTransition } from "react";
 import { saveBoxConfig } from "@/lib/actions";
 import type { Box } from "@/lib/categories";
 
+// The Records editor reuses this same component — same shape, same UX,
+// just routed to a different `onSave`. See app/settings/records/page.tsx.
+
 // Auto-derived key from a label: uppercase, spaces → underscores, strip
 // punctuation. Mirrors the manual transform users were typing themselves.
 function deriveKey(label: string): string {
@@ -13,7 +16,23 @@ function deriveKey(label: string): string {
     .slice(0, 40);
 }
 
-export function BoxesEditor({ initial }: { initial: Box[] }) {
+export function BoxesEditor({
+  initial,
+  onSave = saveBoxConfig,
+  singular = "BOX",
+  plural = "BOXES",
+  labelPlaceholder = "Label (e.g. PCS)",
+  metaPlaceholder = "Subtitle, e.g. Polymer Clay Superstore",
+}: {
+  initial: Box[];
+  onSave?: (rows: Box[]) => Promise<unknown>;
+  /** Uppercase singular — used in "+ ADD <singular>". */
+  singular?: string;
+  /** Uppercase plural — used in "SAVE <plural>". */
+  plural?: string;
+  labelPlaceholder?: string;
+  metaPlaceholder?: string;
+}) {
   const [boxes, setBoxes] = useState<Box[]>(initial);
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -47,7 +66,11 @@ export function BoxesEditor({ initial }: { initial: Box[] }) {
   }
 
   function remove(i: number) {
-    if (!confirm("Remove this box? Items already filed under it stay safe."))
+    if (
+      !confirm(
+        `Remove this ${singular.toLowerCase()}? Items already filed under it stay safe.`,
+      )
+    )
       return;
     setBoxes(boxes.filter((_, idx) => idx !== i));
     // Re-base manual-key indexes after removal.
@@ -67,7 +90,7 @@ export function BoxesEditor({ initial }: { initial: Box[] }) {
     }));
     setBoxes(cleaned);
     startTransition(async () => {
-      await saveBoxConfig(cleaned);
+      await onSave(cleaned);
       setSavedAt(Date.now());
     });
   }
@@ -100,13 +123,13 @@ export function BoxesEditor({ initial }: { initial: Box[] }) {
           <input
             value={b.label}
             onChange={(e) => changeLabel(i, e.target.value)}
-            placeholder="Label (e.g. PCS)"
+            placeholder={labelPlaceholder}
             className="min-w-[160px] flex-1 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-ink outline-none focus:border-brass"
           />
           <input
             value={b.meta ?? ""}
             onChange={(e) => update(i, { meta: e.target.value })}
-            placeholder="Subtitle, e.g. Polymer Clay Superstore"
+            placeholder={metaPlaceholder}
             title="An optional one-liner to remind you what this box is — shows under the label on box cards."
             className="min-w-[160px] flex-1 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[11px] text-ink-mute outline-none focus:border-brass"
           />
@@ -129,7 +152,7 @@ export function BoxesEditor({ initial }: { initial: Box[] }) {
         onClick={add}
         className="w-full rounded-sm border border-dashed border-brass/40 py-3 font-mono text-[10px] tracking-[0.24em] text-brass/70 hover:border-brass"
       >
-        + ADD BOX
+        + ADD {singular}
       </button>
 
       <div className="flex items-center justify-between pt-3">
@@ -147,7 +170,7 @@ export function BoxesEditor({ initial }: { initial: Box[] }) {
           disabled={pending}
           className="brass-button px-6 py-2 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
         >
-          SAVE BOXES
+          SAVE {plural}
         </button>
       </div>
     </div>

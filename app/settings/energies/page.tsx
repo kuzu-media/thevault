@@ -32,10 +32,22 @@ export default async function EnergiesSettingsPage() {
           BOXES
         </Link>
         <Link
+          href="/settings/records"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          RECORDS
+        </Link>
+        <Link
           href="/settings/energies"
           className="rounded-sm border border-brass bg-brass/10 px-3 py-1 text-brass"
         >
           ENERGIES
+        </Link>
+        <Link
+          href="/settings/connect"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          CONNECT
         </Link>
       </div>
 

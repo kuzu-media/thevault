@@ -9,6 +9,8 @@ import {
   setItemState,
 } from "@/lib/actions";
 import type { DayInputs, Item, Energy } from "@/lib/types";
+import { useShortcut } from "@/lib/shortcuts";
+import { Kbd } from "./kbd";
 
 const STEPS = [
   { n: 1, title: "Hours" },
@@ -55,6 +57,18 @@ export function BuildWizard({
   function finish() {
     router.push("/");
   }
+
+  // Esc → back. Steps 5 + 6 advance with Enter (no input focus).
+  useShortcut("escape", prev, {
+    label: "Back / cancel",
+    group: "Build day",
+    options: { allowInInputs: true },
+  });
+  useShortcut("enter", () => (isLast ? finish() : next()), {
+    label: "Continue",
+    group: "Build day",
+    options: { enabled: step === 5 || step === 6 },
+  });
 
   return (
     <div className="relative mx-auto flex min-h-[80vh] max-w-[640px] flex-col px-4 py-12 md:px-10">
@@ -115,10 +129,11 @@ export function BuildWizard({
       <div className="mt-8 flex items-center justify-between font-mono text-[10px] tracking-[0.18em] text-ink-mute">
         <button
           onClick={prev}
-          className="hover:text-brass"
+          className="flex items-center gap-2 hover:text-brass"
           disabled={pending}
         >
-          ← {step === 1 ? "CANCEL" : "BACK"}
+          <Kbd keys="escape" size="xs" />
+          <span>← {step === 1 ? "CANCEL" : "BACK"}</span>
         </button>
         <Link href="/" className="hover:text-brass">
           SKIP &amp; OPEN VAULT

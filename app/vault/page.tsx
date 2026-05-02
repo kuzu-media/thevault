@@ -1,34 +1,38 @@
-import Link from "next/link";
-import { getAllItems } from "@/lib/data";
-import { fixtureItems } from "@/lib/fixtures";
-import { BoxCard } from "@/components/box-card";
-
 // Vault interior — STORAGE ONLY. Daily-action surfaces (Drop / Docket /
 // ATM / Counter) live in the top nav; here we only show the things you
 // put away.
+//
+// Strictly configured-only:
+//   Boxes   = settings.boxes (and only those)
+//   Records = settings.records (and only those)
+//
+// Items whose `box` doesn't match a configured key are NOT rendered. They
+// stay in the database (so historical data isn't destroyed), but the vault
+// only surfaces what the user has explicitly set up. Edit the lists in
+// Settings → Boxes / Records.
 
-const BOXES = [
-  { key: "SWB_PLAN", title: "SWB Plan", meta: "Strategic rows" },
-  { key: "PCS_DELEGATION", title: "PCS Delegation", meta: "For Ron" },
-  { key: "PCS_IDEAS", title: "PCS Ideas", meta: "Work ideas" },
-  { key: "READ_RESEARCH", title: "Read & Research", meta: "URLs & refs" },
-  { key: "HEALTH_IDEAS", title: "Health Ideas", meta: "Aspirational" },
-  { key: "MISC_IDEAS", title: "Misc Ideas", meta: "Aspirational" },
-  { key: "RON", title: "Ron's Queue", meta: "Delegation" },
-];
-
-const RECORDS = [
-  { key: "MEASUREMENTS", title: "Measurements", meta: "Weekly log", href: "/records/measurements" },
-  { key: "LIFTING", title: "Lifting", meta: "Workout plan", href: "/records/lifting" },
-  { key: "PCS_MISC", title: "PCS Misc", meta: "Promo schedule", href: "/records/pcs-misc" },
-  { key: "NOTES", title: "Notes", meta: "Manifesto", href: "/records/notes" },
-];
+import Link from "next/link";
+import { getAllItems } from "@/lib/data";
+import { getBoxes, getRecords } from "@/lib/categories";
+import { BoxCard } from "@/components/box-card";
 
 export default async function VaultInteriorPage() {
-  const all = await getAllItems();
-  const source = all.length ? all : fixtureItems;
+  const [items, boxes, records] = await Promise.all([
+    getAllItems(),
+    getBoxes(),
+    getRecords(),
+  ]);
+
+  // Per-key item count, restricted to configured keys.
   const counts = new Map<string, number>();
-  for (const it of source) counts.set(it.box, (counts.get(it.box) ?? 0) + 1);
+  const configuredKeys = new Set<string>([
+    ...boxes.map((b) => b.key),
+    ...records.map((r) => r.key),
+  ]);
+  for (const it of items) {
+    if (!configuredKeys.has(it.box)) continue;
+    counts.set(it.box, (counts.get(it.box) ?? 0) + 1);
+  }
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
@@ -39,26 +43,62 @@ export default async function VaultInteriorPage() {
         Storage. Long-term places for ideas, plans, and reference.
       </p>
 
-      <Header label="The Boxes" />
-      <Grid>
-        {BOXES.map((b) => (
-          <BoxCard
-            key={b.key}
-            title={b.title}
-            meta={b.meta}
-            count={counts.get(b.key) ?? 0}
-            href={`/vault/${b.key.toLowerCase().replace(/_/g, "-")}`}
-          />
-        ))}
-        <NewBoxTile />
-      </Grid>
+      {boxes.length > 0 && (
+        <>
+          <Header label="The Boxes" />
+          <Grid>
+            {boxes.map((b) => (
+              <BoxCard
+                key={b.key}
+                title={b.label}
+                count={counts.get(b.key) ?? 0}
+                href={`/vault/${slugify(b.key)}`}
+              />
+            ))}
+            <NewTile href="/settings/boxes" label="+ New box" />
+          </Grid>
+        </>
+      )}
 
-      <Header label="The Records" />
-      <Grid>
-        {RECORDS.map((r) => (
-          <BoxCard key={r.key} title={r.title} meta={r.meta} href={r.href} />
-        ))}
-      </Grid>
+      {boxes.length === 0 && records.length === 0 && (
+        <div className="mt-10 rounded-sm border border-dashed border-vault-line/60 bg-vault-panel/20 p-8 text-center">
+          <p className="text-ink-dim">No boxes or records yet.</p>
+          <p className="mt-1 text-[12px] text-ink-mute">
+            Set up your categories to start filing thoughts.
+          </p>
+          <div className="mt-4 inline-flex gap-2">
+            <Link
+              href="/settings/boxes"
+              className="rounded-sm border border-brass/40 px-4 py-2 font-mono text-[10px] tracking-[0.18em] text-brass transition hover:bg-brass/10"
+            >
+              + ADD BOXES
+            </Link>
+            <Link
+              href="/settings/records"
+              className="rounded-sm border border-brass/40 px-4 py-2 font-mono text-[10px] tracking-[0.18em] text-brass transition hover:bg-brass/10"
+            >
+              + ADD RECORDS
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {records.length > 0 && (
+        <>
+          <Header label="The Records" />
+          <Grid>
+            {records.map((r) => (
+              <BoxCard
+                key={r.key}
+                title={r.label}
+                meta={r.meta || "reference"}
+                href={`/records/${slugify(r.key)}`}
+              />
+            ))}
+            <NewTile href="/settings/records" label="+ New record" />
+          </Grid>
+        </>
+      )}
     </div>
   );
 }
@@ -71,13 +111,18 @@ function Grid({ children }: { children: React.ReactNode }) {
   return <div className="mt-4 flex flex-wrap gap-4">{children}</div>;
 }
 
-function NewBoxTile() {
+function NewTile({ href, label }: { href: string; label: string }) {
   return (
     <Link
-      href="/settings/boxes"
+      href={href}
       className="flex h-[140px] w-full flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line text-ink-mute transition hover:border-brass/40 hover:text-brass sm:w-[240px]"
     >
-      <span className="serif-h text-[16px]">+ New box</span>
+      <span className="serif-h text-[16px]">{label}</span>
     </Link>
   );
+}
+
+// Convert a BOX_KEY → slug-case for URLs.
+function slugify(key: string): string {
+  return key.toLowerCase().replace(/_/g, "-").replace(/\//g, "-");
 }

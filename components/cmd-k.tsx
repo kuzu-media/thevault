@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { depositText } from "@/lib/actions";
+import { useShortcut } from "@/lib/shortcuts";
+import { Kbd } from "./kbd";
 
 export function CmdK() {
   const [open, setOpen] = useState(false);
@@ -9,19 +11,22 @@ export function CmdK() {
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
+  useShortcut("mod+k", () => setOpen((v) => !v), {
+    label: "Open mail slot",
+    group: "Capture",
+    options: { allowInInputs: true },
+  });
+  useShortcut("escape", () => setOpen(false), {
+    label: "",
+    options: { enabled: open, allowInInputs: true },
+  });
+
+  // `n` from anywhere also opens the mail slot.
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
-      if (isCmdK) {
-        e.preventDefault();
-        setOpen((v) => !v);
-      } else if (e.key === "Escape" && open) {
-        setOpen(false);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+    const onOpen = () => setOpen(true);
+    window.addEventListener("vault:open-cmdk", onOpen);
+    return () => window.removeEventListener("vault:open-cmdk", onOpen);
+  }, []);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
@@ -67,7 +72,17 @@ export function CmdK() {
           className="mt-3 w-full bg-transparent text-ink outline-none placeholder:text-ink-mute serif-h text-[18px]"
         />
         <div className="mt-3 flex items-center justify-between font-mono text-[10px] tracking-wider text-ink-mute">
-          <span>{pending ? "saving…" : "Enter to deposit · Esc to close"}</span>
+          <span className="flex items-center gap-2">
+            {pending ? (
+              "saving…"
+            ) : (
+              <>
+                <Kbd keys="enter" size="xs" /> deposit
+                <span className="opacity-50">·</span>
+                <Kbd keys="escape" size="xs" /> close
+              </>
+            )}
+          </span>
           <button
             onClick={submit}
             disabled={pending}

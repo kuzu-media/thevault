@@ -4,6 +4,10 @@ import "./globals.css";
 import { TopBar } from "@/components/top-bar";
 import { TopBarShell } from "@/components/top-bar-shell";
 import { CmdK } from "@/components/cmd-k";
+import { ShortcutsProvider } from "@/lib/shortcuts";
+import { GlobalShortcuts } from "@/components/global-shortcuts";
+import { ShortcutCheatSheet } from "@/components/shortcut-cheat-sheet";
+import { ShortcutsHintBar } from "@/components/shortcuts-hint-bar";
 
 export const metadata: Metadata = {
   title: "The Vault",
@@ -25,11 +29,16 @@ export default function RootLayout({
       </head>
       <body className="bg-vault-bg text-ink min-h-screen">
         <div className="absolute inset-0 lamp-glow pointer-events-none" />
-        <TopBarShell>
-          <TopBar />
-        </TopBarShell>
-        <main className="relative">{children}</main>
-        <CmdK />
+        <ShortcutsProvider>
+          <TopBarShell>
+            <TopBar />
+          </TopBarShell>
+          <main className="relative">{children}</main>
+          <CmdK />
+          <GlobalShortcuts />
+          <ShortcutCheatSheet />
+          <ShortcutsHintBar />
+        </ShortcutsProvider>
         <Toaster
           theme="dark"
           position="bottom-right"

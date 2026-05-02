@@ -70,6 +70,7 @@ export default async function DocketPage() {
         </div>
         <Link
           href="/build?step=1"
+          title="Press g b"
           className="font-mono text-[10px] tracking-[0.18em] text-ink-mute hover:text-brass"
         >
           ↻ REBUILD DAY

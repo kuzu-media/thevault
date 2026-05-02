@@ -1,15 +1,16 @@
 import Link from "next/link";
-import { getBoxes } from "@/lib/categories";
+import { getRecords } from "@/lib/categories";
+import { saveRecordConfig } from "@/lib/actions";
 import { BoxesEditor } from "@/components/boxes-editor";
 
-export default async function BoxesSettingsPage() {
-  const initial = await getBoxes();
+export default async function RecordsSettingsPage() {
+  const initial = await getRecords();
 
   return (
     <div className="mx-auto max-w-[1000px] px-4 py-8 md:px-10">
-      <div className="eyebrow">— Settings · boxes —</div>
+      <div className="eyebrow">— Settings · records —</div>
       <h1 className="serif-h mt-2 text-[36px] leading-tight md:text-[40px]">
-        How the vault is organized.
+        Long-form reference categories.
       </h1>
 
       <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] tracking-wider">
@@ -27,13 +28,13 @@ export default async function BoxesSettingsPage() {
         </Link>
         <Link
           href="/settings/boxes"
-          className="rounded-sm border border-brass bg-brass/10 px-3 py-1 text-brass"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
         >
           BOXES
         </Link>
         <Link
           href="/settings/records"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+          className="rounded-sm border border-brass bg-brass/10 px-3 py-1 text-brass"
         >
           RECORDS
         </Link>
@@ -52,18 +53,20 @@ export default async function BoxesSettingsPage() {
       </div>
 
       <p className="mt-6 text-ink-dim">
-        Your boxes are the categories you file thoughts into from The Drop —
-        life areas, businesses, projects. The same box can hold Counter items
-        (obligations) and ATM items (energy-matched pulls).
-      </p>
-      <p className="mt-1 text-[12px] text-ink-mute">
-        The <strong>label</strong> is what you see in dropdowns. The{" "}
-        <strong>meta</strong> is an optional subtitle (shown under the label
-        on box cards). The <strong>key</strong> auto-derives from the label
-        as you type — only edit it directly if you really need to.
+        Records are text-first reference — Notes, Measurements, Read &amp;
+        Research, Health Ideas. Distinct from boxes (which hold task-shaped
+        items). Each record gets a markdown page at{" "}
+        <span className="font-mono text-brass">/records/&lt;slug&gt;</span>.
       </p>
 
-      <BoxesEditor initial={initial} />
+      <BoxesEditor
+        initial={initial}
+        onSave={saveRecordConfig}
+        singular="RECORD"
+        plural="RECORDS"
+        labelPlaceholder="Label (e.g. Notes)"
+        metaPlaceholder="Subtitle, e.g. Measurements & doses"
+      />
     </div>
   );
 }
