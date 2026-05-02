@@ -1,9 +1,10 @@
 "use client";
 import { useState, useTransition } from "react";
 import { updateItem } from "@/lib/actions";
+import { DRAWER_AREAS } from "@/lib/categories";
 import clsx from "clsx";
 
-const AREAS = ["ECO", "SWB", "HEALTH", "FF", "TRAVEL", "HOME", "FINANCE"];
+const AREAS = DRAWER_AREAS.map((a) => a.key);
 
 export function AreaPill({
   itemId,

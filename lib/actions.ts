@@ -139,10 +139,12 @@ export async function softDeleteItem(itemId: string) {
   revalidatePath("/");
 }
 
-// Triage a Drop item — move into target box and set its metadata in one
-// roundtrip. Used by the rich row on /drop.
+// Triage a Drop item — pick a category and let the action route it to the
+// right box (Till for non-admin categories, Drawer for admin areas), set
+// the matching column (category vs area), and apply the rest of the fields
+// in one server roundtrip.
 const TriagePatch = z.object({
-  box: z.string().min(1).max(40),
+  category: z.string().min(1).max(40),
   minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
   urgent: z.coerce.boolean().optional(),
   must: z.coerce.boolean().optional(),
@@ -150,9 +152,9 @@ const TriagePatch = z.object({
     .enum(["CREATIVE", "PROB-SOLV", "LEISURE", "PHYSICAL", "ADMIN"])
     .nullable()
     .optional(),
-  area: z.string().max(40).nullable().optional(),
-  category: z.string().max(40).nullable().optional(),
 });
+
+import { destinationFor } from "@/lib/categories";
 
 export async function triageDropItem(
   itemId: string,
@@ -160,7 +162,24 @@ export async function triageDropItem(
 ) {
   const { sb } = await requireUser();
   const parsed = TriagePatch.parse(patch);
-  await sb.from("items").update(parsed).eq("id", itemId);
+  const dest = destinationFor(parsed.category);
+  const update: Record<string, unknown> = {
+    box: dest,
+    minutes: parsed.minutes ?? null,
+    urgent: parsed.urgent ?? false,
+    must: parsed.must ?? false,
+    energy: parsed.energy ?? null,
+  };
+  // Drawer items use `area`; Till items use `category`. Keep them separate
+  // so each surface filters by its native column.
+  if (dest === "DRAWER") {
+    update.area = parsed.category;
+    update.category = null;
+  } else {
+    update.category = parsed.category;
+    update.area = null;
+  }
+  await sb.from("items").update(update).eq("id", itemId);
   revalidatePath("/", "layout");
 }
 
