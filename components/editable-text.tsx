@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import clsx from "clsx";
 import { updateItem } from "@/lib/actions";
 import { FlagIcon, type FlagKind } from "./flag-icons";
@@ -40,7 +41,11 @@ export function EditableText({
         ? null
         : value;
     startTransition(async () => {
-      await updateItem(itemId, { [field]: v } as any);
+      try {
+        await updateItem(itemId, { [field]: v } as any);
+      } catch (e: any) {
+        toast.error(e?.message ?? "Couldn't save edit.");
+      }
     });
   }
 

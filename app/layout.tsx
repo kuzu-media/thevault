@@ -8,6 +8,7 @@ import { ShortcutsProvider } from "@/lib/shortcuts";
 import { GlobalShortcuts } from "@/components/global-shortcuts";
 import { ShortcutCheatSheet } from "@/components/shortcut-cheat-sheet";
 import { ShortcutsHintBar } from "@/components/shortcuts-hint-bar";
+import { UnhandledRejectionGuard } from "@/components/unhandled-rejection-guard";
 
 export const metadata: Metadata = {
   title: "The Vault",
@@ -38,6 +39,7 @@ export default function RootLayout({
           <GlobalShortcuts />
           <ShortcutCheatSheet />
           <ShortcutsHintBar />
+          <UnhandledRejectionGuard />
         </ShortcutsProvider>
         <Toaster
           theme="dark"

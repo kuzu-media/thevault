@@ -1,0 +1,37 @@
+"use client";
+
+// Catches browser-side unhandled promise rejections and forwards them to
+// the dev console with full detail (the Next.js dev log only prints the
+// rejection's `reason.toString()`, which is "undefined" for a lot of
+// React/Server-Action errors). Also calls preventDefault so the red
+// devtools overlay doesn't flap on every transient failure.
+
+import { useEffect } from "react";
+import { toast } from "sonner";
+
+export function UnhandledRejectionGuard() {
+  useEffect(() => {
+    function onRejection(e: PromiseRejectionEvent) {
+      // Print everything we have so the dev log is actionable.
+      // eslint-disable-next-line no-console
+      console.error("[vault] unhandled promise rejection", {
+        reason: e.reason,
+        message: (e.reason as { message?: string } | null)?.message,
+        stack: (e.reason as { stack?: string } | null)?.stack,
+        type: typeof e.reason,
+      });
+      // Show a toast in dev only — production ought to surface failures
+      // contextually at the call site.
+      if (process.env.NODE_ENV !== "production") {
+        const r = e.reason as { message?: string } | null;
+        toast.error(
+          r?.message ? `Background error: ${r.message}` : "A background promise rejected (see console).",
+        );
+      }
+      e.preventDefault();
+    }
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => window.removeEventListener("unhandledrejection", onRejection);
+  }, []);
+  return null;
+}
