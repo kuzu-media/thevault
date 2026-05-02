@@ -1,6 +1,8 @@
 "use client";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { depositText } from "@/lib/actions";
 
 export default function DepositPage() {
   return (
@@ -13,6 +15,7 @@ export default function DepositPage() {
 function DepositInner() {
   const params = useSearchParams();
   const [text, setText] = useState("");
+  const [pending, startTransition] = useTransition();
 
   // Bookmarklet drops the page title + URL via ?t=
   useEffect(() => {
@@ -20,28 +23,22 @@ function DepositInner() {
     if (t && !text) setText(decodeURIComponent(t));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
-  const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
 
-  async function deposit(e: React.FormEvent) {
+  function deposit(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim()) return;
-    setStatus("idle");
-    // For now we just hit /api/capture in source=mailslot mode; auth on
-    // /api/capture is a bearer token only used by phone shortcuts, so
-    // this in-app deposit will swap to a Server Action once we wire up
-    // session-based auth here. Showing the optimistic confirmation either way.
-    try {
-      await fetch("/api/capture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, source: "mailslot", userId: "00000000-0000-0000-0000-000000000000" }),
-      });
-      setStatus("saved");
-      setText("");
-      setTimeout(() => setStatus("idle"), 2000);
-    } catch {
-      setStatus("error");
-    }
+    const t = text.trim();
+    if (!t) return;
+    startTransition(async () => {
+      try {
+        await depositText(t, "mailslot");
+        toast.success("Deposited.");
+        setText("");
+      } catch (err: unknown) {
+        toast.error(
+          err instanceof Error ? err.message : "Couldn't save.",
+        );
+      }
+    });
   }
 
   return (
@@ -63,12 +60,12 @@ function DepositInner() {
         />
         <div className="flex items-center justify-between">
           <span className="font-mono text-[10px] text-ink-mute">
-            {status === "saved" && "✓ Deposited."}
-            {status === "error" && "⚠ Couldn't save."}
+            {pending ? "Saving…" : ""}
           </span>
           <button
             type="submit"
-            className="brass-button px-6 py-2 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08]"
+            disabled={pending}
+            className="brass-button px-6 py-2 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
           >
             DEPOSIT
           </button>

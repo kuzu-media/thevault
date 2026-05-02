@@ -462,7 +462,7 @@ export async function depositText(text: string, source: string = "mailslot") {
   const vaultId = await currentVaultId();
   if (!vaultId) throw new Error("No vault");
 
-  const { data: item } = await sb
+  const { data: item, error: itemErr } = await sb
     .from("items")
     .insert({
       vault_id: vaultId,
@@ -476,13 +476,17 @@ export async function depositText(text: string, source: string = "mailslot") {
     .select("id")
     .single();
 
-  await sb.from("captures").insert({
+  if (itemErr) throw new Error(itemErr.message);
+  if (!item?.id) throw new Error("Couldn't create item.");
+
+  const { error: capErr } = await sb.from("captures").insert({
     vault_id: vaultId,
     user_id: user.id,
     raw: trimmed,
     source,
-    item_id: item?.id,
+    item_id: item.id,
   });
+  if (capErr) throw new Error(capErr.message);
   revalidatePath("/drop");
 }
 
