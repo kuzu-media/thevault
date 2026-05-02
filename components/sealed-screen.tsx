@@ -147,22 +147,14 @@ export function SealedScreen({
           {/* Actions */}
           <div className="mt-8 flex items-center gap-3">
             {sealed ? (
-              <>
-                <button
-                  onClick={unseal}
-                  disabled={pending}
-                  className="brass-button flex items-center gap-2 px-6 py-3 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
-                >
-                  <span aria-hidden>↑</span>
-                  OPEN VAULT NOW
-                </button>
-                <Link
-                  href="/vault"
-                  className="rounded-sm border border-brass/30 px-5 py-3 font-mono text-[10px] tracking-[0.24em] text-ink-mute hover:border-brass hover:text-brass"
-                >
-                  PEEK INSIDE
-                </Link>
-              </>
+              <button
+                onClick={unseal}
+                disabled={pending}
+                className="brass-button flex items-center gap-2 px-6 py-3 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
+              >
+                <span aria-hidden>↑</span>
+                OPEN VAULT NOW
+              </button>
             ) : (
               <>
                 <button

@@ -2,13 +2,21 @@
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 
-// Big ceremonial vault dial. Renders in three phases:
-//   open      — rings still, lock open, pin at 12 o'clock
-//   sealing   — pin sweeps clockwise, ring rotates, lock closes
-//   sealed    — locked, settled
-// Pass `animate` true to play the sealing transition once on mount.
+// Big ceremonial vault dial. The seal/unseal transition is a 1.6-second
+// sequence the user is meant to watch:
+//
+//   t=0      pin starts sweeping (270° clockwise to seal, counter-clockwise to open)
+//   t=0      inner dotted ring counter-rotates 180°
+//   t=0.4s   bolts extend outward (or retract on unseal)
+//   t=0.7s   center plate gives a small scale pulse
+//   t=0.9s   shackle slams down (or springs up)
+//   t=1.0s   brass glow pulses
+//   t=1.4s   "click" jolt — tiny rotational wobble
+//   t=1.6s   settled
 
 type Phase = "open" | "sealing" | "sealed";
+
+const ANIM_MS = 1600;
 
 export function VaultDial({
   sealed,
@@ -20,25 +28,36 @@ export function VaultDial({
   size?: number;
 }) {
   const [phase, setPhase] = useState<Phase>(
-    sealed ? (animate ? "sealing" : "sealed") : "open",
+    sealed ? (animate ? "sealing" : "sealed") : animate ? "sealing" : "open",
   );
+  // Force a re-render so animations trigger after first paint.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    if (!animate) return;
-    if (sealed) {
-      setPhase("sealing");
-      const t = setTimeout(() => setPhase("sealed"), 1400);
-      return () => clearTimeout(t);
-    } else {
-      setPhase("sealing"); // unsealing reverses
-      const t = setTimeout(() => setPhase("open"), 900);
-      return () => clearTimeout(t);
+    if (!animate) {
+      setPhase(sealed ? "sealed" : "open");
+      return;
     }
+    setPhase("sealing");
+    const t = setTimeout(
+      () => setPhase(sealed ? "sealed" : "open"),
+      ANIM_MS,
+    );
+    return () => clearTimeout(t);
   }, [animate, sealed]);
 
-  const isSealed = phase === "sealed" || (phase === "sealing" && sealed);
-  const ringTurn =
-    phase === "open" ? 0 : phase === "sealing" && sealed ? 90 : sealed ? 90 : 0;
+  const isSealed = sealed && phase !== "open";
+  const animating = phase === "sealing";
+
+  // Outer ring rotation: 0 when open, 270° when sealed.
+  const ringTurn = mounted && isSealed ? 270 : 0;
+  // Inner ring counter-rotates for visual depth.
+  const innerTurn = mounted && isSealed ? -180 : 0;
+  // Final wobble overlay — tiny rotation at the end of the seal.
+  const wobble = animating ? "animate-[dial-wobble_400ms_ease-out_1.2s_1]" : "";
 
   return (
     <div
@@ -46,12 +65,37 @@ export function VaultDial({
       style={{ width: size, height: size }}
       aria-label={sealed ? "Vault sealed" : "Vault open"}
     >
-      {/* Outer ring (rotates) */}
+      <style>{`
+        @keyframes dial-wobble {
+          0% { transform: rotate(0); }
+          25% { transform: rotate(-2deg); }
+          60% { transform: rotate(1deg); }
+          100% { transform: rotate(0); }
+        }
+        @keyframes dial-glow-pulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.08); }
+        }
+        @keyframes plate-pulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.04); }
+        }
+        @keyframes shackle-slam {
+          0% { transform: translateY(-3px); }
+          70% { transform: translateY(1px); }
+          100% { transform: translateY(0); }
+        }
+      `}</style>
+
+      {/* Outer rotating layer with all the rings + pin */}
       <svg
         viewBox="0 0 440 440"
         width={size}
         height={size}
-        className="absolute inset-0 transition-transform duration-[900ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
+        className={clsx(
+          "absolute inset-0 transition-transform duration-[1200ms] ease-[cubic-bezier(0.65,0,0.35,1)]",
+          wobble,
+        )}
         style={{ transform: `rotate(${ringTurn}deg)` }}
       >
         <defs>
@@ -65,8 +109,20 @@ export function VaultDial({
           </radialGradient>
         </defs>
 
-        {/* Soft brass glow behind the dial */}
-        <circle cx="220" cy="220" r="200" fill="url(#brass-glow)" opacity="0.6" />
+        {/* Soft brass glow — pulses during seal */}
+        <circle
+          cx="220"
+          cy="220"
+          r="200"
+          fill="url(#brass-glow)"
+          style={{
+            opacity: 0.6,
+            animation: animating
+              ? "dial-glow-pulse 1200ms ease-out 800ms 1"
+              : undefined,
+            transformOrigin: "220px 220px",
+          }}
+        />
 
         {/* Dial face */}
         <circle
@@ -87,17 +143,6 @@ export function VaultDial({
           stroke="#B5853A"
           strokeWidth="1"
           opacity="0.6"
-        />
-        {/* Inner track */}
-        <circle
-          cx="220"
-          cy="220"
-          r="115"
-          fill="none"
-          stroke="#B5853A"
-          strokeWidth="0.8"
-          strokeDasharray="2 4"
-          opacity="0.5"
         />
 
         {/* Tick marks every 30° */}
@@ -123,7 +168,7 @@ export function VaultDial({
           );
         })}
 
-        {/* Pin pointer (rotates with ring) */}
+        {/* Pin pointer */}
         <line
           x1="220"
           y1="60"
@@ -133,15 +178,45 @@ export function VaultDial({
           strokeWidth="3"
           strokeLinecap="round"
         />
+        <circle cx="220" cy="60" r="3" fill="#E0B963" />
       </svg>
 
-      {/* Bolts (don't rotate) — top, right, bottom, left */}
+      {/* Counter-rotating inner ring (independent of outer) */}
+      <svg
+        viewBox="0 0 440 440"
+        width={size}
+        height={size}
+        className="absolute inset-0 transition-transform duration-[1200ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
+        style={{ transform: `rotate(${innerTurn}deg)` }}
+      >
+        <circle
+          cx="220"
+          cy="220"
+          r="115"
+          fill="none"
+          stroke="#B5853A"
+          strokeWidth="0.8"
+          strokeDasharray="2 4"
+          opacity="0.5"
+        />
+        {/* Inner satellite mark */}
+        <circle cx="220" cy="105" r="2" fill="#E0B963" opacity="0.5" />
+      </svg>
+
+      {/* Bolts — extend outward when sealing, retract when opening */}
       {[0, 90, 180, 270].map((deg) => (
         <div
           key={deg}
-          className="absolute left-1/2 top-1/2 h-[18px] w-[36px] -translate-x-1/2 rounded-sm border border-[#3a322b] bg-[#1a1d22]"
+          className="absolute left-1/2 top-1/2 h-[18px] w-[36px] -translate-x-1/2 rounded-sm border border-[#3a322b] bg-[#1a1d22] transition-transform duration-700 ease-[cubic-bezier(0.65,0,0.35,1)]"
           style={{
-            transform: `translate(-50%, -50%) rotate(${deg}deg) translateY(-${size / 2 - 6}px)`,
+            transform: `translate(-50%, -50%) rotate(${deg}deg) translateY(-${
+              size / 2 - (mounted && isSealed ? 0 : 12)
+            }px)`,
+            transitionDelay: animating ? "400ms" : "0ms",
+            boxShadow:
+              isSealed && !animating
+                ? "0 0 8px rgba(224,185,99,0.15)"
+                : undefined,
           }}
         />
       ))}
@@ -149,14 +224,25 @@ export function VaultDial({
       {/* Center plate with lock */}
       <div
         className={clsx(
-          "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex h-[140px] w-[140px] flex-col items-center justify-center gap-2 rounded-full border border-brass/30 bg-[#0c0e11] transition-shadow duration-700",
-          isSealed && "shadow-[0_0_60px_rgba(224,185,99,0.15)]",
+          "absolute left-1/2 top-1/2 flex h-[140px] w-[140px] flex-col items-center justify-center gap-2 rounded-full border border-brass/30 bg-[#0c0e11] transition-shadow duration-700",
+          isSealed && "shadow-[0_0_60px_rgba(224,185,99,0.20)]",
         )}
+        style={{
+          transform: "translate(-50%, -50%)",
+          animation: animating
+            ? "plate-pulse 600ms ease-out 700ms 1"
+            : undefined,
+        }}
       >
-        <LockIcon
-          sealed={isSealed}
-          animating={phase === "sealing"}
-        />
+        <div
+          style={{
+            animation: animating
+              ? "shackle-slam 250ms ease-out 900ms 1"
+              : undefined,
+          }}
+        >
+          <LockIcon sealed={isSealed} />
+        </div>
         <span
           className={clsx(
             "font-mono text-[10px] tracking-[0.32em] transition-opacity duration-500",
@@ -170,24 +256,9 @@ export function VaultDial({
   );
 }
 
-function LockIcon({
-  sealed,
-  animating,
-}: {
-  sealed: boolean;
-  animating: boolean;
-}) {
+function LockIcon({ sealed }: { sealed: boolean }) {
   return (
-    <svg
-      width="32"
-      height="36"
-      viewBox="0 0 32 36"
-      fill="none"
-      className={clsx(
-        "transition-transform duration-700",
-        animating && "scale-105",
-      )}
-    >
+    <svg width="32" height="36" viewBox="0 0 32 36" fill="none">
       {/* Shackle — slides up when open */}
       <path
         d={
