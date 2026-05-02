@@ -3,7 +3,7 @@
 import { useShortcutRegistry } from "@/lib/shortcuts";
 import { Kbd } from "./kbd";
 
-// Tiny floating reminder so Tracy notices the keyboard is hot.
+// Tiny floating reminder so the user notices the keyboard is hot.
 // Bottom-left so it stays out of the toaster's way.
 export function ShortcutsHintBar() {
   const { setCheatOpen, cheatOpen } = useShortcutRegistry();

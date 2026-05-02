@@ -12,8 +12,6 @@ export default async function SettingsPage() {
         stressorAnchorMinutes: row.stressor_anchor_minutes,
         defaultEndOfDay: row.default_end_of_day,
         defaultHours: Number(row.default_hours),
-        showAnnualBudget: !!row.show_annual_budget,
-        annualHours: row.annual_hours,
       }
     : DEFAULT_SETTINGS;
 
@@ -104,35 +102,6 @@ export default async function SettingsPage() {
               min="0"
               max="480"
               unit="min"
-              width="w-[88px]"
-            />
-          </Row>
-        </Group>
-
-        <Group title="Annual budget">
-          <Row
-            label="Show annual hours"
-            hint="500 hours of deep work a year."
-          >
-            <label className="inline-flex cursor-pointer select-none items-center gap-2">
-              <input
-                type="checkbox"
-                name="show_annual_budget"
-                defaultChecked={s.showAnnualBudget}
-                className="h-4 w-4 accent-[#b5853a]"
-              />
-              <span className="font-mono text-[10px] tracking-wider text-brass">
-                ON
-              </span>
-            </label>
-          </Row>
-          <Row label="Annual hours">
-            <NumberField
-              name="annual_hours"
-              defaultValue={s.annualHours}
-              min="0"
-              max="8760"
-              unit="hrs"
               width="w-[88px]"
             />
           </Row>

@@ -5,7 +5,7 @@
 // records editor. Items are stored in the items table with box = the
 // record's key and a markdown body; we surface the most-recent item so
 // this stays one-record-per-slug. Later we can fan out to multiple
-// entries if Tracy wants them.
+// entries later if needed.
 
 import Link from "next/link";
 import { getItemsByBox } from "@/lib/data";

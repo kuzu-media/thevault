@@ -48,7 +48,7 @@ export function DropTriageRow({
   const [focused, setFocused] = useState(false);
 
   // Track whether the focused element lives inside this row so per-row
-  // shortcuts only fire on the row Tracy is looking at.
+  // shortcuts only fire on the row the user is looking at.
   useEffect(() => {
     function check() {
       const el = document.activeElement;
@@ -174,7 +174,7 @@ export function DropTriageRow({
       className={clsx(
         "group relative overflow-hidden rounded-sm border bg-vault-panel/40 transition hover:bg-vault-panel/60 outline-none",
         // The whole row is focusable. When the wrapper itself is focused
-        // (j/k navigation), give it a strong brass ring so Tracy sees
+        // (j/k navigation), give it a strong brass ring so the user sees
         // exactly which thought is "armed". When focus is on a child
         // input, dim it.
         "focus:ring-2 focus:ring-brass focus-within:ring-1 focus-within:ring-brass/40",

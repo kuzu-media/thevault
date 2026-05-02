@@ -1,6 +1,6 @@
 # Apple Shortcut: Deposit to The Vault
 
-A 30-second setup for the Action Button on Tracy's iPhone.
+A 30-second setup for the Action Button on iPhone.
 
 ## Once
 
@@ -16,7 +16,7 @@ A 30-second setup for the Action Button on Tracy's iPhone.
       - Request Body → JSON:
          - `text` → (Magic Variable: Dictated Text)
          - `source` → `shortcut`
-         - `userId` → `YOUR_TRACY_USER_ID`
+         - `userId` → `YOUR_USER_ID`
    3. **Show Notification** — text: `Deposited.`
 3. Save.
 4. **Settings → Action Button → Shortcut → Deposit to Vault.**
@@ -29,7 +29,7 @@ Press the Action Button. Talk. Done. Item lands in **The Drop**.
 
 - `YOUR-DOMAIN.app` — Vercel domain.
 - `YOUR_CAPTURE_TOKEN` — value of `CAPTURE_TOKEN` in `.env.local` and in Vercel project env.
-- `YOUR_TRACY_USER_ID` — Tracy's `auth.uid` after she signs in once. (Run a one-liner against Supabase to grab it.)
+- `YOUR_USER_ID` — your `auth.uid` after signing in once. (Run a one-liner against Supabase to grab it, or copy from Settings → Connect.)
 
 ## Siri variant
 

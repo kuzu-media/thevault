@@ -1,4 +1,4 @@
-// Distinct icons for the two flags Tracy toggles per item.
+// Distinct icons for the two flags toggled per item.
 //
 // Urgent  →  ⚡ lightning bolt — time-pressure, rust color
 // Must-do →  ★ star          — anchor / required, brass color

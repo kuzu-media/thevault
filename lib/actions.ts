@@ -492,12 +492,6 @@ const SettingsSchema = z.object({
   stressor_anchor_minutes: z.coerce.number().int().min(0).max(480),
   default_end_of_day: z.string(),
   default_hours: z.coerce.number().min(0).max(24),
-  show_annual_budget: z
-    .union([z.literal("on"), z.literal("off"), z.literal("true"), z.literal("false")])
-    .transform((v) => v === "on" || v === "true")
-    .optional()
-    .default("off" as any),
-  annual_hours: z.coerce.number().int().min(0).max(8760),
 });
 
 export async function saveSettings(formData: FormData) {

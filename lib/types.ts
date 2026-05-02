@@ -60,8 +60,6 @@ export type Settings = {
   defaultEndOfDay: string;
   defaultHours: number;
   captureToken: string | null;
-  showAnnualBudget: boolean;
-  annualHours: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -69,6 +67,4 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultEndOfDay: "16:30",
   defaultHours: 7,
   captureToken: null,
-  showAnnualBudget: false,
-  annualHours: 500,
 };

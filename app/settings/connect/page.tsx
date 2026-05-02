@@ -1,9 +1,8 @@
 // Connect-your-devices walkthrough.
 //
-// Tracy's main complaint with the old sheet was capture friction. The point
-// of this page is: in five minutes, she can drop a thought from her
-// phone or her Mac without opening a tab. Each card is one mechanism with
-// its own copyable snippet pre-filled with her userId + token + base URL.
+// In five minutes the user can drop a thought from their phone or Mac
+// without opening a tab. Each card is one mechanism with its own
+// copyable snippet pre-filled with the user's id + token + base URL.
 
 import Link from "next/link";
 import { headers } from "next/headers";

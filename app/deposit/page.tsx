@@ -27,9 +27,9 @@ function DepositInner() {
     if (!text.trim()) return;
     setStatus("idle");
     // For now we just hit /api/capture in source=mailslot mode; auth on
-    // /api/capture is a bearer token that Tracy will only have on her
-    // phone, so this in-app deposit will swap to a Server Action once we
-    // wire up auth. Showing the optimistic confirmation either way.
+    // /api/capture is a bearer token only used by phone shortcuts, so
+    // this in-app deposit will swap to a Server Action once we wire up
+    // session-based auth here. Showing the optimistic confirmation either way.
     try {
       await fetch("/api/capture", {
         method: "POST",

@@ -1,8 +1,8 @@
 // Wizard: build today, one question at a time.
 //
-// Tracy answers her familiar five morning questions, reviews what's heavy,
-// withdraws from the ATM, then lands on the Docket. Each step persists
-// immediately so a refresh / phone-pickup keeps her place.
+// The user answers five morning questions, reviews what's on the
+// Counter, withdraws from the ATM, then lands on the Docket. Each step
+// persists immediately so a refresh or phone-pickup keeps their place.
 
 import { redirect } from "next/navigation";
 import { getDayInputs, getItemsByBox, getSettings } from "@/lib/data";

@@ -1,10 +1,15 @@
 #!/usr/bin/env tsx
 /**
- * One-shot import: Tracy's 14-tab Google Sheet → Supabase.
+ * One-shot import: Google Sheet → Supabase.
  *
  * Reads service-account JSON via GOOGLE_APPLICATION_CREDENTIALS, pulls each
- * tab with the appropriate column mapping, and inserts into `items` for the
- * supplied user_id (the auth.uid of Tracy's row).
+ * tab with the appropriate column mapping, inserts into `items` for the
+ * supplied user_id (an auth.uid), and seeds settings.boxes / records /
+ * energies so the Vault renders without manual setup afterward.
+ *
+ * The tab names hardcoded below match the source sheet this was built
+ * for; missing tabs are skipped silently. Adapt the fetchTab list at
+ * the bottom of main() if you point this at a different sheet.
  *
  * Usage:
  *   tsx scripts/migrate-from-sheet.ts <userId>
@@ -267,7 +272,59 @@ async function main() {
     console.error("Insert failed:", error);
     process.exit(1);
   }
+
+  // The Vault page only renders configured boxes / records (settings.boxes
+  // and settings.records). Derive both from the items we just inserted so
+  // the user lands on a populated Vault, not an empty shell.
+  await seedSettingsFromItems(inserts);
+
   console.log("Done.");
+}
+
+// Record-shaped tabs: each became a single Insert with `body`. Box-shaped
+// tabs got many Inserts with `title`. We walk the Insert list, partition
+// by that signal, and dedupe.
+async function seedSettingsFromItems(inserts: Insert[]) {
+  const recordKeys = new Set<string>();
+  const boxKeys = new Set<string>();
+  const energySet = new Set<string>();
+
+  for (const it of inserts) {
+    if (it.body) recordKeys.add(it.box);
+    else if (it.box !== "COUNTER" && it.box !== "ATM") boxKeys.add(it.box);
+    if (it.energy) energySet.add(it.energy);
+  }
+
+  const boxes = Array.from(boxKeys)
+    .sort()
+    .map((key) => ({ key, label: prettify(key) }));
+  const records = Array.from(recordKeys)
+    .sort()
+    .map((key) => ({ key, label: prettify(key) }));
+  const energies = Array.from(energySet)
+    .sort()
+    .map((key) => ({ key, label: prettify(key) }));
+
+  const { error } = await sb.from("settings").upsert({
+    vault_id: vaultId,
+    boxes,
+    records,
+    energies,
+  });
+  if (error) {
+    console.error("Settings seed failed:", error);
+    return;
+  }
+  console.log(
+    `Seeded settings: ${boxes.length} boxes, ${records.length} records, ${energies.length} energies.`,
+  );
+}
+
+function prettify(key: string): string {
+  return key
+    .split(/[_\s-]+/)
+    .map((p) => p.charAt(0) + p.slice(1).toLowerCase())
+    .join(" ");
 }
 
 main().catch((e) => {
