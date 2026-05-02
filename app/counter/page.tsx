@@ -6,6 +6,7 @@ import { EditableText, EditableFlag } from "@/components/editable-text";
 import { AreaPill } from "@/components/area-pill";
 import { NewItemRow } from "@/components/new-item-row";
 import { SortableList } from "@/components/sortable-list";
+import { TodayToggle } from "@/components/today-toggle";
 import type { Item } from "@/lib/types";
 
 type Filter =
@@ -115,6 +116,9 @@ export default async function CounterPage({
       </details>
 
       <div className="mt-6">
+        <div className="mb-3">
+          <NewItemRow box="COUNTER" placeholder="+ New admin item" />
+        </div>
         <SortableList
           items={filtered.map((it) => ({
             id: it.id,
@@ -126,9 +130,6 @@ export default async function CounterPage({
             ),
           }))}
         />
-        <div className="mt-3">
-          <NewItemRow box="COUNTER" placeholder="+ New admin item" />
-        </div>
       </div>
     </div>
   );
@@ -164,7 +165,7 @@ function CounterRow({
         />
       )}
 
-      {/* Line 1 — title + minutes, the things she scans */}
+      {/* Line 1 — title + minutes + today toggle, the things she scans */}
       <div className="flex items-center gap-3">
         <EditableText
           itemId={item.id}
@@ -184,6 +185,11 @@ function CounterRow({
           />
           <span className="font-mono text-[10px] text-ink-mute/70">min</span>
         </span>
+        <TodayToggle
+          itemId={item.id}
+          on={(item.todayOrder ?? null) !== null}
+          size="sm"
+        />
       </div>
 
       {/* Line 2 — flags + box, the things she sets */}

@@ -3,11 +3,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
-import {
-  saveDayInputsPartial,
-  pickFromAtm,
-  setItemState,
-} from "@/lib/actions";
+import { saveDayInputsPartial, pickFromAtm } from "@/lib/actions";
+import { TodayToggle } from "./today-toggle";
 import type { DayInputs, Item, Energy } from "@/lib/types";
 import { useShortcut } from "@/lib/shortcuts";
 import { Kbd } from "./kbd";
@@ -358,13 +355,12 @@ function ReviewStep({
 }
 
 function Row({ item }: { item: Item }) {
-  const [skipped, setSkipped] = useState(false);
-  const [, startTransition] = useTransition();
+  const onToday = (item.todayOrder ?? null) !== null;
   return (
     <div
       className={clsx(
-        "flex items-center gap-3 rounded-sm border border-vault-line/60 bg-vault-panel/40 px-3 py-2",
-        skipped && "opacity-40 line-through",
+        "flex items-center gap-3 rounded-sm border bg-vault-panel/40 px-3 py-2 transition",
+        onToday ? "border-brass/40" : "border-vault-line/60",
       )}
     >
       {item.area && (
@@ -372,24 +368,19 @@ function Row({ item }: { item: Item }) {
           {item.area}
         </span>
       )}
-      <span className="min-w-0 flex-1 truncate text-ink" title={item.title}>
+      <span
+        className={clsx(
+          "min-w-0 flex-1 truncate",
+          onToday ? "text-ink" : "text-ink-mute",
+        )}
+        title={item.title}
+      >
         {item.title}
       </span>
       <span className="w-16 shrink-0 whitespace-nowrap text-right font-mono text-[11px] text-ink-mute">
         {item.minutes ?? "—"} min
       </span>
-      <button
-        onClick={() => {
-          const next = !skipped;
-          setSkipped(next);
-          startTransition(async () => {
-            await setItemState(item.id, next ? "skipped" : "upcoming");
-          });
-        }}
-        className="w-[88px] shrink-0 whitespace-nowrap rounded-sm border border-vault-line px-2 py-0.5 font-mono text-[10px] tracking-wider text-ink-mute hover:border-rust hover:text-rust"
-      >
-        {skipped ? "BRING BACK" : "NOT TODAY"}
-      </button>
+      <TodayToggle itemId={item.id} on={onToday} size="sm" />
     </div>
   );
 }

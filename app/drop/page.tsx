@@ -85,6 +85,9 @@ export default async function DropPage() {
 
       <div className="mt-3">
         <DropKeyboardController />
+        <div className="mb-3">
+          <NewItemRow box="DROP" placeholder="+ Drop a thought" />
+        </div>
         <SortableList
           items={list.map((it) => ({
             id: it.id,
@@ -93,9 +96,6 @@ export default async function DropPage() {
             ),
           }))}
         />
-        <div className="mt-3">
-          <NewItemRow box="DROP" placeholder="+ Drop a thought" />
-        </div>
       </div>
 
       <p className="mt-6 text-[11px] text-ink-mute">

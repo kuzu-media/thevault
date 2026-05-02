@@ -23,6 +23,10 @@ export default async function AtmPage() {
         Withdraw what feels right. Nothing here is an obligation.
       </p>
 
+      <div className="mt-6">
+        <NewItemRow box="ATM" placeholder="+ New ATM option" />
+      </div>
+
       {[...groups.entries()].map(([cat, rows]) => (
         <section key={cat} className="mt-8">
           <h2 className="eyebrow">— {cat.toLowerCase()} —</h2>
@@ -78,13 +82,6 @@ export default async function AtmPage() {
           </div>
         </section>
       ))}
-
-      <div className="mt-10">
-        <NewItemRow
-          box="ATM"
-          placeholder="+ New ATM option"
-        />
-      </div>
     </div>
   );
 }

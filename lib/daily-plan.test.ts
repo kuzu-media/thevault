@@ -8,6 +8,10 @@ import {
 } from "./daily-plan";
 import type { Item, DayInputs } from "./types";
 
+// Counter items now require an explicit today_order to be scheduled
+// (opt-in for today). Tests default to todayOrder=1 so they continue
+// exercising the schedule logic; cases that need "not on today" can
+// override.
 const baseItem = (over: Partial<Item>): Item => ({
   id: crypto.randomUUID(),
   box: "ADMIN",
@@ -15,6 +19,7 @@ const baseItem = (over: Partial<Item>): Item => ({
   urgent: false,
   must: false,
   pinned: false,
+  todayOrder: 1,
   createdAt: new Date().toISOString(),
   modifiedAt: new Date().toISOString(),
   ...over,
@@ -59,6 +64,15 @@ describe("classify", () => {
     const r = classify(items);
     expect(r.stressors).toHaveLength(0);
   });
+
+  it("excludes items without today_order (not on today's plan)", () => {
+    const items = [
+      baseItem({ urgent: true, must: true, minutes: 30, todayOrder: null }),
+      baseItem({ urgent: true, must: true, minutes: 30, todayOrder: 2 }),
+    ];
+    const r = classify(items);
+    expect(r.stressors).toHaveLength(1);
+  });
 });
 
 describe("pickAtmCandidates", () => {
@@ -98,16 +112,19 @@ describe("pickAtmCandidates", () => {
 });
 
 describe("buildSchedule", () => {
-  it("anchors admin pile to end-of-day when stressors < threshold", () => {
+  it("always starts at dayStart regardless of admin size", () => {
+    // Below threshold (small admin pile, no ATM picks). The old behavior
+    // anchored admin to end-of-day, producing a late "first block start"
+    // when nothing filled the morning. New behavior: admin starts at
+    // dayStart (= endOfDay − hoursAvailable = 9:30 AM).
     const classified = classify([
       baseItem({ urgent: true, must: true, minutes: 30, title: "S1" }),
       baseItem({ urgent: false, must: true, minutes: 60, title: "M1" }),
     ]);
     const blocks = buildSchedule({ classified, atmPicks: [], inputs });
-    const last = blocks[blocks.length - 1];
-    expect(new Date(last.end).toISOString()).toBe(
-      parseTimeOnDate("16:30", "2026-05-01").toISOString(),
-    );
+    const first = blocks[0];
+    expect(new Date(first.start).getHours()).toBe(9);
+    expect(new Date(first.start).getMinutes()).toBe(30);
   });
 
   it("runs admin first when stressors >= threshold", () => {
@@ -119,6 +136,15 @@ describe("buildSchedule", () => {
     const first = blocks[0];
     expect(new Date(first.start).getHours()).toBe(9);
     expect(new Date(first.start).getMinutes()).toBe(30);
+  });
+
+  it("schedules otherAdmin (neither urgent nor must) too", () => {
+    const classified = classify([
+      baseItem({ urgent: false, must: false, minutes: 20, title: "Q1" }),
+    ]);
+    const blocks = buildSchedule({ classified, atmPicks: [], inputs });
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].title).toBe("Q1");
   });
 
   it("respects pinned scheduledStart", () => {

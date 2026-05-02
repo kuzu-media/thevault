@@ -262,14 +262,15 @@ export async function reorderItems(itemIds: string[]) {
   revalidatePath("/", "layout");
 }
 
-// ATM withdrawal — mark for today by giving it a today_order rank.
-export async function pickFromAtm(itemId: string, picked: boolean) {
+// Universal "on today's plan" toggle. Used by both ATM (Withdraw) and
+// Counter (Today). today_order = rank across ALL items currently on
+// today's plan; null = not on today.
+export async function setTodayPlan(itemId: string, on: boolean) {
   const { sb } = await requireUser();
-  if (picked) {
+  if (on) {
     const { data: max } = await sb
       .from("items")
       .select("today_order")
-      .eq("box", "ATM")
       .not("today_order", "is", null)
       .order("today_order", { ascending: false })
       .limit(1)
@@ -281,7 +282,15 @@ export async function pickFromAtm(itemId: string, picked: boolean) {
   }
   revalidatePath("/");
   revalidatePath("/atm");
+  revalidatePath("/counter");
   revalidatePath("/build");
+}
+
+// Backwards-compat alias — Counter and the AtmPickButton both call this
+// path. Same semantics; kept under the old name so the ATM "Withdraw"
+// affordance keeps reading naturally.
+export async function pickFromAtm(itemId: string, picked: boolean) {
+  return setTodayPlan(itemId, picked);
 }
 
 // Custom block on the Docket — creates a pinned, scheduled COUNTER item.

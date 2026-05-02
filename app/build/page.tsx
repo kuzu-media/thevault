@@ -46,7 +46,9 @@ export default async function BuildDayPage({
     endOfDay: dayRaw.end_of_day,
   };
 
-  const classified = classify(counterItems);
+  // Wizard review wants every counter item (for opt-in), not just the
+  // ones already on today's plan.
+  const classified = classify(counterItems, /* todayOnly */ false);
 
   // Past the last step → bounce to home. Step 6 is itself a step (ATM), not
   // the exit.

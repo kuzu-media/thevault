@@ -18,7 +18,11 @@ export type Classified = {
   mustDoMinutes: number;
 };
 
-export function classify(items: Item[]): Classified {
+// Bucket items into the four flag-based piles. Set `todayOnly: true` to
+// also drop items that aren't on today's plan (today_order = null) — used
+// when feeding buildSchedule. The wizard's "What's heavy" review wants to
+// see every counter item so the user can opt in, so it passes false.
+export function classify(items: Item[], todayOnly = true): Classified {
   const stressors: ClassifiedItem[] = [];
   const timeSensitive: ClassifiedItem[] = [];
   const mustDo: ClassifiedItem[] = [];
@@ -26,6 +30,7 @@ export function classify(items: Item[]): Classified {
 
   for (const it of items) {
     if (it.deletedAt) continue;
+    if (todayOnly && (it.todayOrder ?? null) === null) continue;
     const m = it.minutes ?? 0;
     if (it.urgent && it.must) {
       stressors.push({ ...it, bucket: "STRESSOR" });
@@ -135,36 +140,34 @@ export function buildSchedule({
     endOfDay.getTime() - inputs.hoursAvailable * 60 * 60_000,
   );
 
+  // adminPile = every counter item on today's plan, in priority order.
+  // otherAdmin (neither urgent nor must) was being dropped from the
+  // schedule — fixed: append at the tail so "neither" items also show up.
   const adminPile = [
     ...classified.stressors,
     ...classified.timeSensitive,
     ...classified.mustDo,
+    ...classified.otherAdmin,
   ];
-  const adminMinutes = sumMinutes(adminPile);
-  const atmMinutes = sumMinutes(atmPicks);
 
-  // Admin-first vs admin-anchored-to-end.
+  // Admin-first vs ATM-first ordering. Either way, the day starts at
+  // dayStart — the old "anchor admin to end-of-day" mode produced weird
+  // 5:45 PM start times when ATM picks were empty, since the morning
+  // had nothing to fill it. Now both branches start at dayStart.
   const adminFirst =
     classified.stressorsMinutes >= stressorAnchorMinutes;
 
-  let cursor: Date;
+  let cursor: Date = new Date(dayStart);
   const blocks: ScheduledBlock[] = [];
 
   if (adminFirst) {
-    cursor = new Date(dayStart);
     cursor = appendBlocks(blocks, adminPile, cursor);
     cursor = appendBlocks(blocks, atmPicks, cursor, "ATM_PICK");
   } else {
-    // Till first, then admin lands at end-of-day.
-    const adminStart = new Date(endOfDay.getTime() - adminMinutes * 60_000);
-    cursor = new Date(dayStart);
     cursor = appendBlocks(blocks, atmPicks, cursor, "ATM_PICK");
-    // If till + admin together overshoot, admin still anchors to end-of-day;
-    // till blocks may overlap day_start (caller can flag overflow).
-    cursor = new Date(adminStart);
     cursor = appendBlocks(blocks, adminPile, cursor);
-    void atmMinutes;
   }
+  void endOfDay;
 
   // Apply pins last — items with their own scheduledStart override.
   for (const block of blocks) {

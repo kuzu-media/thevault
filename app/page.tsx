@@ -4,6 +4,7 @@
 // "Build my day" entry. Once she's been through the wizard, show the schedule.
 
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   classify,
   buildSchedule,
@@ -24,11 +25,18 @@ const DAY_GREETINGS = ["Today", "What we're holding today", "Just for today"];
 
 export default async function DocketPage() {
   const date = todayISO();
-  const [counterItems, atmItems, dayRow] = await Promise.all([
+  const [counterItems, atmItems, dayRow, dropItems] = await Promise.all([
     getItemsByBox("COUNTER"),
     getItemsByBox("ATM"),
     getDayInputs(date),
+    getItemsByBox("DROP"),
   ]);
+
+  // Triage-first when the day hasn't been built yet. Untriaged thoughts
+  // need to land in their boxes before the schedule is meaningful.
+  if (!dayRow && dropItems.length > 0) {
+    redirect("/drop");
+  }
 
   // No day built yet → calm entry.
   if (!dayRow) {
@@ -54,6 +62,11 @@ export default async function DocketPage() {
     [...counterItems, ...atmItems].map((i) => [i.id, i.state ?? "upcoming"]),
   );
 
+  // Overflow: when scheduled minutes exceed the day she said she has.
+  const scheduledMinutes = blocks.reduce((a, b) => a + b.minutes, 0);
+  const availableMinutes = inputs.hoursAvailable * 60;
+  const overflowMinutes = Math.max(0, scheduledMinutes - availableMinutes);
+
   const greeting = DAY_GREETINGS[new Date().getDate() % DAY_GREETINGS.length];
 
   return (
@@ -76,6 +89,26 @@ export default async function DocketPage() {
           ↻ REBUILD DAY
         </Link>
       </div>
+
+      {overflowMinutes > 0 && (
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-sm border border-rust/40 bg-rust/5 px-4 py-3 text-[12px] text-ink-dim">
+          <span className="font-mono text-[10px] tracking-wider text-rust">
+            ⚠ OVERFLOW
+          </span>
+          <span>
+            Scheduled {fmtHrs(scheduledMinutes)} but you said you have{" "}
+            {fmtHrs(availableMinutes)} —{" "}
+            <strong className="text-rust">{fmtHrs(overflowMinutes)}</strong>{" "}
+            past end-of-day.
+          </span>
+          <Link
+            href="/counter"
+            className="ml-auto font-mono text-[10px] tracking-[0.18em] text-rust hover:underline"
+          >
+            TRIM COUNTER →
+          </Link>
+        </div>
+      )}
 
       <div className="mt-8 space-y-2">
         {blocks.length === 0 && (
@@ -126,6 +159,13 @@ function BuildPrompt() {
       </div>
     </div>
   );
+}
+
+function fmtHrs(min: number): string {
+  if (min < 60) return `${min}m`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
 function fmt12(iso?: string) {

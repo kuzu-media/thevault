@@ -27,6 +27,7 @@ export default async function BoxPage({
       </h1>
 
       <div className="mt-6 space-y-2">
+        <NewItemRow box={key} placeholder={`+ New in ${title}`} />
         {list.map((it) => (
           <div
             key={it.id}
@@ -74,7 +75,6 @@ export default async function BoxPage({
             />
           </div>
         ))}
-        <NewItemRow box={key} placeholder={`+ New in ${title}`} />
       </div>
     </div>
   );
