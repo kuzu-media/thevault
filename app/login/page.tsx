@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import Link from "next/link";
@@ -7,7 +7,17 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 
 type Mode = "signin" | "signup";
 
+// useSearchParams forces dynamic rendering and must sit inside a Suspense
+// boundary so Next can statically prerender the surrounding shell.
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/";
