@@ -139,6 +139,31 @@ export async function softDeleteItem(itemId: string) {
   revalidatePath("/");
 }
 
+// Triage a Drop item — move into target box and set its metadata in one
+// roundtrip. Used by the rich row on /drop.
+const TriagePatch = z.object({
+  box: z.string().min(1).max(40),
+  minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
+  urgent: z.coerce.boolean().optional(),
+  must: z.coerce.boolean().optional(),
+  energy: z
+    .enum(["CREATIVE", "PROB-SOLV", "LEISURE", "PHYSICAL", "ADMIN"])
+    .nullable()
+    .optional(),
+  area: z.string().max(40).nullable().optional(),
+  category: z.string().max(40).nullable().optional(),
+});
+
+export async function triageDropItem(
+  itemId: string,
+  patch: z.input<typeof TriagePatch>,
+) {
+  const { sb } = await requireUser();
+  const parsed = TriagePatch.parse(patch);
+  await sb.from("items").update(parsed).eq("id", itemId);
+  revalidatePath("/", "layout");
+}
+
 const ItemPatch = z.object({
   title: z.string().min(1).max(500).optional(),
   area: z.string().max(40).nullable().optional(),
@@ -146,7 +171,7 @@ const ItemPatch = z.object({
   urgent: z.coerce.boolean().optional(),
   must: z.coerce.boolean().optional(),
   energy: z
-    .enum(["CREATIVE", "PROB-SOLV", "LEISURE", "PHYSICAL"])
+    .enum(["CREATIVE", "PROB-SOLV", "LEISURE", "PHYSICAL", "ADMIN"])
     .nullable()
     .optional(),
   category: z.string().max(40).nullable().optional(),

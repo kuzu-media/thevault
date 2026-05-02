@@ -1,6 +1,11 @@
 export type ItemState = "upcoming" | "active" | "done" | "skipped" | "overrun";
 
-export type Energy = "CREATIVE" | "PROB-SOLV" | "LEISURE" | "PHYSICAL";
+export type Energy =
+  | "CREATIVE"
+  | "PROB-SOLV"
+  | "LEISURE"
+  | "PHYSICAL"
+  | "ADMIN";
 
 export type CounterStation = "DROP" | "DOCKET" | "TILL" | "DRAWER";
 
