@@ -1,6 +1,6 @@
 # The Vault
 
-ADHD-friendly task manager built around a banking metaphor: deposit, store, and pull from a vault. Replaces a 14-tab Google Sheet + Python pipeline with a single Next.js app.
+ADHD-friendly task manager built around a banking metaphor: **drop** thoughts in, triage to **boxes**, withdraw from the **ATM**, work through the **counter**, file **records** for reference. Replaces a 14-tab Google Sheet + Python pipeline with a single Next.js app.
 
 ## Quick start
 
@@ -10,47 +10,51 @@ cp .env.local.example .env.local        # then fill it in
 npm run dev                              # http://localhost:3000
 ```
 
-The UI renders against fixtures until Supabase is wired up.
+Until Supabase env vars are set, pages render in empty-state mode (no items).
 
 ## Stack
 
-- Next.js 16 (App Router) · React 19 · Tailwind 4
+- Next.js 16 (App Router, Turbopack) · React 19 · Tailwind 4
 - Supabase (Postgres + Auth + RLS)
 - Vercel
-- Apple Shortcut for Action-Button capture
+- Apple Shortcut + bookmarklet for capture
+
+## Working in this repo
+
+**See [AGENTS.md](AGENTS.md)** — how a coding assistant should work here, the data model, invariants that mustn't break, and how to translate the user's plain-English requests into code actions.
 
 ## Layout
 
 ```
 app/                Routes — one per surface
-components/         UI primitives (top-bar, schedule-block, box-card)
+components/         UI primitives
 lib/
-  daily-plan.ts     Port of plan_day.py (classify + buildSchedule)
-  fixtures.ts       Local-dev data
-  supabase/         server + client helpers
+  daily-plan.ts     classify + buildSchedule (the schedule logic)
+  actions.ts        Server Actions
+  data.ts           Read-side helpers
+  categories.ts     Boxes / Records / Energies (configured per-vault)
+  shortcuts.tsx     Keyboard shortcut hook + cheat sheet
+  supabase/         Server + client helpers
   types.ts          Domain types
 scripts/
-  migrate-from-sheet.ts   One-shot Sheet → Supabase import
+  migrate-from-sheet.ts   Sheet → Supabase resync (clean by default)
   apple-shortcut.md       Action Button setup recipe
-supabase/migrations/      SQL schema
-docs/
-  SPEC.md           Full app spec
-  AGENTS.md         How a coding assistant should work in this repo
-  interview.md      Open questions for Tracy
-  screens/          Paper artboard exports (design reference)
+supabase/migrations/      SQL schema (run in order)
+docs/SPEC.md              Original app spec (historical)
 ```
 
 ## Going live
 
-1. **Supabase** — create a Tracy-owned project, run `supabase/migrations/0001_init.sql`, drop the URL / anon key / service-role key into `.env.local`.
-2. **Sign Tracy in once** to seed her `auth.users` row, grab her uid.
-3. **Migrate the Sheet** — `npm run migrate:sheet <userId>`.
-4. **Vercel** — push to GitHub (Tracy-owned), import in Vercel, set the same env vars.
-5. **iPhone** — follow [scripts/apple-shortcut.md](scripts/apple-shortcut.md).
+1. **Supabase** — create a project, run every migration in `supabase/migrations/` in order, drop the URL / anon key / service-role key into `.env.local`.
+2. **Sign in once** at the deployed URL to seed the `auth.users` row, grab the uid.
+3. **Migrate the Sheet** — `npm run migrate:sheet <userId>`. Clean resync by default, no duplicates on re-run.
+4. **Review settings** — `/settings/boxes`, `/settings/records`, `/settings/energies` — rename labels as needed.
+5. **Configure the day** — `/settings` for default hours / end-of-day.
+6. **Connect devices** — `/settings/connect` walks through iPhone Siri, Mac dock, and the bookmarklet.
 
 ## Tests
 
 ```bash
 npm test                                 # daily-plan logic
-npm run build                            # full type-check + production build
+npm run build                            # type-check + production build
 ```
