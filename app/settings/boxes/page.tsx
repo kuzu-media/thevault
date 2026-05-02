@@ -40,9 +40,15 @@ export default async function BoxesSettingsPage() {
       </div>
 
       <p className="mt-6 text-ink-dim">
-        Your boxes are the categories Tracy can file a thought into from The
-        Drop. Each box sends to either The Till (non-admin / energy-matched)
-        or The Drawer (admin obligations).
+        Your boxes are the categories you file thoughts into from The Drop —
+        life areas, businesses, projects. The same box can hold Drawer items
+        (obligations) and Till items (energy-matched pulls).
+      </p>
+      <p className="mt-1 text-[12px] text-ink-mute">
+        The <strong>label</strong> is what you see in dropdowns. The{" "}
+        <strong>meta</strong> is an optional subtitle (shown under the label
+        on box cards). The <strong>key</strong> auto-derives from the label
+        as you type — only edit it directly if you really need to.
       </p>
 
       <BoxesEditor initial={initial} />

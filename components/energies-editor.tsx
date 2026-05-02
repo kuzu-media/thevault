@@ -1,12 +1,24 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { saveEnergyConfig } from "@/lib/actions";
 import type { EnergyType } from "@/lib/categories";
+
+// Energies don't carry a destination — Till items use them for daily
+// energy-matching, Drawer items don't have an energy column at all.
+
+function deriveKey(label: string): string {
+  return label
+    .toUpperCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^A-Z0-9_/-]/g, "")
+    .slice(0, 40);
+}
 
 export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
   const [energies, setEnergies] = useState<EnergyType[]>(initial);
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const manualKeys = useRef<Set<number>>(new Set());
 
   function update(i: number, patch: Partial<EnergyType>) {
     setEnergies(
@@ -14,11 +26,23 @@ export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
     );
   }
 
+  function changeLabel(i: number, label: string) {
+    setEnergies(
+      energies.map((e, idx) => {
+        if (idx !== i) return e;
+        const key = manualKeys.current.has(i) ? e.key : deriveKey(label);
+        return { ...e, label, key };
+      }),
+    );
+  }
+
+  function changeKey(i: number, key: string) {
+    manualKeys.current.add(i);
+    update(i, { key: key.toUpperCase().replace(/\s+/g, "-") });
+  }
+
   function add() {
-    setEnergies([
-      ...energies,
-      { key: `ENERGY_${energies.length + 1}`, label: "New energy" },
-    ]);
+    setEnergies([...energies, { key: "", label: "" }]);
   }
 
   function remove(i: number) {
@@ -29,11 +53,22 @@ export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
     )
       return;
     setEnergies(energies.filter((_, idx) => idx !== i));
+    const next = new Set<number>();
+    for (const idx of manualKeys.current) {
+      if (idx < i) next.add(idx);
+      else if (idx > i) next.add(idx - 1);
+    }
+    manualKeys.current = next;
   }
 
   function save() {
+    const cleaned = energies.map((e) => ({
+      ...e,
+      key: e.key || deriveKey(e.label) || "ENERGY",
+    }));
+    setEnergies(cleaned);
     startTransition(async () => {
-      await saveEnergyConfig(energies);
+      await saveEnergyConfig(cleaned);
       setSavedAt(Date.now());
     });
   }
@@ -42,7 +77,9 @@ export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
     <div className="mt-6 space-y-3">
       <div className="flex flex-wrap items-center gap-2 px-1 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
         <span className="flex-1 min-w-[160px]">Label</span>
-        <span className="w-[140px]">Key</span>
+        <span className="w-[140px]">
+          Key <span className="text-ink-mute/60 normal-case tracking-normal">(auto)</span>
+        </span>
         <span className="w-[80px]" />
       </div>
       {energies.map((e, i) => (
@@ -52,18 +89,15 @@ export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
         >
           <input
             value={e.label}
-            onChange={(ev) => update(i, { label: ev.target.value })}
-            placeholder="Label"
+            onChange={(ev) => changeLabel(i, ev.target.value)}
+            placeholder="Label (e.g. Creative)"
             className="min-w-[160px] flex-1 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-ink outline-none focus:border-brass"
           />
           <input
             value={e.key}
-            onChange={(ev) =>
-              update(i, {
-                key: ev.target.value.toUpperCase().replace(/\s/g, "-"),
-              })
-            }
-            placeholder="KEY"
+            onChange={(ev) => changeKey(i, ev.target.value)}
+            placeholder="auto"
+            title="Stored internally on each Till item. Auto-derived from the label until you edit it."
             className="w-[140px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[10px] text-brass outline-none focus:border-brass"
           />
           <button
