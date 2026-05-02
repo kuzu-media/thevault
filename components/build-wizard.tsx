@@ -448,7 +448,7 @@ function AtmStep({
     <Step
       title="Withdraw anything from the ATM?"
       hint="Energy-matched options for today. Pick what feels right — or none."
-      submitLabel="OPEN THE VAULT"
+      submitLabel="BUILD THE DAY"
       onSubmit={onFinish}
     >
       {matched.length === 0 ? (
