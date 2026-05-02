@@ -19,10 +19,16 @@ export type Box = {
   meta?: string;
 };
 
+// Reserved keys for the daily-action surfaces (top-level pages, not
+// categories). Stored on item.box but never valid as a settings.boxes
+// or settings.records entry.
+export const RESERVED_BOX_KEYS = new Set(["DROP", "ATM", "COUNTER", "DOCKET"]);
+
 function normalize(raw: any): Box | null {
   if (!raw || typeof raw !== "object") return null;
   const key = typeof raw.key === "string" ? raw.key : null;
   if (!key) return null;
+  if (RESERVED_BOX_KEYS.has(key)) return null;
   return {
     key,
     label: typeof raw.label === "string" ? raw.label : key,

@@ -11,26 +11,20 @@ function slugify(key: string): string {
   return key.toLowerCase().replace(/_/g, "-").replace(/\//g, "-");
 }
 
-// Fallback prettifier for keys that aren't in settings.boxes (legacy /
-// orphan categories). Mirrors the rule used elsewhere in the app.
-function prettify(key: string): string {
-  return key
-    .split("_")
-    .map((p) => p.charAt(0) + p.slice(1).toLowerCase())
-    .join(" ");
-}
-
 export default async function AtmPage() {
   const [list, boxes] = await Promise.all([
     getItemsByBox("ATM"),
     getBoxes(),
   ]);
+  // Settings is the single source of truth for labels. If a category
+  // doesn't resolve here, the page renders it as "Uncategorized" (and
+  // doesn't link out) — that's a signal to the user the import / triage
+  // didn't tag this item, not something to paper over with prettify.
   const labelByKey = new Map(boxes.map((b) => [b.key, b.label]));
-  const configuredKeys = new Set(boxes.map((b) => b.key));
 
   const groups = new Map<string, typeof list>();
   for (const it of list) {
-    const key = it.category ?? "OTHER";
+    const key = it.category ?? "";
     if (!groups.has(key)) groups.set(key, [] as any);
     groups.get(key)!.push(it as any);
   }
@@ -49,8 +43,8 @@ export default async function AtmPage() {
       </div>
 
       {[...groups.entries()].map(([cat, rows]) => {
-        const label = labelByKey.get(cat) ?? prettify(cat);
-        const linkable = configuredKeys.has(cat);
+        const label = labelByKey.get(cat) ?? "Uncategorized";
+        const linkable = labelByKey.has(cat);
         return (
         <section key={cat} className="mt-8">
           <h2 className="eyebrow text-ink-mute">

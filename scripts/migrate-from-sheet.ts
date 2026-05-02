@@ -89,6 +89,11 @@ type Insert = {
 
 const baseFlags = { urgent: false, must: false, pinned: false } as const;
 
+// Reserved keys for the daily-action surfaces. Must never appear in
+// settings.boxes or settings.records. Mirrors RESERVED_BOX_KEYS in
+// lib/categories.ts so the runtime guard there is moot for fresh imports.
+const RESERVED_KEYS = new Set(["DROP", "ATM", "COUNTER", "DOCKET"]);
+
 // Normalize sheet free-text into the canonical box-key form so Counter
 // areas and ATM categories line up with settings.boxes after import.
 // Mirrors deriveKey() in components/boxes-editor.tsx.
@@ -101,19 +106,33 @@ function deriveKey(label: string): string | null {
   return s || null;
 }
 
+// First-seen original-cased label per key, populated as inserts are built.
+// Used to seed settings.{boxes,records,energies} with the user's actual
+// language ("PCS Delegation"), not a key-prettified guess ("Pcs Delegation").
+const observedLabel = new Map<string, string>();
+function rememberLabel(key: string | null, label: string) {
+  if (!key) return;
+  if (!observedLabel.has(key) && label.trim()) {
+    observedLabel.set(key, label.trim());
+  }
+}
+
 function fromAdmin(rows: Row[]): Insert[] {
   // Layout: A=area, B=minutes, C=urgent, D=today's-order, E=must, F=description
   const out: Insert[] = [];
   rows.slice(2).forEach((r) => {
     const desc = (r[5] ?? "").trim();
     if (!desc) return;
+    const areaText = (r[0] ?? "").trim();
+    const areaKey = deriveKey(areaText);
+    rememberLabel(areaKey, areaText);
     out.push({
       ...baseFlags,
       vault_id: vaultId,
       user_id: userId,
       box: "COUNTER",
       title: desc,
-      area: deriveKey((r[0] ?? "").trim()),
+      area: areaKey,
       minutes: num(r[1]),
       urgent: isY(r[2]),
       must: isY(r[4]),
@@ -129,14 +148,20 @@ function fromMenu(rows: Row[]): Insert[] {
   rows.slice(1).forEach((r) => {
     const task = (r[3] ?? "").trim();
     if (!task) return;
+    const energyText = (r[0] ?? "").trim();
+    const catText = (r[1] ?? "").trim();
+    const energyKey = deriveKey(energyText);
+    const catKey = deriveKey(catText);
+    rememberLabel(energyKey, energyText);
+    rememberLabel(catKey, catText);
     out.push({
       ...baseFlags,
       vault_id: vaultId,
       user_id: userId,
       box: "ATM",
       title: task,
-      energy: deriveKey((r[0] ?? "").trim()),
-      category: deriveKey((r[1] ?? "").trim()),
+      energy: energyKey,
+      category: catKey,
       minutes: num(r[2]),
     });
   });
@@ -145,12 +170,16 @@ function fromMenu(rows: Row[]): Insert[] {
 
 function fromPcsIdeas(rows: Row[]): Insert[] {
   // Header guess: Potential / Time / Person / Admin-Creative / Category / Task
+  rememberLabel("PCS_IDEAS", "PCS Ideas");
   const out: Insert[] = [];
   rows.slice(1).forEach((r) => {
     const task = (r[5] ?? r[4] ?? "").trim();
     if (!task) return;
     const potRaw = num(r[0]);
     const potential = potRaw && potRaw >= 1 && potRaw <= 5 ? potRaw : null;
+    const catText = (r[4] ?? "").trim();
+    const catKey = deriveKey(catText);
+    rememberLabel(catKey, catText);
     out.push({
       ...baseFlags,
       vault_id: vaultId,
@@ -161,16 +190,17 @@ function fromPcsIdeas(rows: Row[]): Insert[] {
       minutes: num(r[1]),
       person: (r[2] ?? "").trim() || null,
       tag: (r[3] ?? "").trim() || null,
-      category: (r[4] ?? "").trim() || null,
+      category: catKey,
     });
   });
   return out;
 }
 
-function fromGenericList(rows: Row[], box: string): Insert[] {
+function fromGenericList(rows: Row[], box: string, label: string): Insert[] {
   // Treat the first non-empty cell of each row as the title; everything else
   // joined as `notes`. Used for low-schema tabs (READ/RESEARCH, MISC IDEAS,
   // HEALTH IDEAS, Ron, PCS DELEGATION, PCS misc).
+  rememberLabel(box, label);
   const out: Insert[] = [];
   rows.slice(1).forEach((r) => {
     const cells = r.map((c) => (c ?? "").toString().trim()).filter(Boolean);
@@ -190,6 +220,7 @@ function fromGenericList(rows: Row[], box: string): Insert[] {
 
 function fromRecord(rows: Row[], title: string, box: string): Insert {
   // Whole-tab → single Record row, body = TSV preserving structure.
+  rememberLabel(box, title);
   const body = rows.map((r) => r.join("\t")).join("\n");
   return {
     ...baseFlags,
@@ -266,11 +297,11 @@ async function main() {
     ...fromAdmin(admin),
     ...fromMenu(menu),
     ...fromPcsIdeas(pcsIdeas),
-    ...fromGenericList(pcsDeleg, "PCS_DELEGATION"),
-    ...fromGenericList(readResearch, "READ_RESEARCH"),
-    ...fromGenericList(healthIdeas, "HEALTH_IDEAS"),
-    ...fromGenericList(miscIdeas, "MISC_IDEAS"),
-    ...fromGenericList(ron, "RON"),
+    ...fromGenericList(pcsDeleg, "PCS_DELEGATION", "PCS Delegation"),
+    ...fromGenericList(readResearch, "READ_RESEARCH", "Read & Research"),
+    ...fromGenericList(healthIdeas, "HEALTH_IDEAS", "Health Ideas"),
+    ...fromGenericList(miscIdeas, "MISC_IDEAS", "Misc Ideas"),
+    ...fromGenericList(ron, "RON", "Ron"),
     fromRecord(swbPlan, "SWB Plan", "SWB_PLAN"),
     fromRecord(measurements, "Measurements", "MEASUREMENTS"),
     fromRecord(lifting, "Lifting", "LIFTING"),
@@ -304,27 +335,35 @@ async function seedSettingsFromItems(inserts: Insert[]) {
   for (const it of inserts) {
     if (it.body) {
       recordKeys.add(it.box);
-    } else if (it.box !== "COUNTER" && it.box !== "ATM") {
+    } else if (!RESERVED_KEYS.has(it.box)) {
       boxKeys.add(it.box);
     }
     // Counter areas + ATM categories are also boxes — they're the user's
     // category axis, just stored on items rather than as the box key.
     // Without folding them in, the ATM page groups by category and
     // /counter filters by area, but the configured boxes list omits them.
-    if (it.box === "COUNTER" && it.area) boxKeys.add(it.area);
-    if (it.box === "ATM" && it.category) boxKeys.add(it.category);
+    if (it.box === "COUNTER" && it.area && !RESERVED_KEYS.has(it.area)) {
+      boxKeys.add(it.area);
+    }
+    if (it.box === "ATM" && it.category && !RESERVED_KEYS.has(it.category)) {
+      boxKeys.add(it.category);
+    }
     if (it.energy) energySet.add(it.energy);
   }
 
+  // Settings dictate the view — write user-language labels we observed in
+  // the sheet; fall back to a fresh prettify only when nothing was seen.
+  const labelFor = (key: string) => observedLabel.get(key) ?? prettify(key);
+
   const boxes = Array.from(boxKeys)
     .sort()
-    .map((key) => ({ key, label: prettify(key) }));
+    .map((key) => ({ key, label: labelFor(key) }));
   const records = Array.from(recordKeys)
     .sort()
-    .map((key) => ({ key, label: prettify(key) }));
+    .map((key) => ({ key, label: labelFor(key) }));
   const energies = Array.from(energySet)
     .sort()
-    .map((key) => ({ key, label: prettify(key) }));
+    .map((key) => ({ key, label: labelFor(key) }));
 
   const { error } = await sb.from("settings").upsert({
     vault_id: vaultId,
