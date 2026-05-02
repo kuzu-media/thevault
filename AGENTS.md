@@ -245,6 +245,108 @@ The user almost never wants you to push without their explicit "ship it" / "push
 
 ---
 
+## Glossary — the user's vocabulary
+
+The user's words are deliberate; map them back to code precisely.
+
+| User says | In the app |
+|---|---|
+| **The vault** | The whole app, also `/vault` (the storage interior). Boxes + Records live here. |
+| **The drop** | `/drop`. Untriaged inbox. New captures land here as `box: 'DROP'`. |
+| **The counter** | `/counter`. Obligations — `box: 'COUNTER'`, with `urgent` / `must` flags. |
+| **The ATM** | `/atm`. Energy-matched optional pulls — `box: 'ATM'`, with `energy` + `category`. |
+| **The docket** / **today** | `/` (home). Today's timed schedule. |
+| **A box** | A user-configured category (`settings.boxes`). The same box can hold both Counter and ATM items. |
+| **A record** | A user-configured text-first category (`settings.records`). Routed to `/records/<slug>`. |
+| **An energy** | A user-configured tag on ATM items (`settings.energies`) — Creative, Prob-Solv, etc. |
+| **Build the day** / **build today** | The morning wizard at `/build` (5–6 questions). Persists to `day_inputs`. |
+| **Seal it** / **close the vault** | Set `settings.sealed = true`. The Sealed page hides daily surfaces; deposit slot stays open. |
+| **Deposit** / **drop in vault** | Create an item in `box: 'DROP'`. Surfaces: ⌘K mail slot, `/deposit`, Siri Shortcut, bookmarklet. |
+| **+ TODAY** / **on today's plan** | Sets `today_order` (rank). Default is null (not on today). Universal flag for both Counter and ATM. |
+| **Withdraw** | ATM-specific phrasing for the same `today_order` toggle. |
+| **Stressor** | An item with both `urgent` and `must` set. |
+| **What's heavy** | Wizard step 5 — the counter-items review. Where she opts in via `+ TODAY`. |
+| **The mail slot** | The ⌘K capture popup, available everywhere. |
+| **Mark done** | Set `state: 'done'` on a schedule block. Item stays in its box. |
+
+If she uses a word that isn't in this table, **mirror it back to her** — don't invent new app terminology.
+
+---
+
+## Patterns to follow
+
+These were established the hard way; preserve them.
+
+### Server Actions: always try/catch + toast
+
+Every `startTransition(async () => await someAction(...))` must wrap the await in try/catch and toast on error. Without this, Server Action failures bubble as silent `unhandledRejection` events that the user never sees.
+
+```tsx
+startTransition(async () => {
+  try {
+    await someAction(args);
+    toast.success("Saved.");
+  } catch (e: any) {
+    toast.error(e?.message ?? "Couldn't save.");
+  }
+});
+```
+
+The unhandled-rejection guard in `components/unhandled-rejection-guard.tsx` exists as a backstop, but **it deliberately silences null/undefined rejections** (framework noise from Next.js prefetcher with stale client bundles). Don't rely on it to surface real errors — wrap at the call site.
+
+### Server Component ≠ event handlers
+
+A Server Component file (no `"use client"` at top) can't have `onChange` / `onClick` handlers — they're no-ops in the browser. If you need interactivity, extract to a client component. (The Members page Role select had this exact bug.)
+
+### Focus-gated keyboard shortcuts
+
+When a shortcut should only fire for the focused row (Drop triage, Counter row), use the `useShortcut` hook with `enabled: focused` and track focus with a `focusin`/`focusout` listener:
+
+```tsx
+const wrapperRef = useRef<HTMLDivElement>(null);
+const [focused, setFocused] = useState(false);
+useEffect(() => {
+  const check = () => setFocused(!!wrapperRef.current?.contains(document.activeElement));
+  document.addEventListener("focusin", check);
+  document.addEventListener("focusout", check);
+  return () => { /* …remove listeners */ };
+}, []);
+
+useShortcut("u", () => toggleUrgent(), {
+  label: "Toggle Urgent",
+  group: "Drop",
+  options: { enabled: focused },
+});
+```
+
+Pattern is in `components/drop-triage-row.tsx` — copy if extending to Counter rows.
+
+### Settings dictates the view
+
+If you find yourself writing `prettify(key)` in a page component as a label fallback, **stop**. Look up the label in `settings.boxes` / `settings.records` / `settings.energies`. If it's not there, render "Uncategorized" (and don't link). Pages display data; settings own labels; the import seeds settings.
+
+### Confirm before destructive things — except where speed matters
+
+The Drop dismiss action skips the confirm prompt because at 35–40 untriaged thoughts the prompt was the bottleneck (soft-delete is reversible from the DB anyway). The Members remove action keeps a confirm because the consequence is harder to undo. Pick deliberately based on reversibility + frequency.
+
+### Keyboard shortcut registration
+
+Every `useShortcut` call with a `label` auto-registers in the cheat sheet (`?` key). When adding a new binding, give it a clear `label` + `group` so it shows up. Use `hidden: true` only for pure key aliases (e.g. arrow-down as alias for `j`).
+
+---
+
+## Common gotchas
+
+- **"Failed to fetch RSC payload" + bare `undefined` rejections in dev** — almost always a stale client bundle after dev-server restart. The guard silences these. If they persist after the user hard-refreshes (⌘⇧R), then it's real.
+- **Dev server returning 500 after a clean restart** — clear `.next/` (`rm -rf .next`) and restart. Turbopack's incremental cache can desync after backslash-deep edits.
+- **A change works locally but not in deployed Vercel build** — usually a missing migration the user hasn't run in their Supabase project. Check `supabase/migrations/` for any new files vs. what's been run.
+- **iOS Safari standalone detection** — uses both `window.matchMedia('(display-mode: standalone)').matches` AND iOS-specific `(navigator as any).standalone`. The `connect-device-cards.tsx` component does both.
+- **Migration script + duplicates** — the script is **clean resync by default**. If the user asks "why do I have two of everything," they likely re-ran with `--no-clean` or with an old version. Re-run without the flag.
+- **Captures vs items** — the `captures` table holds raw deposit history; `items` are the actual rows. `captures.item_id` is `on delete set null`, so wiping items leaves capture history intact (this is intentional for audit).
+- **`getAllItems()` returns everything, not just storage** — when displaying a count, filter out counter-station boxes (`DROP`, `ATM`, `COUNTER`, `DOCKET`) unless you specifically mean "every row."
+
+---
+
 ## When in doubt
 
 Ask the user. Use their words. Make the smallest change that achieves the goal. Don't refactor.
