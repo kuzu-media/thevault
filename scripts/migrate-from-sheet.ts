@@ -1,18 +1,25 @@
 #!/usr/bin/env tsx
 /**
- * One-shot import: Google Sheet → Supabase.
+ * Re-syncable import: Google Sheet → Supabase.
  *
  * Reads service-account JSON via GOOGLE_APPLICATION_CREDENTIALS, pulls each
  * tab with the appropriate column mapping, inserts into `items` for the
  * supplied user_id (an auth.uid), and seeds settings.boxes / records /
  * energies so the Vault renders without manual setup afterward.
  *
+ * Default mode is **clean resync**: deletes every existing item in the
+ * target vault and resets settings.{boxes,records,energies} before
+ * inserting. Run repeatedly without duplicating items. Captures stay
+ * (their item_id is set null on delete). Members, day_inputs, and
+ * day-level settings (default_hours, etc.) are untouched.
+ *
  * The tab names hardcoded below match the source sheet this was built
  * for; missing tabs are skipped silently. Adapt the fetchTab list at
  * the bottom of main() if you point this at a different sheet.
  *
  * Usage:
- *   tsx scripts/migrate-from-sheet.ts <userId>
+ *   tsx scripts/migrate-from-sheet.ts <userId>             # clean resync
+ *   tsx scripts/migrate-from-sheet.ts <userId> --no-clean  # additive
  *
  * Required env (all in .env.local):
  *   NEXT_PUBLIC_SUPABASE_URL
@@ -26,11 +33,16 @@ import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const userId = process.argv[2];
-if (!userId) {
-  console.error("Usage: tsx scripts/migrate-from-sheet.ts <userId>");
+const args = process.argv.slice(2);
+const userIdArg = args.find((a) => !a.startsWith("--"));
+const noClean = args.includes("--no-clean");
+if (!userIdArg) {
+  console.error(
+    "Usage: tsx scripts/migrate-from-sheet.ts <userId> [--no-clean]",
+  );
   process.exit(1);
 }
+const userId: string = userIdArg;
 
 require("dotenv").config({ path: ".env.local" });
 
@@ -234,6 +246,41 @@ function fromRecord(rows: Row[], title: string, box: string): Insert {
 
 let vaultId = "";
 
+// Clean resync: wipe items + reset settings.{boxes,records,energies}.
+// captures.item_id is `on delete set null`, so capture history stays.
+// day_inputs and day-level settings (default_hours, end_of_day, etc.)
+// are explicitly preserved.
+async function wipeVault() {
+  const { count: before } = await sb
+    .from("items")
+    .select("*", { count: "exact", head: true })
+    .eq("vault_id", vaultId);
+  console.log(`Wiping ${before ?? 0} existing items…`);
+  const { error: delErr } = await sb
+    .from("items")
+    .delete()
+    .eq("vault_id", vaultId);
+  if (delErr) {
+    console.error("Wipe failed:", delErr);
+    process.exit(1);
+  }
+  // Reset the three settings lists the import seeds, leaving day-level
+  // settings (default_hours / default_end_of_day / stressor_anchor) alone.
+  const { error: setErr } = await sb
+    .from("settings")
+    .upsert({
+      vault_id: vaultId,
+      boxes: [],
+      records: [],
+      energies: [],
+    });
+  if (setErr) {
+    console.error("Settings reset failed:", setErr);
+    process.exit(1);
+  }
+  console.log("Cleared settings.boxes / records / energies.");
+}
+
 async function resolveVault() {
   const { data: existing } = await sb
     .from("vault_members")
@@ -262,6 +309,13 @@ async function resolveVault() {
 async function main() {
   vaultId = await resolveVault();
   console.log("Vault:", vaultId);
+
+  if (!noClean) {
+    await wipeVault();
+  } else {
+    console.log("--no-clean: appending to existing items.");
+  }
+
   console.log("Reading sheet…");
   const [
     admin,
