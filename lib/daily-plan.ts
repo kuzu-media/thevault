@@ -126,6 +126,24 @@ export type BuildScheduleArgs = {
   now?: Date;
 };
 
+/** Next quarter-hour boundary at or after `d`, in the machine's local calendar (browser / Node TZ). */
+export function ceilToNextQuarterHourLocal(d: Date): Date {
+  const z = new Date(d);
+  const start = new Date(
+    z.getFullYear(),
+    z.getMonth(),
+    z.getDate(),
+    0,
+    0,
+    0,
+    0,
+  );
+  const elapsed = z.getTime() - start.getTime();
+  const q = 15 * 60 * 1000;
+  const up = Math.ceil(elapsed / q) * q;
+  return new Date(start.getTime() + up);
+}
+
 /** Working window for the docket header — not the first task’s start (pins can move that later). */
 export function dayScheduleWindow(
   inputs: DayInputs,
@@ -136,10 +154,24 @@ export function dayScheduleWindow(
     endOfDay.getTime() - inputs.hoursAvailable * 60 * 60_000,
   );
   const nowOnDate = now ?? new Date();
-  const dayStart =
-    nowOnDate > configuredStart && sameLocalDate(nowOnDate, configuredStart)
-      ? nowOnDate
-      : configuredStart;
+
+  let dayStart: Date;
+  if (
+    nowOnDate > configuredStart &&
+    sameLocalDate(nowOnDate, configuredStart)
+  ) {
+    dayStart = ceilToNextQuarterHourLocal(nowOnDate);
+    if (dayStart.getTime() <= configuredStart.getTime()) {
+      dayStart = configuredStart;
+    }
+  } else {
+    dayStart = configuredStart;
+  }
+
+  if (dayStart.getTime() > endOfDay.getTime()) {
+    dayStart = endOfDay;
+  }
+
   return { dayStart, endOfDay };
 }
 

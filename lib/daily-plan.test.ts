@@ -3,6 +3,7 @@ import {
   classify,
   pickAtmCandidates,
   buildSchedule,
+  ceilToNextQuarterHourLocal,
   parseTimeOnDate,
   thresholdCallout,
 } from "./daily-plan";
@@ -147,15 +148,25 @@ describe("buildSchedule", () => {
     expect(blocks[0].title).toBe("Q1");
   });
 
-  it("clamps to `now` when (re)building mid-day so blocks aren't in the past", () => {
+  it("when rebuilding mid-day, first block aligns to now if now is already on a quarter-hour", () => {
     const classified = classify([
       baseItem({ urgent: false, must: true, minutes: 30, title: "M1" }),
     ]);
-    // Configured dayStart is 9:30 AM (16:30 − 7h); pretend it's 11 AM.
+    // Configured dayStart is 9:30 AM (16:30 − 7h); pretend it's 11:00.
     const now = new Date(2026, 4, 1, 11, 0, 0);
     const blocks = buildSchedule({ classified, atmPicks: [], inputs, now });
     expect(new Date(blocks[0].start).getHours()).toBe(11);
     expect(new Date(blocks[0].start).getMinutes()).toBe(0);
+  });
+
+  it("when rebuilding mid-day, first block starts at the next quarter-hour after now", () => {
+    const classified = classify([
+      baseItem({ urgent: false, must: true, minutes: 30, title: "M1" }),
+    ]);
+    const now = new Date(2026, 4, 1, 11, 18, 0);
+    const blocks = buildSchedule({ classified, atmPicks: [], inputs, now });
+    expect(new Date(blocks[0].start).getHours()).toBe(11);
+    expect(new Date(blocks[0].start).getMinutes()).toBe(30);
   });
 
   it("ignores `now` when it's a different day (e.g. building tonight for tomorrow)", () => {
@@ -180,6 +191,22 @@ describe("buildSchedule", () => {
     const classified = classify([pinned]);
     const blocks = buildSchedule({ classified, atmPicks: [], inputs });
     expect(blocks[0].start).toBe("2026-05-01T15:00:00.000Z");
+  });
+});
+
+describe("ceilToNextQuarterHourLocal", () => {
+  it("keeps exact quarter boundaries", () => {
+    const d = new Date(2026, 4, 1, 14, 30, 0);
+    const out = ceilToNextQuarterHourLocal(d);
+    expect(out.getHours()).toBe(14);
+    expect(out.getMinutes()).toBe(30);
+  });
+
+  it("rounds up between quarter hours (e.g. 2:18 → 2:30)", () => {
+    const d = new Date(2026, 4, 1, 14, 18, 0);
+    const out = ceilToNextQuarterHourLocal(d);
+    expect(out.getHours()).toBe(14);
+    expect(out.getMinutes()).toBe(30);
   });
 });
 
