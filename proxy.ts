@@ -68,8 +68,13 @@ export async function proxy(req: NextRequest) {
   return res;
 }
 
+// Skip middleware on Next-generated framework assets (icons, manifest)
+// in addition to the usual static-asset exclusions. Without these,
+// browsers requesting /icon0, /apple-icon, or /manifest.webmanifest
+// before login get redirected to /login and the install / favicon
+// requests fail.
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon\\b|icon\\d|apple-icon|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
