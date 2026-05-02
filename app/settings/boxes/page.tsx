@@ -1,17 +1,12 @@
 import Link from "next/link";
-import { getSettings } from "@/lib/data";
-import { saveBoxConfig } from "@/lib/actions";
+import { getBoxes } from "@/lib/categories";
 import { BoxesEditor } from "@/components/boxes-editor";
 
 export default async function BoxesSettingsPage() {
-  const row = await getSettings();
-  const initial =
-    Array.isArray(row?.boxes) && row?.boxes.length
-      ? row.boxes
-      : DEFAULT_BOXES;
+  const initial = await getBoxes();
 
   return (
-    <div className="mx-auto max-w-[800px] px-6 py-8 md:px-10">
+    <div className="mx-auto max-w-[1000px] px-4 py-8 md:px-10">
       <div className="eyebrow">— Settings · boxes —</div>
       <h1 className="serif-h mt-2 text-[36px] leading-tight md:text-[40px]">
         How the vault is organized.
@@ -39,21 +34,12 @@ export default async function BoxesSettingsPage() {
       </div>
 
       <p className="mt-6 text-ink-dim">
-        Add, rename, or recolor a deposit box. The four Counter stations (Drop /
-        Docket / Till / Drawer) are fixed.
+        Your boxes are the categories Tracy can file a thought into from The
+        Drop. Each box sends to either The Till (non-admin / energy-matched)
+        or The Drawer (admin obligations).
       </p>
 
       <BoxesEditor initial={initial} />
     </div>
   );
 }
-
-const DEFAULT_BOXES = [
-  { key: "SWB_PLAN", title: "SWB Plan", meta: "Strategic rows", color: "#b5853a" },
-  { key: "PCS_DELEGATION", title: "PCS Delegation", meta: "For Ron", color: "#b5853a" },
-  { key: "PCS_IDEAS", title: "PCS Ideas", meta: "Work ideas", color: "#b5853a" },
-  { key: "READ_RESEARCH", title: "Read & Research", meta: "URLs & refs", color: "#b5853a" },
-  { key: "HEALTH_IDEAS", title: "Health Ideas", meta: "Aspirational", color: "#b5853a" },
-  { key: "MISC_IDEAS", title: "Misc Ideas", meta: "Aspirational", color: "#b5853a" },
-  { key: "RON", title: "Ron's Queue", meta: "Delegation", color: "#b5853a" },
-];

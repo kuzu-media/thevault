@@ -4,11 +4,7 @@ import { toast } from "sonner";
 import clsx from "clsx";
 import { triageDropItem, softDeleteItem } from "@/lib/actions";
 import { EditableText } from "@/components/editable-text";
-import {
-  TILL_CATEGORIES,
-  DRAWER_AREAS,
-  destinationFor,
-} from "@/lib/categories";
+import type { Box } from "@/lib/categories";
 import type { Energy, Item } from "@/lib/types";
 
 const ENERGIES: { value: Energy; label: string }[] = [
@@ -19,7 +15,13 @@ const ENERGIES: { value: Energy; label: string }[] = [
   { value: "ADMIN", label: "Admin" },
 ];
 
-export function DropTriageRow({ item }: { item: Item }) {
+export function DropTriageRow({
+  item,
+  boxes,
+}: {
+  item: Item;
+  boxes: Box[];
+}) {
   const [category, setCategory] = useState<string>(
     item.area ?? item.category ?? "",
   );
@@ -31,11 +33,16 @@ export function DropTriageRow({ item }: { item: Item }) {
   const [energy, setEnergy] = useState<Energy | "">(item.energy ?? "");
   const [pending, startTransition] = useTransition();
 
-  const dest = category ? destinationFor(category) : null;
+  const dest = category
+    ? (boxes.find((b) => b.key === category)?.dest ?? null)
+    : null;
+
+  const tillBoxes = boxes.filter((b) => b.dest === "TILL");
+  const drawerBoxes = boxes.filter((b) => b.dest === "DRAWER");
 
   function send() {
     if (!category) {
-      toast.error("Pick a category first.");
+      toast.error("Pick a box first.");
       return;
     }
     startTransition(async () => {
@@ -47,10 +54,11 @@ export function DropTriageRow({ item }: { item: Item }) {
           must,
           energy: energy || null,
         });
+        const label = boxes.find((b) => b.key === category)?.label ?? category;
         toast.success(
           dest === "DRAWER"
-            ? `Sent to The Drawer · ${category}.`
-            : `Sent to The Till · ${category}.`,
+            ? `Sent to The Drawer · ${label}.`
+            : `Sent to The Till · ${label}.`,
         );
       } catch (e: any) {
         toast.error(e?.message ?? "Couldn't send.");
@@ -87,13 +95,13 @@ export function DropTriageRow({ item }: { item: Item }) {
                 : "border-teal/60 text-teal",
             )}
           >
-            → {dest === "DRAWER" ? "DRAWER" : "TILL"}
+            → {dest}
           </span>
         )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <FieldLabel>Category</FieldLabel>
+        <FieldLabel>Box</FieldLabel>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -102,20 +110,24 @@ export function DropTriageRow({ item }: { item: Item }) {
           <option value="" className="bg-vault-bg">
             — pick —
           </option>
-          <optgroup label="Till (non-admin)">
-            {TILL_CATEGORIES.map((c) => (
-              <option key={c.key} value={c.key} className="bg-vault-bg">
-                {c.label}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="Drawer (admin)">
-            {DRAWER_AREAS.map((c) => (
-              <option key={c.key} value={c.key} className="bg-vault-bg">
-                {c.label}
-              </option>
-            ))}
-          </optgroup>
+          {tillBoxes.length > 0 && (
+            <optgroup label="Till (non-admin)">
+              {tillBoxes.map((c) => (
+                <option key={c.key} value={c.key} className="bg-vault-bg">
+                  {c.label}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {drawerBoxes.length > 0 && (
+            <optgroup label="Drawer (admin)">
+              {drawerBoxes.map((c) => (
+                <option key={c.key} value={c.key} className="bg-vault-bg">
+                  {c.label}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
 
         <FieldDivider />

@@ -1,17 +1,19 @@
 "use client";
 import { useState, useTransition } from "react";
 import { updateItem } from "@/lib/actions";
-import { DRAWER_AREAS } from "@/lib/categories";
 import clsx from "clsx";
 
-const AREAS = DRAWER_AREAS.map((a) => a.key);
+// AreaPill takes its option list from the parent (driven by settings.boxes,
+// filtered to DRAWER-dest entries on the Drawer page). No hardcoded areas.
 
 export function AreaPill({
   itemId,
   initial,
+  options,
 }: {
   itemId: string;
   initial?: string | null;
+  options: { key: string; label: string }[];
 }) {
   const [area, setArea] = useState(initial ?? "");
   const [pending, startTransition] = useTransition();
@@ -34,9 +36,9 @@ export function AreaPill({
       <option className="bg-vault-bg" value="">
         —
       </option>
-      {AREAS.map((a) => (
-        <option key={a} className="bg-vault-bg" value={a}>
-          {a}
+      {options.map((o) => (
+        <option key={o.key} className="bg-vault-bg" value={o.key}>
+          {o.label}
         </option>
       ))}
     </select>

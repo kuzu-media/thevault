@@ -154,7 +154,7 @@ const TriagePatch = z.object({
     .optional(),
 });
 
-import { destinationFor } from "@/lib/categories";
+import { destinationFor, getBoxes } from "@/lib/categories";
 
 export async function triageDropItem(
   itemId: string,
@@ -162,7 +162,8 @@ export async function triageDropItem(
 ) {
   const { sb } = await requireUser();
   const parsed = TriagePatch.parse(patch);
-  const dest = destinationFor(parsed.category);
+  const boxes = await getBoxes();
+  const dest = destinationFor(boxes, parsed.category);
   const update: Record<string, unknown> = {
     box: dest,
     minutes: parsed.minutes ?? null,
@@ -360,7 +361,8 @@ export async function createMyVault(name: string) {
 
 const BoxConfig = z.object({
   key: z.string().min(1).max(40),
-  title: z.string().min(1).max(60),
+  label: z.string().min(1).max(60),
+  dest: z.enum(["TILL", "DRAWER"]),
   meta: z.string().max(40).optional().default(""),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
 });

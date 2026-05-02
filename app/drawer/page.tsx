@@ -1,6 +1,7 @@
 import Link from "next/link";
 import clsx from "clsx";
 import { getItemsByBox } from "@/lib/data";
+import { getBoxes } from "@/lib/categories";
 import { EditableText, EditableFlag } from "@/components/editable-text";
 import { AreaPill } from "@/components/area-pill";
 import { NewItemRow } from "@/components/new-item-row";
@@ -55,11 +56,13 @@ export default async function DrawerPage({
   const sp = await searchParams;
   const active = (sp.filter ?? "all") as Filter;
   const area = sp.area;
-  const all = await getItemsByBox("DRAWER");
+  const [all, boxes] = await Promise.all([
+    getItemsByBox("DRAWER"),
+    getBoxes(),
+  ]);
   const filtered = applyFilter(all, active, area);
-  const areas = Array.from(
-    new Set(all.map((i) => i.area).filter(Boolean)),
-  ) as string[];
+  const drawerOptions = boxes.filter((b) => b.dest === "DRAWER");
+  const areas = drawerOptions.map((b) => b.key);
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 md:px-10">
@@ -126,7 +129,11 @@ export default async function DrawerPage({
                   glyph="■"
                   className="text-brass"
                 />
-                <AreaPill itemId={it.id} initial={it.area} />
+                <AreaPill
+                  itemId={it.id}
+                  initial={it.area}
+                  options={drawerOptions}
+                />
                 <EditableText
                   itemId={it.id}
                   field="title"
