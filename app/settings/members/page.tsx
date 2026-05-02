@@ -54,6 +54,33 @@ export default async function MembersPage() {
         Who can open this vault.
       </h1>
 
+      <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] tracking-wider">
+        <a
+          href="/settings"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          GENERAL
+        </a>
+        <a
+          href="/settings/members"
+          className="rounded-sm border border-brass bg-brass/10 px-3 py-1 text-brass"
+        >
+          MEMBERS
+        </a>
+        <a
+          href="/settings/boxes"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          BOXES
+        </a>
+        <a
+          href="/settings/energies"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          ENERGIES
+        </a>
+      </div>
+
       {vault && myRole === "owner" && (
         <form
           action={async (fd) => {

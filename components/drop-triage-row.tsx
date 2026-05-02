@@ -5,25 +5,24 @@ import clsx from "clsx";
 import { triageDropItem, softDeleteItem } from "@/lib/actions";
 import { EditableText } from "@/components/editable-text";
 import { FlagIcon, type FlagKind } from "@/components/flag-icons";
-import type { Box } from "@/lib/categories";
-import type { Energy, Item } from "@/lib/types";
-
-const ENERGIES: { value: Energy; label: string }[] = [
-  { value: "CREATIVE", label: "Creative" },
-  { value: "PROB-SOLV", label: "Problem-solve" },
-  { value: "LEISURE", label: "Leisure" },
-  { value: "PHYSICAL", label: "Physical" },
-  { value: "ADMIN", label: "Admin" },
-];
+import {
+  destinationForEnergy,
+  type Box,
+  type Destination,
+  type EnergyType,
+} from "@/lib/categories";
+import type { Item } from "@/lib/types";
 
 export function DropTriageRow({
   item,
   boxes,
+  energies,
 }: {
   item: Item;
   boxes: Box[];
+  energies: EnergyType[];
 }) {
-  const [category, setCategory] = useState<string>(
+  const [boxKey, setBoxKey] = useState<string>(
     item.area ?? item.category ?? "",
   );
   const [minutes, setMinutes] = useState<string>(
@@ -31,31 +30,34 @@ export function DropTriageRow({
   );
   const [urgent, setUrgent] = useState(item.urgent);
   const [must, setMust] = useState(item.must);
-  const [energy, setEnergy] = useState<Energy | "">(item.energy ?? "");
+  const [energy, setEnergy] = useState<string>(item.energy ?? "");
   const [pending, startTransition] = useTransition();
 
-  const dest = category
-    ? (boxes.find((b) => b.key === category)?.dest ?? null)
+  const dest: Destination | null = energy
+    ? destinationForEnergy(energies, energy)
     : null;
-
-  const tillBoxes = boxes.filter((b) => b.dest === "TILL");
-  const drawerBoxes = boxes.filter((b) => b.dest === "DRAWER");
+  const adminLike =
+    !!energy && energies.find((e) => e.key === energy)?.dest === "DRAWER";
 
   function send() {
-    if (!category) {
+    if (!boxKey) {
       toast.error("Pick a box first.");
+      return;
+    }
+    if (!energy) {
+      toast.error("Pick an energy — that decides Till vs Drawer.");
       return;
     }
     startTransition(async () => {
       try {
         await triageDropItem(item.id, {
-          category,
+          box_key: boxKey,
+          energy,
           minutes: minutes ? Number(minutes) : null,
           urgent,
           must,
-          energy: energy || null,
         });
-        const label = boxes.find((b) => b.key === category)?.label ?? category;
+        const label = boxes.find((b) => b.key === boxKey)?.label ?? boxKey;
         toast.success(
           dest === "DRAWER"
             ? `Sent to The Drawer · ${label}.`
@@ -104,31 +106,41 @@ export function DropTriageRow({
       <div className="flex flex-wrap items-center gap-2">
         <FieldLabel>Box</FieldLabel>
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          value={boxKey}
+          onChange={(e) => setBoxKey(e.target.value)}
           className="rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[11px] text-brass outline-none focus:border-brass"
         >
           <option value="" className="bg-vault-bg">
             — pick —
           </option>
-          {tillBoxes.length > 0 && (
-            <optgroup label="Till (non-admin)">
-              {tillBoxes.map((c) => (
-                <option key={c.key} value={c.key} className="bg-vault-bg">
-                  {c.label}
-                </option>
-              ))}
-            </optgroup>
+          {boxes.map((b) => (
+            <option key={b.key} value={b.key} className="bg-vault-bg">
+              {b.label}
+            </option>
+          ))}
+        </select>
+
+        <FieldDivider />
+
+        <FieldLabel>Energy</FieldLabel>
+        <select
+          value={energy}
+          onChange={(e) => setEnergy(e.target.value)}
+          className={clsx(
+            "rounded-sm border bg-vault-bg/60 px-2 py-1 font-mono text-[11px] outline-none focus:border-brass",
+            adminLike
+              ? "border-rust/40 text-rust"
+              : "border-vault-line text-brass",
           )}
-          {drawerBoxes.length > 0 && (
-            <optgroup label="Drawer (admin)">
-              {drawerBoxes.map((c) => (
-                <option key={c.key} value={c.key} className="bg-vault-bg">
-                  {c.label}
-                </option>
-              ))}
-            </optgroup>
-          )}
+        >
+          <option value="" className="bg-vault-bg">
+            — pick —
+          </option>
+          {energies.map((e) => (
+            <option key={e.key} value={e.key} className="bg-vault-bg">
+              {e.label}
+            </option>
+          ))}
         </select>
 
         <FieldDivider />
@@ -161,24 +173,6 @@ export function DropTriageRow({
           color="text-brass"
         />
 
-        <FieldDivider />
-
-        <FieldLabel>Energy</FieldLabel>
-        <select
-          value={energy}
-          onChange={(e) => setEnergy((e.target.value as Energy) || "")}
-          className="rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[11px] text-brass outline-none focus:border-brass"
-        >
-          <option value="" className="bg-vault-bg">
-            —
-          </option>
-          {ENERGIES.map((e) => (
-            <option key={e.value} value={e.value} className="bg-vault-bg">
-              {e.label}
-            </option>
-          ))}
-        </select>
-
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={dismiss}
@@ -189,7 +183,7 @@ export function DropTriageRow({
           </button>
           <button
             onClick={send}
-            disabled={pending || !category}
+            disabled={pending || !boxKey || !energy}
             className="brass-button px-4 py-1.5 font-mono text-[10px] tracking-[0.2em] text-[#2a1c08] disabled:opacity-50"
           >
             {pending ? "..." : "→ SEND"}

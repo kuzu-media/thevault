@@ -15,10 +15,7 @@ const ItemPatch = z.object({
   minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
   urgent: z.coerce.boolean().optional(),
   must: z.coerce.boolean().optional(),
-  energy: z
-    .enum(["CREATIVE", "PROB-SOLV", "LEISURE", "PHYSICAL"])
-    .nullable()
-    .optional(),
+  energy: z.string().max(40).nullable().optional(),
   category: z.string().max(40).nullable().optional(),
   potential: z.coerce.number().int().min(1).max(5).nullable().optional(),
   person: z.string().max(40).nullable().optional(),
@@ -40,8 +37,11 @@ describe("ItemPatch", () => {
   it("rejects out-of-range potential", () => {
     expect(() => ItemPatch.parse({ potential: 7 })).toThrow();
   });
-  it("rejects unknown energy", () => {
-    expect(() => ItemPatch.parse({ energy: "VIBES" })).toThrow();
+  it("accepts a custom energy string", () => {
+    expect(ItemPatch.parse({ energy: "VIBES" }).energy).toBe("VIBES");
+  });
+  it("rejects oversize energy", () => {
+    expect(() => ItemPatch.parse({ energy: "x".repeat(41) })).toThrow();
   });
   it("allows null to clear a field", () => {
     expect(ItemPatch.parse({ area: null }).area).toBeNull();

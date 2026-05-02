@@ -23,7 +23,7 @@ export default async function SettingsPage() {
         How the vault behaves.
       </h1>
 
-      <div className="mt-3 flex gap-3 font-mono text-[10px] tracking-wider">
+      <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] tracking-wider">
         <Link
           href="/settings"
           className="rounded-sm border border-brass bg-brass/10 px-3 py-1 text-brass"
@@ -41,6 +41,12 @@ export default async function SettingsPage() {
           className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
         >
           BOXES
+        </Link>
+        <Link
+          href="/settings/energies"
+          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          ENERGIES
         </Link>
       </div>
 

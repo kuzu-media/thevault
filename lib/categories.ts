@@ -1,44 +1,66 @@
-// Tracy's categories — what she calls "boxes." Stored in settings.boxes
-// as JSON; each box has a key, label, destination (TILL or DRAWER), and
-// optional color/meta. The Drop triage dropdown reads this list, the Drawer
-// area pill reads the DRAWER-dest entries, the Till groups by category.
+// Boxes are Tracy's single flat list of categories. Each item has a box +
+// an energy. Routing is determined by ENERGY, not by the box:
+//
+//   energy = ADMIN          → goes to The Drawer  (area = box.key)
+//   energy = anything else  → goes to The Till    (category = box.key)
+//
+// So a single box (e.g. PCS) can have items in both The Drawer (PCS admin
+// work) and The Till (PCS creative work) at the same time.
+//
+// The list lives in settings.boxes JSONB so Tracy can edit it from
+// /settings/boxes. The seed below is just the default for first-run.
 
 import { supabaseServer } from "./supabase/server";
-
-export type CategoryDest = "TILL" | "DRAWER";
 
 export type Box = {
   key: string;
   label: string;
-  dest: CategoryDest;
   color?: string;
   meta?: string;
 };
 
-// Default seed if settings.boxes is empty. Editable in Settings → Boxes.
-export const DEFAULT_BOXES: Box[] = [
-  // Till (non-admin)
-  { key: "PLD", label: "PLD", dest: "TILL" },
-  { key: "CC", label: "CC", dest: "TILL" },
-  { key: "NP", label: "NP", dest: "TILL" },
-  { key: "HG", label: "HG", dest: "TILL" },
-  { key: "READ/WATCH", label: "Read / Watch", dest: "TILL" },
-  { key: "LEISURE", label: "Leisure", dest: "TILL" },
-  { key: "PHYSICAL", label: "Physical", dest: "TILL" },
-  { key: "PEOPLE", label: "People", dest: "TILL" },
-  // Drawer (admin)
-  { key: "PCS", label: "PCS", dest: "DRAWER" },
-  { key: "QCOM", label: "Qcom", dest: "DRAWER" },
-  { key: "SWB", label: "SWB", dest: "DRAWER" },
-  { key: "ECOSHIP", label: "Ecoship", dest: "DRAWER" },
-  { key: "ADVERT", label: "Advert", dest: "DRAWER" },
-  { key: "HOME", label: "Home", dest: "DRAWER" },
-  { key: "FF", label: "FF", dest: "DRAWER" },
-  { key: "HEALTH", label: "Health", dest: "DRAWER" },
-  { key: "TRAVEL", label: "Travel", dest: "DRAWER" },
-];
+// No defaults — every vault starts empty. Owner sets up their own boxes
+// from Settings → Boxes before they can triage from The Drop.
+export const DEFAULT_BOXES: Box[] = [];
 
 function normalize(raw: any): Box | null {
+  if (!raw || typeof raw !== "object") return null;
+  const key = typeof raw.key === "string" ? raw.key : null;
+  if (!key) return null;
+  return {
+    key,
+    label: typeof raw.label === "string" ? raw.label : key,
+    color: typeof raw.color === "string" ? raw.color : undefined,
+    meta: typeof raw.meta === "string" ? raw.meta : undefined,
+  };
+}
+
+export async function getBoxes(): Promise<Box[]> {
+  const sb = await supabaseServer();
+  const { data } = await sb
+    .from("settings")
+    .select("boxes")
+    .maybeSingle();
+  const raw = (data?.boxes as any[]) ?? null;
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw.map(normalize).filter((b): b is Box => b !== null);
+}
+
+export type Destination = "TILL" | "DRAWER";
+
+// Energies are also user-editable. Each one has a destination that decides
+// where a Drop item routes when she picks that energy.
+export type EnergyType = {
+  key: string;
+  label: string;
+  dest: Destination;
+};
+
+// No defaults — every vault starts empty. Owner sets up their own energies
+// from Settings → Energies before they can triage from The Drop.
+export const DEFAULT_ENERGIES: EnergyType[] = [];
+
+function normalizeEnergy(raw: any): EnergyType | null {
   if (!raw || typeof raw !== "object") return null;
   const key = typeof raw.key === "string" ? raw.key : null;
   if (!key) return null;
@@ -48,28 +70,28 @@ function normalize(raw: any): Box | null {
     key,
     label: typeof raw.label === "string" ? raw.label : key,
     dest,
-    color: typeof raw.color === "string" ? raw.color : undefined,
-    meta: typeof raw.meta === "string" ? raw.meta : undefined,
   };
 }
 
-// Read the user's box list from settings, or fall back to defaults.
-// Returns the seed (without writing) so first-run users see something
-// immediately; writing happens on first save in the Boxes editor.
-export async function getBoxes(): Promise<Box[]> {
+export async function getEnergies(): Promise<EnergyType[]> {
   const sb = await supabaseServer();
   const { data } = await sb
     .from("settings")
-    .select("boxes")
+    .select("energies")
     .maybeSingle();
-  const raw = (data?.boxes as any[]) ?? null;
-  if (!raw || !Array.isArray(raw) || raw.length === 0) return DEFAULT_BOXES;
-  const parsed = raw
-    .map(normalize)
-    .filter((b): b is Box => b !== null);
-  return parsed.length ? parsed : DEFAULT_BOXES;
+  const raw = (data?.energies as any[]) ?? null;
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw
+    .map(normalizeEnergy)
+    .filter((e): e is EnergyType => e !== null);
 }
 
-export function destinationFor(boxes: Box[], key: string): CategoryDest {
-  return boxes.find((b) => b.key === key)?.dest ?? "TILL";
+// Look up the destination for a given energy key from the user's list.
+// Falls back to TILL if the key isn't in the list (custom unknown energy).
+export function destinationForEnergy(
+  energies: EnergyType[],
+  key: string | null | undefined,
+): Destination {
+  if (!key) return "TILL";
+  return energies.find((e) => e.key === key)?.dest ?? "TILL";
 }

@@ -61,8 +61,9 @@ export default async function DrawerPage({
     getBoxes(),
   ]);
   const filtered = applyFilter(all, active, area);
-  const drawerOptions = boxes.filter((b) => b.dest === "DRAWER");
-  const areas = drawerOptions.map((b) => b.key);
+  // Any box can hold Drawer items (when paired with an admin-energy), so
+  // the area pill shows the full box list.
+  const areas = boxes.map((b) => b.key);
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 md:px-10">
@@ -132,7 +133,7 @@ export default async function DrawerPage({
                 <AreaPill
                   itemId={it.id}
                   initial={it.area}
-                  options={drawerOptions}
+                  options={boxes}
                 />
                 <EditableText
                   itemId={it.id}

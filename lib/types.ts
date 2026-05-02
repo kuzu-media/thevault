@@ -1,11 +1,8 @@
 export type ItemState = "upcoming" | "active" | "done" | "skipped" | "overrun";
 
-export type Energy =
-  | "CREATIVE"
-  | "PROB-SOLV"
-  | "LEISURE"
-  | "PHYSICAL"
-  | "ADMIN";
+// Energies are user-defined per vault (settings.energies), so this is a
+// loose string. Each energy carries a destination — see lib/categories.ts.
+export type Energy = string;
 
 export type CounterStation = "DROP" | "DOCKET" | "TILL" | "DRAWER";
 

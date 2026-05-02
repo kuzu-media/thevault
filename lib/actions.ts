@@ -139,22 +139,17 @@ export async function softDeleteItem(itemId: string) {
   revalidatePath("/");
 }
 
-// Triage a Drop item — pick a category and let the action route it to the
-// right box (Till for non-admin categories, Drawer for admin areas), set
-// the matching column (category vs area), and apply the rest of the fields
-// in one server roundtrip.
+// Triage a Drop item. Box + energy are both user-defined; the energy's
+// destination (looked up from settings.energies) decides Till vs Drawer.
 const TriagePatch = z.object({
-  category: z.string().min(1).max(40),
+  box_key: z.string().min(1).max(40),
+  energy: z.string().min(1).max(40),
   minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
   urgent: z.coerce.boolean().optional(),
   must: z.coerce.boolean().optional(),
-  energy: z
-    .enum(["CREATIVE", "PROB-SOLV", "LEISURE", "PHYSICAL", "ADMIN"])
-    .nullable()
-    .optional(),
 });
 
-import { destinationFor, getBoxes } from "@/lib/categories";
+import { destinationForEnergy, getEnergies } from "@/lib/categories";
 
 export async function triageDropItem(
   itemId: string,
@@ -162,22 +157,20 @@ export async function triageDropItem(
 ) {
   const { sb } = await requireUser();
   const parsed = TriagePatch.parse(patch);
-  const boxes = await getBoxes();
-  const dest = destinationFor(boxes, parsed.category);
+  const energies = await getEnergies();
+  const dest = destinationForEnergy(energies, parsed.energy);
   const update: Record<string, unknown> = {
     box: dest,
+    energy: parsed.energy,
     minutes: parsed.minutes ?? null,
     urgent: parsed.urgent ?? false,
     must: parsed.must ?? false,
-    energy: parsed.energy ?? null,
   };
-  // Drawer items use `area`; Till items use `category`. Keep them separate
-  // so each surface filters by its native column.
   if (dest === "DRAWER") {
-    update.area = parsed.category;
+    update.area = parsed.box_key;
     update.category = null;
   } else {
-    update.category = parsed.category;
+    update.category = parsed.box_key;
     update.area = null;
   }
   await sb.from("items").update(update).eq("id", itemId);
@@ -190,10 +183,7 @@ const ItemPatch = z.object({
   minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
   urgent: z.coerce.boolean().optional(),
   must: z.coerce.boolean().optional(),
-  energy: z
-    .enum(["CREATIVE", "PROB-SOLV", "LEISURE", "PHYSICAL", "ADMIN"])
-    .nullable()
-    .optional(),
+  energy: z.string().max(40).nullable().optional(),
   category: z.string().max(40).nullable().optional(),
   potential: z.coerce.number().int().min(1).max(5).nullable().optional(),
   person: z.string().max(40).nullable().optional(),
@@ -362,7 +352,6 @@ export async function createMyVault(name: string) {
 const BoxConfig = z.object({
   key: z.string().min(1).max(40),
   label: z.string().min(1).max(60),
-  dest: z.enum(["TILL", "DRAWER"]),
   meta: z.string().max(40).optional().default(""),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
 });
@@ -373,6 +362,27 @@ export async function saveBoxConfig(boxes: z.input<typeof BoxConfig>[]) {
   if (!vaultId) throw new Error("No vault");
   const parsed = boxes.map((b) => BoxConfig.parse(b));
   await sb.from("settings").upsert({ vault_id: vaultId, boxes: parsed });
+  revalidatePath("/", "layout");
+}
+
+const EnergyConfig = z.object({
+  key: z
+    .string()
+    .min(1)
+    .max(40)
+    .transform((v) => v.toUpperCase().replace(/\s/g, "-")),
+  label: z.string().min(1).max(60),
+  dest: z.enum(["TILL", "DRAWER"]),
+});
+
+export async function saveEnergyConfig(
+  energies: z.input<typeof EnergyConfig>[],
+) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+  const parsed = energies.map((e) => EnergyConfig.parse(e));
+  await sb.from("settings").upsert({ vault_id: vaultId, energies: parsed });
   revalidatePath("/", "layout");
 }
 

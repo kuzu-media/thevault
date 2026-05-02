@@ -1,38 +1,44 @@
 "use client";
 import { useState, useTransition } from "react";
-import { saveBoxConfig } from "@/lib/actions";
-import type { Box } from "@/lib/categories";
+import clsx from "clsx";
+import { saveEnergyConfig } from "@/lib/actions";
+import type { EnergyType } from "@/lib/categories";
 
-export function BoxesEditor({ initial }: { initial: Box[] }) {
-  const [boxes, setBoxes] = useState<Box[]>(initial);
+export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
+  const [energies, setEnergies] = useState<EnergyType[]>(initial);
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  function update(i: number, patch: Partial<Box>) {
-    setBoxes(boxes.map((b, idx) => (idx === i ? { ...b, ...patch } : b)));
+  function update(i: number, patch: Partial<EnergyType>) {
+    setEnergies(
+      energies.map((e, idx) => (idx === i ? { ...e, ...patch } : e)),
+    );
   }
 
   function add() {
-    setBoxes([
-      ...boxes,
+    setEnergies([
+      ...energies,
       {
-        key: `BOX_${boxes.length + 1}`,
-        label: "New box",
-        meta: "",
-        color: "#b5853a",
+        key: `ENERGY_${energies.length + 1}`,
+        label: "New energy",
+        dest: "TILL",
       },
     ]);
   }
 
   function remove(i: number) {
-    if (!confirm("Remove this box? Items already filed under it stay safe."))
+    if (
+      !confirm(
+        "Remove this energy? Items already tagged with it keep their value.",
+      )
+    )
       return;
-    setBoxes(boxes.filter((_, idx) => idx !== i));
+    setEnergies(energies.filter((_, idx) => idx !== i));
   }
 
   function save() {
     startTransition(async () => {
-      await saveBoxConfig(boxes);
+      await saveEnergyConfig(energies);
       setSavedAt(Date.now());
     });
   }
@@ -40,46 +46,51 @@ export function BoxesEditor({ initial }: { initial: Box[] }) {
   return (
     <div className="mt-6 space-y-3">
       <div className="flex flex-wrap items-center gap-2 px-1 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
-        <span className="w-7" />
         <span className="flex-1 min-w-[160px]">Label</span>
-        <span className="flex-1 min-w-[160px]">Meta</span>
-        <span className="w-[110px]">Key</span>
+        <span className="w-[140px]">Key</span>
+        <span className="w-[110px]">Sends to</span>
         <span className="w-[80px]" />
       </div>
-      {boxes.map((b, i) => (
+      {energies.map((e, i) => (
         <div
           key={i}
           className="flex flex-wrap items-center gap-2 rounded-sm border border-vault-line bg-vault-panel/40 px-4 py-3"
         >
           <input
-            type="color"
-            value={b.color ?? "#b5853a"}
-            onChange={(e) => update(i, { color: e.target.value })}
-            className="h-7 w-7 cursor-pointer rounded-sm border border-vault-line bg-transparent"
-            title="Color"
-          />
-          <input
-            value={b.label}
-            onChange={(e) => update(i, { label: e.target.value })}
+            value={e.label}
+            onChange={(ev) => update(i, { label: ev.target.value })}
             placeholder="Label"
             className="min-w-[160px] flex-1 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-ink outline-none focus:border-brass"
           />
           <input
-            value={b.meta ?? ""}
-            onChange={(e) => update(i, { meta: e.target.value })}
-            placeholder="Meta"
-            className="min-w-[160px] flex-1 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[11px] text-ink-mute outline-none focus:border-brass"
-          />
-          <input
-            value={b.key}
-            onChange={(e) =>
+            value={e.key}
+            onChange={(ev) =>
               update(i, {
-                key: e.target.value.toUpperCase().replace(/\s/g, "_"),
+                key: ev.target.value.toUpperCase().replace(/\s/g, "-"),
               })
             }
             placeholder="KEY"
-            className="w-[110px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[10px] text-brass outline-none focus:border-brass"
+            className="w-[140px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[10px] text-brass outline-none focus:border-brass"
           />
+          <select
+            value={e.dest}
+            onChange={(ev) =>
+              update(i, { dest: ev.target.value as EnergyType["dest"] })
+            }
+            className={clsx(
+              "w-[110px] rounded-sm border bg-vault-bg/60 px-2 py-1 font-mono text-[10px] tracking-wider outline-none focus:border-brass",
+              e.dest === "DRAWER"
+                ? "border-rust/50 text-rust"
+                : "border-teal/50 text-teal",
+            )}
+          >
+            <option value="TILL" className="bg-vault-bg">
+              TILL
+            </option>
+            <option value="DRAWER" className="bg-vault-bg">
+              DRAWER
+            </option>
+          </select>
           <button
             onClick={() => remove(i)}
             className="rounded-sm border border-vault-line px-2 py-1 font-mono text-[10px] tracking-wider text-ink-mute hover:border-rust hover:text-rust"
@@ -92,7 +103,7 @@ export function BoxesEditor({ initial }: { initial: Box[] }) {
         onClick={add}
         className="w-full rounded-sm border border-dashed border-brass/40 py-3 font-mono text-[10px] tracking-[0.24em] text-brass/70 hover:border-brass"
       >
-        + ADD BOX
+        + ADD ENERGY
       </button>
 
       <div className="flex items-center justify-between pt-3">
@@ -110,7 +121,7 @@ export function BoxesEditor({ initial }: { initial: Box[] }) {
           disabled={pending}
           className="brass-button px-6 py-2 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
         >
-          SAVE BOXES
+          SAVE ENERGIES
         </button>
       </div>
     </div>
