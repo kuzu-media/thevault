@@ -12,27 +12,29 @@ import { toast } from "sonner";
 export function UnhandledRejectionGuard() {
   useEffect(() => {
     function onRejection(e: PromiseRejectionEvent) {
-      const reason = e.reason as { message?: string } | null | undefined;
-      // Bare `undefined` / `null` rejections are framework noise — Next.js
-      // prefetcher does this when an RSC fetch fails and the browser tab
-      // has a stale client bundle (common after a dev-server restart). Not
-      // an app bug, so swallow silently in production-like fashion.
-      const isFrameworkNoise = reason == null || reason === false;
-      if (!isFrameworkNoise) {
-        // eslint-disable-next-line no-console
-        console.error("[vault] unhandled promise rejection", {
-          reason: e.reason,
-          message: reason?.message,
-          stack: (reason as { stack?: string } | null)?.stack,
-          type: typeof e.reason,
-        });
-        if (process.env.NODE_ENV !== "production") {
-          toast.error(
-            reason?.message
-              ? `Background error: ${reason.message}`
-              : "A background promise rejected (see console).",
-          );
-        }
+      const raw: unknown = e.reason;
+      // Bare null / undefined / false rejections are framework noise —
+      // Next.js prefetcher does this when an RSC fetch fails and the
+      // browser tab has a stale client bundle (common after a dev-server
+      // restart). Not an app bug, so swallow silently.
+      if (raw == null || raw === false) {
+        e.preventDefault();
+        return;
+      }
+      const reason = raw as { message?: string; stack?: string };
+      // eslint-disable-next-line no-console
+      console.error("[vault] unhandled promise rejection", {
+        reason: raw,
+        message: reason.message,
+        stack: reason.stack,
+        type: typeof raw,
+      });
+      if (process.env.NODE_ENV !== "production") {
+        toast.error(
+          reason.message
+            ? `Background error: ${reason.message}`
+            : "A background promise rejected (see console).",
+        );
       }
       e.preventDefault();
     }
