@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { getItemsByBox } from "@/lib/data";
 import { EditableText } from "@/components/editable-text";
 import { NewItemRow } from "@/components/new-item-row";
@@ -26,37 +27,54 @@ export default async function TillPage() {
         <section key={cat} className="mt-8">
           <h2 className="eyebrow">— {cat.toLowerCase()} —</h2>
           <div className="mt-3 space-y-2">
-            {rows.map((it: any) => (
-              <div
-                key={it.id}
-                className="flex flex-wrap items-center gap-3 rounded-sm border border-vault-line/60 bg-vault-panel/40 px-4 py-2.5 hover:border-brass/30"
-              >
-                <span className="font-mono text-[10px] tracking-wider text-ink-mute">
-                  {(it.energy ?? "").toLowerCase()}
-                </span>
-                <EditableText
-                  itemId={it.id}
-                  field="title"
-                  initial={it.title}
-                  className="min-w-0 flex-1"
-                />
-                <span className="flex items-baseline gap-1 font-mono text-[11px] text-ink-mute">
-                  <EditableText
-                    itemId={it.id}
-                    field="minutes"
-                    initial={it.minutes}
-                    className="w-12 text-right"
-                    numeric
-                    placeholder="—"
-                  />
-                  <span>min</span>
-                </span>
-                <TillPickButton
-                  itemId={it.id}
-                  picked={it.todayOrder !== null}
-                />
-              </div>
-            ))}
+            {rows.map((it: any) => {
+              const picked = it.todayOrder !== null;
+              return (
+                <div
+                  key={it.id}
+                  className={clsx(
+                    "group relative overflow-hidden rounded-sm border bg-vault-panel/30 px-4 py-3 transition hover:border-brass/40 hover:bg-vault-panel/50",
+                    picked ? "border-teal/40" : "border-vault-line/60",
+                  )}
+                >
+                  {picked && (
+                    <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-teal/70" />
+                  )}
+
+                  {/* Title + minutes */}
+                  <div className="flex items-center gap-3">
+                    <EditableText
+                      itemId={it.id}
+                      field="title"
+                      initial={it.title}
+                      className="min-w-0 flex-1 serif-h text-[15px]"
+                      placeholder="(no title)"
+                    />
+                    <span className="inline-flex shrink-0 items-baseline gap-1 rounded-sm border border-vault-line/60 bg-vault-bg/40 px-2 py-0.5 transition focus-within:border-brass focus-within:bg-vault-bg/80">
+                      <EditableText
+                        itemId={it.id}
+                        field="minutes"
+                        initial={it.minutes}
+                        className="w-12 bg-transparent text-right font-mono text-[12px]"
+                        numeric
+                        placeholder="—"
+                      />
+                      <span className="font-mono text-[10px] text-ink-mute/70">
+                        min
+                      </span>
+                    </span>
+                  </div>
+
+                  {/* Energy + pick */}
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+                      {it.energy ?? "—"}
+                    </span>
+                    <TillPickButton itemId={it.id} picked={picked} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       ))}
@@ -65,7 +83,6 @@ export default async function TillPage() {
         <NewItemRow
           box="TILL"
           placeholder="+ New till option"
-          defaults={{ energy: "CREATIVE" }}
         />
       </div>
     </div>

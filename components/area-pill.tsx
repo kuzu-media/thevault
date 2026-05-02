@@ -1,10 +1,9 @@
 "use client";
 import { useState, useTransition } from "react";
 import { updateItem } from "@/lib/actions";
-import clsx from "clsx";
+import { Select } from "./ui";
 
-// AreaPill takes its option list from the parent (driven by settings.boxes,
-// filtered to DRAWER-dest entries on the Drawer page). No hardcoded areas.
+// Compact box-key picker. Used on Drawer rows to set/change the area.
 
 export function AreaPill({
   itemId,
@@ -19,7 +18,8 @@ export function AreaPill({
   const [pending, startTransition] = useTransition();
 
   return (
-    <select
+    <Select
+      tone="brass"
       value={area}
       onChange={(e) => {
         const v = e.target.value;
@@ -28,19 +28,16 @@ export function AreaPill({
           await updateItem(itemId, { area: v || null });
         });
       }}
-      className={clsx(
-        "rounded-sm border border-brass/40 bg-transparent px-1.5 py-0.5 font-mono text-[9px] tracking-wider text-brass outline-none",
-        pending && "opacity-50",
-      )}
+      className={pending ? "opacity-50" : undefined}
     >
       <option className="bg-vault-bg" value="">
-        —
+        — box —
       </option>
       {options.map((o) => (
         <option key={o.key} className="bg-vault-bg" value={o.key}>
           {o.label}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }

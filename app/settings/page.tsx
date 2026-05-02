@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { DEFAULT_SETTINGS } from "@/lib/types";
 import { getSettings } from "@/lib/data";
-import { saveSettings, rotateCaptureToken } from "@/lib/actions";
+import { saveSettings } from "@/lib/actions";
 import { CaptureTokenRow } from "@/components/capture-token-row";
+import { NumberField, TextInput } from "@/components/ui";
 
 export default async function SettingsPage() {
   const row = await getSettings();
@@ -17,75 +18,79 @@ export default async function SettingsPage() {
     : DEFAULT_SETTINGS;
 
   return (
-    <div className="mx-auto max-w-[800px] px-10 py-8">
-      <div className="eyebrow">— Settings —</div>
-      <h1 className="serif-h mt-2 text-[40px] leading-tight">
-        How the vault behaves.
+    <div className="mx-auto max-w-[800px] px-4 py-8 md:px-10">
+      <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
+        Settings.
       </h1>
+      <p className="mt-1 text-[12px] text-ink-mute">
+        How the vault behaves. Tabs below for members, boxes, and energies.
+      </p>
 
-      <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] tracking-wider">
+      <div className="mt-4 flex flex-wrap gap-2 font-mono text-[10px] tracking-wider">
         <Link
           href="/settings"
-          className="rounded-sm border border-brass bg-brass/10 px-3 py-1 text-brass"
+          className="rounded-sm border border-brass bg-brass/10 px-3 py-1.5 text-brass"
         >
           GENERAL
         </Link>
         <Link
           href="/settings/members"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
         >
           MEMBERS
         </Link>
         <Link
           href="/settings/boxes"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
         >
           BOXES
         </Link>
         <Link
           href="/settings/energies"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
+          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
         >
           ENERGIES
         </Link>
       </div>
 
-      <form action={saveSettings} className="mt-8 space-y-8">
+      <form action={saveSettings} className="mt-8 space-y-6">
         <Group title="The day">
           <Row
             label="Default hours"
             hint="Used when the day-inputs row hasn't been set yet."
           >
-            <input
-              type="number"
+            <NumberField
+              name="default_hours"
+              defaultValue={s.defaultHours}
               step="0.5"
               min="0"
               max="24"
-              name="default_hours"
-              defaultValue={s.defaultHours}
-              className="w-24 rounded-sm border border-vault-line bg-vault-panel/60 px-2 py-1 text-right font-mono text-[12px] text-brass outline-none focus:border-brass"
+              unit="hrs"
+              width="w-[88px]"
             />
           </Row>
-          <Row label="Default end of day">
-            <input
-              type="text"
+          <Row
+            label="Default end of day"
+            hint="Anchor time the schedule lands at."
+          >
+            <TextInput
               name="default_end_of_day"
               defaultValue={s.defaultEndOfDay}
               placeholder="16:30"
-              className="w-24 rounded-sm border border-vault-line bg-vault-panel/60 px-2 py-1 text-right font-mono text-[12px] text-brass outline-none focus:border-brass"
+              className="w-[88px] text-right font-mono"
             />
           </Row>
           <Row
             label="Stressor anchor threshold"
             hint="Below this, admin anchors to end-of-day. At or above, admin runs first."
           >
-            <input
-              type="number"
-              min="0"
-              max="480"
+            <NumberField
               name="stressor_anchor_minutes"
               defaultValue={s.stressorAnchorMinutes}
-              className="w-24 rounded-sm border border-vault-line bg-vault-panel/60 px-2 py-1 text-right font-mono text-[12px] text-brass outline-none focus:border-brass"
+              min="0"
+              max="480"
+              unit="min"
+              width="w-[88px]"
             />
           </Row>
         </Group>
@@ -93,9 +98,9 @@ export default async function SettingsPage() {
         <Group title="Annual budget">
           <Row
             label="Show annual hours"
-            hint="Tracy's manifesto: 500 hours of deep work a year."
+            hint="500 hours of deep work a year."
           >
-            <label className="inline-flex cursor-pointer items-center gap-2">
+            <label className="inline-flex cursor-pointer select-none items-center gap-2">
               <input
                 type="checkbox"
                 name="show_annual_budget"
@@ -108,13 +113,13 @@ export default async function SettingsPage() {
             </label>
           </Row>
           <Row label="Annual hours">
-            <input
-              type="number"
-              min="0"
-              max="8760"
+            <NumberField
               name="annual_hours"
               defaultValue={s.annualHours}
-              className="w-24 rounded-sm border border-vault-line bg-vault-panel/60 px-2 py-1 text-right font-mono text-[12px] text-brass outline-none focus:border-brass"
+              min="0"
+              max="8760"
+              unit="hrs"
+              width="w-[88px]"
             />
           </Row>
         </Group>
@@ -148,7 +153,7 @@ function Group({
   return (
     <section>
       <h2 className="eyebrow">— {title} —</h2>
-      <div className="mt-3 divide-y divide-vault-line rounded-sm border border-vault-line bg-vault-panel/40">
+      <div className="mt-3 divide-y divide-vault-line/60 rounded-sm border border-vault-line/60 bg-vault-panel/30">
         {children}
       </div>
     </section>
@@ -165,12 +170,14 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-6 px-4 py-3">
-      <div>
+    <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+      <div className="min-w-0 flex-1">
         <div className="text-ink">{label}</div>
-        {hint && <div className="text-[12px] text-ink-mute">{hint}</div>}
+        {hint && (
+          <div className="mt-0.5 text-[12px] text-ink-mute">{hint}</div>
+        )}
       </div>
-      <div>{children}</div>
+      <div className="shrink-0">{children}</div>
     </div>
   );
 }
