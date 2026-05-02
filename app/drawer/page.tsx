@@ -119,14 +119,14 @@ export default async function DrawerPage({
                   itemId={it.id}
                   field="urgent"
                   initial={it.urgent}
-                  glyph="●"
+                  kind="urgent"
                   className="text-rust"
                 />
                 <EditableFlag
                   itemId={it.id}
                   field="must"
                   initial={it.must}
-                  glyph="■"
+                  kind="must"
                   className="text-brass"
                 />
                 <AreaPill

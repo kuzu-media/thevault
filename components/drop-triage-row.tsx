@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import clsx from "clsx";
 import { triageDropItem, softDeleteItem } from "@/lib/actions";
 import { EditableText } from "@/components/editable-text";
+import { FlagIcon, type FlagKind } from "@/components/flag-icons";
 import type { Box } from "@/lib/categories";
 import type { Energy, Item } from "@/lib/types";
 
@@ -148,15 +149,15 @@ export function DropTriageRow({
         <Toggle
           on={urgent}
           onChange={setUrgent}
-          glyph="●"
-          label="urgent"
+          kind="urgent"
+          label="Urgent"
           color="text-rust"
         />
         <Toggle
           on={must}
           onChange={setMust}
-          glyph="■"
-          label="must"
+          kind="must"
+          label="Must"
           color="text-brass"
         />
 
@@ -214,13 +215,13 @@ function FieldDivider() {
 function Toggle({
   on,
   onChange,
-  glyph,
+  kind,
   label,
   color,
 }: {
   on: boolean;
   onChange: (next: boolean) => void;
-  glyph: string;
+  kind: FlagKind;
   label: string;
   color: string;
 }) {
@@ -229,13 +230,13 @@ function Toggle({
       onClick={() => onChange(!on)}
       title={label}
       className={clsx(
-        "flex h-6 w-6 items-center justify-center rounded-sm border leading-none transition",
+        "flex h-7 w-7 items-center justify-center rounded-sm border leading-none transition",
         on
           ? `border-current ${color}`
-          : "border-vault-line text-ink-mute/40 hover:border-brass/40 hover:text-ink-mute",
+          : "border-vault-line text-ink-mute/50 hover:border-brass/40 hover:text-ink-mute",
       )}
     >
-      {on ? glyph : "·"}
+      <FlagIcon kind={kind} filled={on} />
     </button>
   );
 }

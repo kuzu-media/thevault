@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import clsx from "clsx";
 import { updateItem } from "@/lib/actions";
+import { FlagIcon, type FlagKind } from "./flag-icons";
 
 export function EditableText({
   itemId,
@@ -63,27 +64,28 @@ export function EditableText({
   );
 }
 
+// Visual key:
+//   urgent (⚡ lightning) → time pressure, rust color
+//   must   (★ star)       → required / anchor, brass color
+// Each renders an outline when OFF (still clearly that flag) and fills when ON.
 export function EditableFlag({
   itemId,
   field,
   initial,
-  glyph,
+  kind,
   className,
 }: {
   itemId: string;
   field: "urgent" | "must" | "pinned";
   initial: boolean;
-  glyph: string;
+  kind: FlagKind;
   className?: string;
 }) {
   const [on, setOn] = useState(initial);
   const [pending, startTransition] = useTransition();
-  // When OFF, render an outline-style ghost (not just dimmed) so the empty
-  // state reads clearly even without color. When ON, render the colored glyph
-  // at full opacity.
   return (
     <button
-      title={field}
+      title={kind === "urgent" ? "Urgent" : "Must"}
       onClick={() => {
         const next = !on;
         setOn(next);
@@ -92,12 +94,12 @@ export function EditableFlag({
         });
       }}
       className={clsx(
-        "flex h-5 w-5 items-center justify-center rounded-sm leading-none transition",
-        on ? className : "text-ink-mute/30 hover:text-ink-mute",
+        "flex h-6 w-6 items-center justify-center rounded-sm leading-none transition",
+        on ? className : "text-ink-mute/40 hover:text-ink-mute",
         pending && "opacity-50",
       )}
     >
-      {on ? glyph : "·"}
+      <FlagIcon kind={kind} filled={on} />
     </button>
   );
 }
