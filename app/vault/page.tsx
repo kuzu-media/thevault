@@ -3,8 +3,9 @@ import { getAllItems } from "@/lib/data";
 import { fixtureItems } from "@/lib/fixtures";
 import { BoxCard } from "@/components/box-card";
 
-// Vault interior — STORAGE ONLY. Counter stations (Drop / Docket / Till /
-// Drawer) live in the top nav; here we only show the things you put away.
+// Vault interior — STORAGE ONLY. Daily-action surfaces (Drop / Docket /
+// ATM / Counter) live in the top nav; here we only show the things you
+// put away.
 
 const BOXES = [
   { key: "SWB_PLAN", title: "SWB Plan", meta: "Strategic rows" },

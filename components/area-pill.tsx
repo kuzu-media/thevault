@@ -3,7 +3,7 @@ import { useState, useTransition } from "react";
 import { updateItem } from "@/lib/actions";
 import { Select } from "./ui";
 
-// Compact box-key picker. Used on Drawer rows to set/change the area.
+// Compact box-key picker. Used on Counter rows to set/change the area.
 
 export function AreaPill({
   itemId,

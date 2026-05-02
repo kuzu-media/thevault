@@ -32,7 +32,7 @@ export default async function DropPage() {
           </h3>
           <p className="mt-1 text-[13px] text-ink-dim">
             Triage needs at least one box (where things go) and one energy
-            (which decides Till vs Drawer).
+            (which decides ATM vs Counter).
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             {boxes.length === 0 && (

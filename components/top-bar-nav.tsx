@@ -6,8 +6,8 @@ import clsx from "clsx";
 const ITEMS = [
   { href: "/", label: "Today", match: (p: string) => p === "/" || p.startsWith("/build") },
   { href: "/drop", label: "Drop", match: (p: string) => p.startsWith("/drop") },
-  { href: "/till", label: "Till", match: (p: string) => p.startsWith("/till") },
-  { href: "/drawer", label: "Drawer", match: (p: string) => p.startsWith("/drawer") },
+  { href: "/atm", label: "ATM", match: (p: string) => p.startsWith("/atm") },
+  { href: "/counter", label: "Counter", match: (p: string) => p.startsWith("/counter") },
   { href: "/vault", label: "Vault", match: (p: string) => p.startsWith("/vault") || p.startsWith("/records") },
   { href: "/settings", label: "Settings", match: (p: string) => p.startsWith("/settings") },
 ];

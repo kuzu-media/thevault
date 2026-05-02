@@ -41,8 +41,8 @@ export default async function BoxesSettingsPage() {
 
       <p className="mt-6 text-ink-dim">
         Your boxes are the categories you file thoughts into from The Drop —
-        life areas, businesses, projects. The same box can hold Drawer items
-        (obligations) and Till items (energy-matched pulls).
+        life areas, businesses, projects. The same box can hold Counter items
+        (obligations) and ATM items (energy-matched pulls).
       </p>
       <p className="mt-1 text-[12px] text-ink-mute">
         The <strong>label</strong> is what you see in dropdowns. The{" "}

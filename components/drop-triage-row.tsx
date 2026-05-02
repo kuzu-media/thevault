@@ -30,7 +30,7 @@ export function DropTriageRow({
     item.area ?? item.category ?? "",
   );
   const [dest, setDest] = useState<Destination>(
-    item.urgent || item.must ? "DRAWER" : "TILL",
+    item.urgent || item.must ? "COUNTER" : "ATM",
   );
   const [minutes, setMinutes] = useState<string>(
     item.minutes != null ? String(item.minutes) : "",
@@ -51,15 +51,15 @@ export function DropTriageRow({
           box_key: boxKey,
           dest,
           minutes: minutes ? Number(minutes) : null,
-          energy: dest === "TILL" ? energy || null : null,
-          urgent: dest === "DRAWER" ? urgent : false,
-          must: dest === "DRAWER" ? must : false,
+          energy: dest === "ATM" ? energy || null : null,
+          urgent: dest === "COUNTER" ? urgent : false,
+          must: dest === "COUNTER" ? must : false,
         });
         const label = boxes.find((b) => b.key === boxKey)?.label ?? boxKey;
         toast.success(
-          dest === "DRAWER"
-            ? `Sent to The Drawer · ${label}.`
-            : `Sent to The Till · ${label}.`,
+          dest === "COUNTER"
+            ? `Sent to The Counter · ${label}.`
+            : `Sent to The ATM · ${label}.`,
         );
       } catch (e: any) {
         toast.error(e?.message ?? "Couldn't send.");
@@ -79,14 +79,14 @@ export function DropTriageRow({
     <div
       className={clsx(
         "group relative overflow-hidden rounded-sm border bg-vault-panel/40 transition hover:bg-vault-panel/60",
-        dest === "DRAWER" ? "border-rust/30" : "border-teal/30",
+        dest === "COUNTER" ? "border-rust/30" : "border-teal/30",
       )}
     >
       {/* Coloured left edge — the at-a-glance signal */}
       <div
         className={clsx(
           "absolute left-0 top-0 bottom-0 w-[4px]",
-          dest === "DRAWER" ? "bg-rust" : "bg-teal",
+          dest === "COUNTER" ? "bg-rust" : "bg-teal",
         )}
       />
 
@@ -125,7 +125,7 @@ export function DropTriageRow({
       <div className="flex flex-wrap items-center gap-3 border-t border-vault-line/30 bg-vault-bg/20 pl-6 pr-3 py-1.5">
         <Minutes value={minutes} onChange={setMinutes} />
 
-        {dest === "TILL" && (
+        {dest === "ATM" && (
           <select
             value={energy}
             onChange={(e) => setEnergy(e.target.value)}
@@ -147,7 +147,7 @@ export function DropTriageRow({
           </select>
         )}
 
-        {dest === "DRAWER" && (
+        {dest === "COUNTER" && (
           <div className="flex items-center gap-1">
             <FlagToggle
               on={urgent}
@@ -200,18 +200,18 @@ function DestSegment({
   return (
     <div className="flex shrink-0 overflow-hidden rounded-sm border border-vault-line/60 bg-vault-bg/40">
       <SegmentButton
-        active={dest === "TILL"}
-        onClick={() => onChange("TILL")}
+        active={dest === "ATM"}
+        onClick={() => onChange("ATM")}
         accent="teal"
       >
-        TILL
+        ATM
       </SegmentButton>
       <SegmentButton
-        active={dest === "DRAWER"}
-        onClick={() => onChange("DRAWER")}
+        active={dest === "COUNTER"}
+        onClick={() => onChange("COUNTER")}
         accent="rust"
       >
-        DRAWER
+        COUNTER
       </SegmentButton>
     </div>
   );

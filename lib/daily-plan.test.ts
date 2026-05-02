@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   classify,
-  pickTillCandidates,
+  pickAtmCandidates,
   buildSchedule,
   parseTimeOnDate,
   thresholdCallout,
@@ -61,34 +61,34 @@ describe("classify", () => {
   });
 });
 
-describe("pickTillCandidates", () => {
+describe("pickAtmCandidates", () => {
   it("includes creative when creative > prob-solv", () => {
     const items = [
-      baseItem({ box: "TILL", energy: "CREATIVE", minutes: 30, title: "a" }),
-      baseItem({ box: "TILL", energy: "PROB-SOLV", minutes: 30, title: "b" }),
+      baseItem({ box: "ATM", energy: "CREATIVE", minutes: 30, title: "a" }),
+      baseItem({ box: "ATM", energy: "PROB-SOLV", minutes: 30, title: "b" }),
     ];
-    const r = pickTillCandidates(items, { ...inputs, creative: 4, probSolv: 2 });
+    const r = pickAtmCandidates(items, { ...inputs, creative: 4, probSolv: 2 });
     expect(r.map((x) => x.title)).toEqual(["a"]);
   });
 
   it("filters out items longer than available hours", () => {
     const items = [
       baseItem({
-        box: "TILL",
+        box: "ATM",
         energy: "PROB-SOLV",
         minutes: 9999,
         title: "huge",
       }),
     ];
-    const r = pickTillCandidates(items, inputs);
+    const r = pickAtmCandidates(items, inputs);
     expect(r).toEqual([]);
   });
 
   it("low total energy unlocks LEISURE/PEOPLE", () => {
     const items = [
-      baseItem({ box: "TILL", energy: "LEISURE", minutes: 30, title: "rest" }),
+      baseItem({ box: "ATM", energy: "LEISURE", minutes: 30, title: "rest" }),
     ];
-    const r = pickTillCandidates(items, {
+    const r = pickAtmCandidates(items, {
       ...inputs,
       creative: 2,
       probSolv: 2,
@@ -103,7 +103,7 @@ describe("buildSchedule", () => {
       baseItem({ urgent: true, must: true, minutes: 30, title: "S1" }),
       baseItem({ urgent: false, must: true, minutes: 60, title: "M1" }),
     ]);
-    const blocks = buildSchedule({ classified, tillPicks: [], inputs });
+    const blocks = buildSchedule({ classified, atmPicks: [], inputs });
     const last = blocks[blocks.length - 1];
     expect(new Date(last.end).toISOString()).toBe(
       parseTimeOnDate("16:30", "2026-05-01").toISOString(),
@@ -115,7 +115,7 @@ describe("buildSchedule", () => {
       baseItem({ urgent: true, must: true, minutes: 25, title: "s" }),
     );
     const classified = classify(stressors);
-    const blocks = buildSchedule({ classified, tillPicks: [], inputs });
+    const blocks = buildSchedule({ classified, atmPicks: [], inputs });
     const first = blocks[0];
     expect(new Date(first.start).getHours()).toBe(9);
     expect(new Date(first.start).getMinutes()).toBe(30);
@@ -131,7 +131,7 @@ describe("buildSchedule", () => {
       scheduledStart: "2026-05-01T15:00:00.000Z",
     });
     const classified = classify([pinned]);
-    const blocks = buildSchedule({ classified, tillPicks: [], inputs });
+    const blocks = buildSchedule({ classified, atmPicks: [], inputs });
     expect(blocks[0].start).toBe("2026-05-01T15:00:00.000Z");
   });
 });

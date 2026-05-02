@@ -5,7 +5,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import {
   saveDayInputsPartial,
-  pickFromTill,
+  pickFromAtm,
   setItemState,
 } from "@/lib/actions";
 import type { DayInputs, Item, Energy } from "@/lib/types";
@@ -16,26 +16,27 @@ const STEPS = [
   { n: 3, title: "Problem-solving" },
   { n: 4, title: "End of day" },
   { n: 5, title: "What's heavy" },
-  { n: 6, title: "From the till" },
+  { n: 6, title: "From the ATM" },
 ] as const;
 
 export function BuildWizard({
   step,
   inputs,
-  drawer,
-  till,
+  counterItems,
+  atmItems,
   stressors,
   timeSensitive,
   mustDo,
 }: {
   step: number;
   inputs: DayInputs;
-  drawer: Item[];
-  till: Item[];
+  counterItems: Item[];
+  atmItems: Item[];
   stressors: Item[];
   timeSensitive: Item[];
   mustDo: Item[];
 }) {
+  void counterItems;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -107,7 +108,7 @@ export function BuildWizard({
           />
         )}
         {step === 6 && (
-          <TillStep till={till} inputs={inputs} onFinish={finish} />
+          <AtmStep atm={atmItems} inputs={inputs} onFinish={finish} />
         )}
       </div>
 
@@ -411,17 +412,17 @@ function Empty() {
   return <div className="text-[12px] italic text-ink-mute">(nothing here)</div>;
 }
 
-// ─── Step 6 — Till picks ───────────────────────────────────────────────────
-function TillStep({
-  till,
+// ─── Step 6 — ATM withdrawals ─────────────────────────────────────────────
+function AtmStep({
+  atm,
   inputs,
   onFinish,
 }: {
-  till: Item[];
+  atm: Item[];
   inputs: DayInputs;
   onFinish: () => void;
 }) {
-  const matched = matchEnergy(till, inputs).slice(0, 8);
+  const matched = matchEnergy(atm, inputs).slice(0, 8);
   const allHaveCategory = matched.some((m) => !!m.category);
   const groups = new Map<string, Item[]>();
   for (const it of matched) {
@@ -431,7 +432,7 @@ function TillStep({
   }
   return (
     <Step
-      title="Pull anything from the till?"
+      title="Withdraw anything from the ATM?"
       hint="Energy-matched options for today. Pick what feels right — or none."
       submitLabel="OPEN THE VAULT"
       onSubmit={onFinish}
@@ -448,7 +449,7 @@ function TillStep({
             )}
             <div className="mt-2 space-y-2">
               {rows.map((it) => (
-                <TillRow key={it.id} item={it} />
+                <AtmRow key={it.id} item={it} />
               ))}
             </div>
           </div>
@@ -458,7 +459,7 @@ function TillStep({
   );
 }
 
-function TillRow({ item }: { item: Item }) {
+function AtmRow({ item }: { item: Item }) {
   const [picked, setPicked] = useState(item.todayOrder !== null);
   const [, startTransition] = useTransition();
   return (
@@ -467,7 +468,7 @@ function TillRow({ item }: { item: Item }) {
         const next = !picked;
         setPicked(next);
         startTransition(async () => {
-          await pickFromTill(item.id, next);
+          await pickFromAtm(item.id, next);
         });
       }}
       className={clsx(
@@ -500,7 +501,7 @@ function TillRow({ item }: { item: Item }) {
   );
 }
 
-function matchEnergy(till: Item[], inputs: DayInputs): Item[] {
+function matchEnergy(atm: Item[], inputs: DayInputs): Item[] {
   const sum = inputs.creative + inputs.probSolv;
   const lowEnergy = sum < 6;
   let creative = inputs.creative > inputs.probSolv;
@@ -510,7 +511,7 @@ function matchEnergy(till: Item[], inputs: DayInputs): Item[] {
     probSolv = inputs.tieBreak === "PROB-SOLV";
   }
   const avail = inputs.hoursAvailable * 60;
-  return till.filter((it) => {
+  return atm.filter((it) => {
     const m = it.minutes ?? 0;
     if (!m || m > avail) return false;
     const e = (it.energy as Energy | null) ?? null;

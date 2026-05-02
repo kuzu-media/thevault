@@ -73,7 +73,7 @@ export default async function BoxPage({
             <TriageChips
               itemId={it.id}
               targets={[
-                { label: "→ Docket", box: "DRAWER" },
+                { label: "→ Docket", box: "COUNTER" },
                 { label: "→ Drop", box: "DROP" },
               ]}
             />

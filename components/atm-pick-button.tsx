@@ -2,9 +2,9 @@
 import { useState, useTransition } from "react";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { pickFromTill } from "@/lib/actions";
+import { pickFromAtm } from "@/lib/actions";
 
-export function TillPickButton({
+export function AtmPickButton({
   itemId,
   picked: initial,
 }: {
@@ -20,8 +20,8 @@ export function TillPickButton({
         setPicked(next);
         startTransition(async () => {
           try {
-            await pickFromTill(itemId, next);
-            toast.success(next ? "Added to today." : "Removed from today.");
+            await pickFromAtm(itemId, next);
+            toast.success(next ? "Withdrawn for today." : "Returned to ATM.");
           } catch (e: any) {
             toast.error(e?.message ?? "Couldn't update.");
           }
@@ -35,7 +35,7 @@ export function TillPickButton({
         pending && "opacity-60",
       )}
     >
-      {picked ? "✓ Picked" : "+ Pick"}
+      {picked ? "✓ Withdrawn" : "+ Withdraw"}
     </button>
   );
 }

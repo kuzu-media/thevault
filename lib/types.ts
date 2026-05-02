@@ -4,13 +4,13 @@ export type ItemState = "upcoming" | "active" | "done" | "skipped" | "overrun";
 // loose string. Each energy carries a destination — see lib/categories.ts.
 export type Energy = string;
 
-export type CounterStation = "DROP" | "DOCKET" | "TILL" | "DRAWER";
+export type CounterStation = "DROP" | "DOCKET" | "ATM" | "COUNTER";
 
 export type BoxKey =
   | "DROP"
   | "DOCKET"
-  | "TILL"
-  | "DRAWER"
+  | "ATM"
+  | "COUNTER"
   | "ADMIN"
   | "PCS_IDEAS"
   | "PCS_DELEGATION"

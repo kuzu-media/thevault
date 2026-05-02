@@ -54,7 +54,7 @@ export function classify(items: Item[]): Classified {
 }
 
 // Till selection — port of pick_menu_choices.
-export function pickTillCandidates(
+export function pickAtmCandidates(
   tillItems: Item[],
   inputs: DayInputs,
 ): Item[] {
@@ -97,7 +97,7 @@ function continue_safe(): false {
 export type ScheduledBlock = {
   itemId: string;
   title: string;
-  bucket: Bucket | "TILL_PICK" | "CUSTOM";
+  bucket: Bucket | "ATM_PICK" | "CUSTOM";
   minutes: number;
   start: string; // ISO
   end: string; // ISO
@@ -108,7 +108,7 @@ export type ScheduledBlock = {
 
 export type BuildScheduleArgs = {
   classified: Classified;
-  tillPicks: Item[];
+  atmPicks: Item[];
   inputs: DayInputs;
   stressorAnchorMinutes?: number;
   now?: Date;
@@ -125,7 +125,7 @@ export type BuildScheduleArgs = {
 //   4. Pinned items keep their scheduledStart; everything else flows around them.
 export function buildSchedule({
   classified,
-  tillPicks,
+  atmPicks,
   inputs,
   stressorAnchorMinutes = 91,
   now,
@@ -141,7 +141,7 @@ export function buildSchedule({
     ...classified.mustDo,
   ];
   const adminMinutes = sumMinutes(adminPile);
-  const tillMinutes = sumMinutes(tillPicks);
+  const atmMinutes = sumMinutes(atmPicks);
 
   // Admin-first vs admin-anchored-to-end.
   const adminFirst =
@@ -153,22 +153,22 @@ export function buildSchedule({
   if (adminFirst) {
     cursor = new Date(dayStart);
     cursor = appendBlocks(blocks, adminPile, cursor);
-    cursor = appendBlocks(blocks, tillPicks, cursor, "TILL_PICK");
+    cursor = appendBlocks(blocks, atmPicks, cursor, "ATM_PICK");
   } else {
     // Till first, then admin lands at end-of-day.
     const adminStart = new Date(endOfDay.getTime() - adminMinutes * 60_000);
     cursor = new Date(dayStart);
-    cursor = appendBlocks(blocks, tillPicks, cursor, "TILL_PICK");
+    cursor = appendBlocks(blocks, atmPicks, cursor, "ATM_PICK");
     // If till + admin together overshoot, admin still anchors to end-of-day;
     // till blocks may overlap day_start (caller can flag overflow).
     cursor = new Date(adminStart);
     cursor = appendBlocks(blocks, adminPile, cursor);
-    void tillMinutes;
+    void atmMinutes;
   }
 
   // Apply pins last — items with their own scheduledStart override.
   for (const block of blocks) {
-    const source = [...adminPile, ...tillPicks].find(
+    const source = [...adminPile, ...atmPicks].find(
       (i) => i.id === block.itemId,
     );
     if (source?.pinned && source.scheduledStart) {

@@ -2,10 +2,10 @@ import clsx from "clsx";
 import { getItemsByBox } from "@/lib/data";
 import { EditableText } from "@/components/editable-text";
 import { NewItemRow } from "@/components/new-item-row";
-import { TillPickButton } from "@/components/till-pick-button";
+import { AtmPickButton } from "@/components/atm-pick-button";
 
-export default async function TillPage() {
-  const list = await getItemsByBox("TILL");
+export default async function AtmPage() {
+  const list = await getItemsByBox("ATM");
 
   const groups = new Map<string, typeof list>();
   for (const it of list) {
@@ -17,10 +17,10 @@ export default async function TillPage() {
   return (
     <div className="mx-auto max-w-[960px] px-4 py-8 md:px-10">
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
-        The Till
+        The ATM
       </h1>
       <p className="mt-1 text-[12px] text-ink-mute">
-        Pick what feels right. Nothing here is an obligation.
+        Withdraw what feels right. Nothing here is an obligation.
       </p>
 
       {[...groups.entries()].map(([cat, rows]) => (
@@ -70,7 +70,7 @@ export default async function TillPage() {
                     <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
                       {it.energy ?? "—"}
                     </span>
-                    <TillPickButton itemId={it.id} picked={picked} />
+                    <AtmPickButton itemId={it.id} picked={picked} />
                   </div>
                 </div>
               );
@@ -81,8 +81,8 @@ export default async function TillPage() {
 
       <div className="mt-10">
         <NewItemRow
-          box="TILL"
-          placeholder="+ New till option"
+          box="ATM"
+          placeholder="+ New ATM option"
         />
       </div>
     </div>

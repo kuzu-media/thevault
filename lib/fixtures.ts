@@ -6,10 +6,10 @@ import type { Item } from "./types";
 const now = () => new Date().toISOString();
 
 export const fixtureItems: Item[] = [
-  // DRAWER (admin pile)
+  // COUNTER (admin pile)
   {
     id: "fx-drawer-1",
-    box: "DRAWER",
+    box: "COUNTER",
     title: "File Q1 sales tax (PCS)",
     area: "ECO",
     minutes: 45,
@@ -21,7 +21,7 @@ export const fixtureItems: Item[] = [
   },
   {
     id: "fx-drawer-2",
-    box: "DRAWER",
+    box: "COUNTER",
     title: "Cruise contract follow-up",
     area: "SWB",
     minutes: 20,
@@ -33,7 +33,7 @@ export const fixtureItems: Item[] = [
   },
   {
     id: "fx-drawer-3",
-    box: "DRAWER",
+    box: "COUNTER",
     title: "Schedule mom's quarterly review",
     area: "FF",
     minutes: 30,
@@ -45,7 +45,7 @@ export const fixtureItems: Item[] = [
   },
   {
     id: "fx-drawer-4",
-    box: "DRAWER",
+    box: "COUNTER",
     title: "Update health insurance",
     area: "HEALTH",
     minutes: 25,
@@ -55,10 +55,10 @@ export const fixtureItems: Item[] = [
     createdAt: now(),
     modifiedAt: now(),
   },
-  // TILL (energy picks)
+  // ATM (energy picks)
   {
     id: "fx-till-1",
-    box: "TILL",
+    box: "ATM",
     title: "Outline Chapter 6 of the new book",
     energy: "CREATIVE",
     category: "Writing",
@@ -71,7 +71,7 @@ export const fixtureItems: Item[] = [
   },
   {
     id: "fx-till-2",
-    box: "TILL",
+    box: "ATM",
     title: "Reorganize PCS marketing calendar",
     energy: "PROB-SOLV",
     category: "Marketing",
@@ -84,7 +84,7 @@ export const fixtureItems: Item[] = [
   },
   {
     id: "fx-till-3",
-    box: "TILL",
+    box: "ATM",
     title: "Quick outreach to 3 cruise contacts",
     energy: "PROB-SOLV",
     category: "Sales",

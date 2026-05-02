@@ -144,8 +144,8 @@ export async function moveItemToBox(itemId: string, box: string) {
   await sb.from("items").update({ box }).eq("id", itemId);
   revalidatePath("/");
   revalidatePath("/drop");
-  revalidatePath("/drawer");
-  revalidatePath("/till");
+  revalidatePath("/counter");
+  revalidatePath("/atm");
   revalidatePath("/vault");
 }
 
@@ -163,7 +163,7 @@ export async function softDeleteItem(itemId: string) {
 // urgent/must flags + minutes). Box is the category and works on both.
 const TriagePatch = z.object({
   box_key: z.string().min(1).max(40),
-  dest: z.enum(["TILL", "DRAWER"]),
+  dest: z.enum(["ATM", "COUNTER"]),
   minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
   energy: z.string().max(40).nullable().optional(), // Till only
   urgent: z.coerce.boolean().optional(), // Drawer only
@@ -180,7 +180,7 @@ export async function triageDropItem(
     box: parsed.dest,
     minutes: parsed.minutes ?? null,
   };
-  if (parsed.dest === "DRAWER") {
+  if (parsed.dest === "COUNTER") {
     update.area = parsed.box_key;
     update.category = null;
     update.energy = null;
@@ -262,14 +262,14 @@ export async function reorderItems(itemIds: string[]) {
   revalidatePath("/", "layout");
 }
 
-// Till "pick" — mark for today by giving it a today_order rank.
-export async function pickFromTill(itemId: string, picked: boolean) {
+// ATM withdrawal — mark for today by giving it a today_order rank.
+export async function pickFromAtm(itemId: string, picked: boolean) {
   const { sb } = await requireUser();
   if (picked) {
     const { data: max } = await sb
       .from("items")
       .select("today_order")
-      .eq("box", "TILL")
+      .eq("box", "ATM")
       .not("today_order", "is", null)
       .order("today_order", { ascending: false })
       .limit(1)
@@ -280,11 +280,11 @@ export async function pickFromTill(itemId: string, picked: boolean) {
     await sb.from("items").update({ today_order: null }).eq("id", itemId);
   }
   revalidatePath("/");
-  revalidatePath("/till");
+  revalidatePath("/atm");
   revalidatePath("/build");
 }
 
-// Custom block on the Docket — creates a pinned, scheduled DRAWER item.
+// Custom block on the Docket — creates a pinned, scheduled COUNTER item.
 export async function addCustomBlock(opts: {
   title: string;
   minutes: number;
@@ -300,7 +300,7 @@ export async function addCustomBlock(opts: {
   await sb.from("items").insert({
     vault_id: vaultId,
     user_id: user.id,
-    box: "DRAWER",
+    box: "COUNTER",
     title: opts.title.trim(),
     minutes: opts.minutes,
     urgent: false,

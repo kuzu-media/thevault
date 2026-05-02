@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   classify,
   buildSchedule,
-  pickTillCandidates,
+  pickAtmCandidates,
 } from "@/lib/daily-plan";
 import { getItemsByBox, getDayInputs } from "@/lib/data";
 import { CustomBlockForm } from "@/components/custom-block-form";
@@ -24,9 +24,9 @@ const DAY_GREETINGS = ["Today", "What we're holding today", "Just for today"];
 
 export default async function DocketPage() {
   const date = todayISO();
-  const [drawer, till, dayRow] = await Promise.all([
-    getItemsByBox("DRAWER"),
-    getItemsByBox("TILL"),
+  const [counterItems, atmItems, dayRow] = await Promise.all([
+    getItemsByBox("COUNTER"),
+    getItemsByBox("ATM"),
     getDayInputs(date),
   ]);
 
@@ -44,14 +44,14 @@ export default async function DocketPage() {
     endOfDay: dayRow.end_of_day,
   };
 
-  const classified = classify(drawer);
-  // Only schedule Till items the user actually picked today.
-  const tillPicks = till
+  const classified = classify(counterItems);
+  // Only schedule ATM withdrawals the user actually picked today.
+  const atmPicks = atmItems
     .filter((i) => i.todayOrder !== null)
     .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0));
-  const blocks = buildSchedule({ classified, tillPicks, inputs });
+  const blocks = buildSchedule({ classified, atmPicks, inputs });
   const stateById = new Map(
-    [...drawer, ...till].map((i) => [i.id, i.state ?? "upcoming"]),
+    [...counterItems, ...atmItems].map((i) => [i.id, i.state ?? "upcoming"]),
   );
 
   const greeting = DAY_GREETINGS[new Date().getDate() % DAY_GREETINGS.length];

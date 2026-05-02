@@ -48,7 +48,7 @@ function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
   }
 }
 
-export default async function DrawerPage({
+export default async function CounterPage({
   searchParams,
 }: {
   searchParams: Promise<{ filter?: string; area?: string }>;
@@ -57,7 +57,7 @@ export default async function DrawerPage({
   const active = (sp.filter ?? "all") as Filter;
   const area = sp.area;
   const [all, boxes] = await Promise.all([
-    getItemsByBox("DRAWER"),
+    getItemsByBox("COUNTER"),
     getBoxes(),
   ]);
   const filtered = applyFilter(all, active, area);
@@ -66,7 +66,7 @@ export default async function DrawerPage({
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
-        The Drawer
+        The Counter
       </h1>
       <p className="mt-1 text-[12px] text-ink-mute">
         Obligations — what has to happen. Filter by stress, urgency, or area.
@@ -83,7 +83,7 @@ export default async function DrawerPage({
           {FILTERS.map((f) => (
             <Link
               key={f.key}
-              href={f.key === "all" ? "/drawer" : `/drawer?filter=${f.key}`}
+              href={f.key === "all" ? "/counter" : `/counter?filter=${f.key}`}
               className={clsx(
                 "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
                 active === f.key
@@ -100,7 +100,7 @@ export default async function DrawerPage({
           {areas.map((a) => (
             <Link
               key={a}
-              href={`/drawer?filter=byarea&area=${encodeURIComponent(a)}`}
+              href={`/counter?filter=byarea&area=${encodeURIComponent(a)}`}
               className={clsx(
                 "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
                 active === "byarea" && area === a
@@ -119,7 +119,7 @@ export default async function DrawerPage({
           items={filtered.map((it) => ({
             id: it.id,
             content: (
-              <DrawerRow
+              <CounterRow
                 item={it}
                 boxes={boxes.map((b) => ({ key: b.key, label: b.label }))}
               />
@@ -127,14 +127,14 @@ export default async function DrawerPage({
           }))}
         />
         <div className="mt-3">
-          <NewItemRow box="DRAWER" placeholder="+ New admin item" />
+          <NewItemRow box="COUNTER" placeholder="+ New admin item" />
         </div>
       </div>
     </div>
   );
 }
 
-function DrawerRow({
+function CounterRow({
   item,
   boxes,
 }: {

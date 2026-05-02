@@ -1,8 +1,8 @@
 // Wizard: build today, one question at a time.
 //
-// Tracy answers her familiar five morning questions, reviews what's stressful,
-// picks Till options, then lands on the Docket. Each step persists immediately
-// so a refresh / phone-pickup keeps her place.
+// Tracy answers her familiar five morning questions, reviews what's heavy,
+// withdraws from the ATM, then lands on the Docket. Each step persists
+// immediately so a refresh / phone-pickup keeps her place.
 
 import { redirect } from "next/navigation";
 import { getDayInputs, getItemsByBox, getSettings } from "@/lib/data";
@@ -25,10 +25,10 @@ export default async function BuildDayPage({
   const step = Math.max(1, Math.min(6, Number(stepParam ?? 1)));
   const date = todayISO();
 
-  const [dayRow, drawer, till, settings] = await Promise.all([
+  const [dayRow, counterItems, atmItems, settings] = await Promise.all([
     getDayInputs(date),
-    getItemsByBox("DRAWER"),
-    getItemsByBox("TILL"),
+    getItemsByBox("COUNTER"),
+    getItemsByBox("ATM"),
     getSettings(),
   ]);
 
@@ -46,18 +46,18 @@ export default async function BuildDayPage({
     endOfDay: dayRaw.end_of_day,
   };
 
-  const classified = classify(drawer);
+  const classified = classify(counterItems);
 
-  // Past the last step → bounce to home. Step 6 is itself a step (Till), not
-  // the exit — was a bug where Tracy never saw the Till.
+  // Past the last step → bounce to home. Step 6 is itself a step (ATM), not
+  // the exit.
   if (step > 6) redirect("/");
 
   return (
     <BuildWizard
       step={step}
       inputs={inputs}
-      drawer={drawer}
-      till={till}
+      counterItems={counterItems}
+      atmItems={atmItems}
       stressors={classified.stressors}
       timeSensitive={classified.timeSensitive}
       mustDo={classified.mustDo}

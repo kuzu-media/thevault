@@ -4,8 +4,8 @@
 // same time.
 //
 // Destination is its own axis, picked explicitly per item at triage time:
-//   TILL   — energy-matched pulls; carries `category`, `energy`, `minutes`
-//   DRAWER — obligations; carries `area`, `urgent`, `must`, `minutes`
+//   ATM     — energy-matched pulls; carries `category`, `energy`, `minutes`
+//   COUNTER — obligations; carries `area`, `urgent`, `must`, `minutes`
 //
 // Boxes and energies both live in `settings` JSONB so they're editable
 // from the Settings UI. No defaults — vaults start empty.
@@ -46,7 +46,7 @@ export async function getBoxes(): Promise<Box[]> {
   return raw.map(normalize).filter((b): b is Box => b !== null);
 }
 
-export type Destination = "TILL" | "DRAWER";
+export type Destination = "ATM" | "COUNTER";
 
 // Energies are pure metadata — they live on Till items, used by the daily
 // energy-matching to decide what to pick today. Drawer items don't carry
