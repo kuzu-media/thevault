@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import { saveBoxConfig } from "@/lib/actions";
 import type { Box } from "@/lib/categories";
 
@@ -90,8 +91,19 @@ export function BoxesEditor({
     }));
     setBoxes(cleaned);
     startTransition(async () => {
-      await onSave(cleaned);
-      setSavedAt(Date.now());
+      try {
+        await onSave(cleaned);
+        setSavedAt(Date.now());
+      } catch (e: any) {
+        // Surface the failure instead of letting it bubble as an
+        // unhandledRejection. Most common cause: a settings column the DB
+        // doesn't have yet (run the latest migration).
+        toast.error(
+          e?.message
+            ? `Couldn't save: ${e.message}`
+            : `Couldn't save ${plural.toLowerCase()}.`,
+        );
+      }
     });
   }
 

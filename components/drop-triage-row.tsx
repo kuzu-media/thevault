@@ -156,9 +156,13 @@ export function DropTriageRow({
   function dismiss() {
     // No confirm — soft-delete is reversible from the DB. Speed > confirmation.
     startTransition(async () => {
-      await softDeleteItem(item.id);
-      toast.success("Dismissed.");
-      window.dispatchEvent(new CustomEvent("vault:drop-advance"));
+      try {
+        await softDeleteItem(item.id);
+        toast.success("Dismissed.");
+        window.dispatchEvent(new CustomEvent("vault:drop-advance"));
+      } catch (e: any) {
+        toast.error(e?.message ?? "Couldn't dismiss.");
+      }
     });
   }
 

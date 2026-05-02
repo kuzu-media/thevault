@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import { saveEnergyConfig } from "@/lib/actions";
 import type { EnergyType } from "@/lib/categories";
 
@@ -68,8 +69,12 @@ export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
     }));
     setEnergies(cleaned);
     startTransition(async () => {
-      await saveEnergyConfig(cleaned);
-      setSavedAt(Date.now());
+      try {
+        await saveEnergyConfig(cleaned);
+        setSavedAt(Date.now());
+      } catch (e: any) {
+        toast.error(e?.message ?? "Couldn't save energies.");
+      }
     });
   }
 
