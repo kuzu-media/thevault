@@ -24,6 +24,7 @@ export function SealedScreen({
   const router = useRouter();
   const [time, setTime] = useState(() => formatNow());
   const [text, setText] = useState("");
+  const [depositPending, setDepositPending] = useState(false);
   const [pending, startTransition] = useTransition();
   const [sealMessageVisible, setSealMessageVisible] = useState(!animate);
 
@@ -42,20 +43,21 @@ export function SealedScreen({
     return () => clearTimeout(t);
   }, [animate]);
 
-  function deposit(e: React.FormEvent) {
+  async function deposit(e: React.FormEvent) {
     e.preventDefault();
     const t = text.trim();
     if (!t) return;
-    startTransition(async () => {
-      try {
-        await depositText(t, "sealed");
-        toast.success("Deposited.");
-        setText("");
-        router.refresh();
-      } catch {
-        toast.error("Couldn't save.");
-      }
-    });
+    setDepositPending(true);
+    try {
+      await depositText(t, "sealed");
+      toast.success("Deposited.");
+      setText("");
+      router.refresh();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save.");
+    } finally {
+      setDepositPending(false);
+    }
   }
 
   function unseal() {
@@ -129,21 +131,33 @@ export function SealedScreen({
 
           {/* Deposit slot — works while sealed */}
           {sealed && (
-            <form
-              onSubmit={deposit}
-              className="mt-8 flex w-full items-center gap-2 rounded-sm border border-vault-line bg-vault-panel/40 px-4 py-2"
-            >
-              <MailSlotIcon />
-              <input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Deposit slot still works while sealed…"
-                className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-mute"
-              />
-              <span className="hidden font-mono text-[10px] tracking-[0.2em] text-ink-mute md:inline">
-                ⌘K · DEPOSIT
-              </span>
-            </form>
+            <div className="mt-8 w-full max-w-[520px]">
+              <form
+                onSubmit={(e) => void deposit(e)}
+                className="flex items-center gap-2 rounded-sm border border-vault-line bg-vault-panel/40 px-4 py-2"
+              >
+                <MailSlotIcon />
+                <input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Deposit slot still works while sealed…"
+                  autoComplete="off"
+                  enterKeyHint="send"
+                  disabled={depositPending}
+                  className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-ink-mute disabled:opacity-60"
+                />
+                <button
+                  type="submit"
+                  disabled={depositPending || !text.trim()}
+                  className="shrink-0 rounded-sm border border-brass/50 bg-brass/15 px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] text-brass hover:bg-brass/25 disabled:pointer-events-none disabled:opacity-40"
+                >
+                  {depositPending ? "…" : "DEPOSIT"}
+                </button>
+              </form>
+              <p className="mt-2 hidden text-center font-mono text-[10px] tracking-[0.2em] text-ink-mute md:block">
+                ⌘K opens the mail slot anywhere.
+              </p>
+            </div>
           )}
 
           {/* Actions */}
