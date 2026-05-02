@@ -42,6 +42,9 @@ export function DropTriageRow({
   const [must, setMust] = useState(item.must);
   const [pending, startTransition] = useTransition();
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const boxSelectRef = useRef<HTMLSelectElement>(null);
+  const minutesInputRef = useRef<HTMLInputElement>(null);
+  const energySelectRef = useRef<HTMLSelectElement>(null);
   const [focused, setFocused] = useState(false);
 
   // Track whether the focused element lives inside this row so per-row
@@ -85,13 +88,46 @@ export function DropTriageRow({
   useShortcut("enter", () => send(), {
     label: "Send",
     group: "Drop",
-    // Allow in inputs so Enter from the title field also sends.
+    // Only at row-level (don't conflict with EditableText's blur-on-Enter).
+    options: { enabled: focused },
+  });
+  useShortcut("b", () => boxSelectRef.current?.focus(), {
+    label: "Focus box dropdown",
+    group: "Drop",
+    options: { enabled: focused },
+  });
+  useShortcut("t", () => minutesInputRef.current?.focus(), {
+    label: "Focus minutes",
+    group: "Drop",
+    options: { enabled: focused },
+  });
+  useShortcut(
+    "e",
+    () => dest === "ATM" && energySelectRef.current?.focus(),
+    {
+      label: "Focus energy",
+      group: "Drop",
+      options: { enabled: focused && dest === "ATM" },
+    },
+  );
+  useShortcut("x", () => dismiss(), {
+    label: "Dismiss thought",
+    group: "Drop",
+    options: { enabled: focused },
+  });
+  // Escape from inside a field returns focus to the row wrapper, so j/k
+  // work again immediately.
+  useShortcut("escape", () => wrapperRef.current?.focus(), {
+    label: "Back to row",
+    group: "Drop",
     options: { enabled: focused, allowInInputs: true },
   });
 
   function send() {
     if (!boxKey) {
       toast.error("Pick a box first.");
+      // Drop the user into the box select so they can pick by keyboard.
+      boxSelectRef.current?.focus();
       return;
     }
     startTransition(async () => {
@@ -110,6 +146,7 @@ export function DropTriageRow({
             ? `Sent to The Counter · ${label}.`
             : `Sent to The ATM · ${label}.`,
         );
+        window.dispatchEvent(new CustomEvent("vault:drop-advance"));
       } catch (e: any) {
         toast.error(e?.message ?? "Couldn't send.");
       }
@@ -117,19 +154,26 @@ export function DropTriageRow({
   }
 
   function dismiss() {
-    if (!confirm("Dismiss this thought?")) return;
+    // No confirm — soft-delete is reversible from the DB. Speed > confirmation.
     startTransition(async () => {
       await softDeleteItem(item.id);
       toast.success("Dismissed.");
+      window.dispatchEvent(new CustomEvent("vault:drop-advance"));
     });
   }
 
   return (
     <div
       ref={wrapperRef}
-      tabIndex={-1}
+      tabIndex={0}
+      data-drop-row="true"
       className={clsx(
-        "group relative overflow-hidden rounded-sm border bg-vault-panel/40 transition hover:bg-vault-panel/60 focus-within:ring-1 focus-within:ring-brass/30",
+        "group relative overflow-hidden rounded-sm border bg-vault-panel/40 transition hover:bg-vault-panel/60 outline-none",
+        // The whole row is focusable. When the wrapper itself is focused
+        // (j/k navigation), give it a strong brass ring so Tracy sees
+        // exactly which thought is "armed". When focus is on a child
+        // input, dim it.
+        "focus:ring-2 focus:ring-brass focus-within:ring-1 focus-within:ring-brass/40",
         dest === "COUNTER" ? "border-rust/30" : "border-teal/30",
       )}
     >
@@ -152,6 +196,7 @@ export function DropTriageRow({
           placeholder="(no title)"
         />
         <select
+          ref={boxSelectRef}
           value={boxKey}
           onChange={(e) => setBoxKey(e.target.value)}
           className={clsx(
@@ -174,10 +219,15 @@ export function DropTriageRow({
 
       {/* Line 2 — metadata + actions, anchored right */}
       <div className="flex flex-wrap items-center gap-3 border-t border-vault-line/30 bg-vault-bg/20 pl-6 pr-3 py-1.5">
-        <Minutes value={minutes} onChange={setMinutes} />
+        <Minutes
+          value={minutes}
+          onChange={setMinutes}
+          inputRef={minutesInputRef}
+        />
 
         {dest === "ATM" && (
           <select
+            ref={energySelectRef}
             value={energy}
             onChange={(e) => setEnergy(e.target.value)}
             className={clsx(
@@ -311,9 +361,11 @@ function SegmentButton({
 function Minutes({
   value,
   onChange,
+  inputRef,
 }: {
   value: string;
   onChange: (v: string) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   return (
     <span
@@ -331,6 +383,7 @@ function Minutes({
         ⏱
       </span>
       <input
+        ref={inputRef}
         type="number"
         min={0}
         max={1440}

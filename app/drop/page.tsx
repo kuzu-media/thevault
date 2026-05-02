@@ -4,6 +4,8 @@ import { getBoxes, getEnergies } from "@/lib/categories";
 import { NewItemRow } from "@/components/new-item-row";
 import { SortableList } from "@/components/sortable-list";
 import { DropTriageRow } from "@/components/drop-triage-row";
+import { DropKeyboardController } from "@/components/drop-keyboard-controller";
+import { Kbd } from "@/components/kbd";
 
 export default async function DropPage() {
   const [list, boxes, energies] = await Promise.all([
@@ -55,7 +57,34 @@ export default async function DropPage() {
         </div>
       )}
 
-      <div className="mt-6">
+      {ready && list.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-sm border border-vault-line/40 bg-vault-panel/20 px-3 py-2 font-mono text-[10px] tracking-wider text-ink-mute">
+          <span className="text-brass">Keyboard:</span>
+          <span className="flex items-center gap-1.5">
+            <Kbd keys="j" size="xs" /> <Kbd keys="k" size="xs" /> next/prev
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Kbd keys="1" size="xs" /> ATM <Kbd keys="2" size="xs" /> Counter
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Kbd keys="b" size="xs" /> box <Kbd keys="t" size="xs" /> time{" "}
+            <Kbd keys="e" size="xs" /> energy
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Kbd keys="u" size="xs" /> urgent <Kbd keys="m" size="xs" /> must
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Kbd keys="enter" size="xs" /> send <Kbd keys="x" size="xs" />{" "}
+            dismiss
+          </span>
+          <span className="ml-auto opacity-70">
+            <Kbd keys="?" size="xs" /> all shortcuts
+          </span>
+        </div>
+      )}
+
+      <div className="mt-3">
+        <DropKeyboardController />
         <SortableList
           items={list.map((it) => ({
             id: it.id,
