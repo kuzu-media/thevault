@@ -30,7 +30,7 @@ export default async function ConnectPage() {
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
         Settings.
       </h1>
-      <p className="mt-1 text-[12px] text-ink-mute">
+      <p className="mt-1 text-[13px] text-ink-dim">
         Connect The Vault to your iPhone and Mac so capture is one tap or one
         word away.
       </p>

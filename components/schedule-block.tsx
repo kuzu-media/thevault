@@ -1,6 +1,7 @@
 "use client";
 import clsx from "clsx";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { setItemState, setItemPinned, startItem } from "@/lib/actions";
 import type { ScheduledBlock } from "@/lib/daily-plan";
 
@@ -56,10 +57,22 @@ export function ScheduleBlock({
         )}
       </div>
       <button
-        title={isDone ? "Mark not done" : "Mark done"}
+        title={
+          isDone
+            ? "Mark not done"
+            : "Mark done — the item stays in your vault"
+        }
         onClick={() =>
           startTransition(async () => {
-            await setItemState(block.itemId, isDone ? "upcoming" : "done");
+            try {
+              await setItemState(
+                block.itemId,
+                isDone ? "upcoming" : "done",
+              );
+              if (!isDone) toast.success("Done. Still safe in your vault.");
+            } catch (e: any) {
+              toast.error(e?.message ?? "Couldn't mark done.");
+            }
           })
         }
         className={clsx(

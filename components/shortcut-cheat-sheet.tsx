@@ -59,7 +59,7 @@ export function ShortcutCheatSheet() {
           </button>
         </div>
         <h2 className="serif-h mt-2 text-[24px] text-ink">Use the keyboard.</h2>
-        <p className="mt-1 text-[12px] text-ink-mute">
+        <p className="mt-1 text-[13px] text-ink-dim">
           Most things in The Vault have a key. Press <Kbd keys="?" /> any time to see this list.
         </p>
 

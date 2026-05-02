@@ -22,7 +22,7 @@ export default async function SettingsPage() {
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
         Settings.
       </h1>
-      <p className="mt-1 text-[12px] text-ink-mute">
+      <p className="mt-1 text-[13px] text-ink-dim">
         How the vault behaves. The tabs below cover members, the categories
         you file into, the energies that power ATM matching, and how to
         connect your phone and Mac.
@@ -96,7 +96,7 @@ export default async function SettingsPage() {
           </Row>
           <Row
             label="Stressor anchor threshold"
-            hint="Below this, admin anchors to end-of-day. At or above, admin runs first."
+            hint="When today's urgent+must minutes hit this, admin runs first thing in the morning. Below it, ATM picks come first and admin lands after."
           >
             <NumberField
               name="stressor_anchor_minutes"
@@ -151,7 +151,7 @@ export default async function SettingsPage() {
       <div className="mt-12">
         <Group title="Capture (Apple Shortcut)">
           <CaptureTokenRow token={row?.capture_token ?? null} />
-          <div className="border-t border-vault-line/40 px-4 py-3 text-[12px] text-ink-mute">
+          <div className="border-t border-vault-line/40 px-4 py-3 text-[13px] text-ink-dim">
             Want a step-by-step?{" "}
             <Link href="/settings/connect" className="text-brass hover:underline">
               Connect your iPhone &amp; Mac →
@@ -196,7 +196,7 @@ function Row({
       <div className="min-w-0 flex-1">
         <div className="text-ink">{label}</div>
         {hint && (
-          <div className="mt-0.5 text-[12px] text-ink-mute">{hint}</div>
+          <div className="mt-0.5 text-[13px] text-ink-dim">{hint}</div>
         )}
       </div>
       <div className="shrink-0">{children}</div>

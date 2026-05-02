@@ -147,6 +147,27 @@ describe("buildSchedule", () => {
     expect(blocks[0].title).toBe("Q1");
   });
 
+  it("clamps to `now` when (re)building mid-day so blocks aren't in the past", () => {
+    const classified = classify([
+      baseItem({ urgent: false, must: true, minutes: 30, title: "M1" }),
+    ]);
+    // Configured dayStart is 9:30 AM (16:30 − 7h); pretend it's 11 AM.
+    const now = new Date(2026, 4, 1, 11, 0, 0);
+    const blocks = buildSchedule({ classified, atmPicks: [], inputs, now });
+    expect(new Date(blocks[0].start).getHours()).toBe(11);
+    expect(new Date(blocks[0].start).getMinutes()).toBe(0);
+  });
+
+  it("ignores `now` when it's a different day (e.g. building tonight for tomorrow)", () => {
+    const classified = classify([
+      baseItem({ urgent: false, must: true, minutes: 30, title: "M1" }),
+    ]);
+    const now = new Date(2026, 3, 30, 22, 0, 0); // Apr 30 10 PM
+    const blocks = buildSchedule({ classified, atmPicks: [], inputs, now });
+    expect(new Date(blocks[0].start).getHours()).toBe(9);
+    expect(new Date(blocks[0].start).getMinutes()).toBe(30);
+  });
+
   it("respects pinned scheduledStart", () => {
     const pinned = baseItem({
       urgent: false,

@@ -57,7 +57,9 @@ export default async function DocketPage() {
   const atmPicks = atmItems
     .filter((i) => i.todayOrder !== null)
     .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0));
-  const blocks = buildSchedule({ classified, atmPicks, inputs });
+  // Pass `now` so the schedule clamps to the current time when she
+  // (re)builds the day mid-morning — no blocks in the past.
+  const blocks = buildSchedule({ classified, atmPicks, inputs, now: new Date() });
   const stateById = new Map(
     [...counterItems, ...atmItems].map((i) => [i.id, i.state ?? "upcoming"]),
   );
@@ -77,7 +79,7 @@ export default async function DocketPage() {
           <div className="serif-h text-[28px] text-ink md:text-[32px]">
             {greeting}.
           </div>
-          <p className="mt-1 text-[12px] text-ink-mute">
+          <p className="mt-1 text-[13px] text-ink-dim">
             {fmt12(blocks[0]?.start)} – {fmt12HHMM(inputs.endOfDay, inputs.date)}
           </p>
         </div>

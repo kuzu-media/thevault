@@ -56,7 +56,7 @@ export default async function BoxesSettingsPage() {
         life areas, businesses, projects. The same box can hold Counter items
         (obligations) and ATM items (energy-matched pulls).
       </p>
-      <p className="mt-1 text-[12px] text-ink-mute">
+      <p className="mt-1 text-[13px] text-ink-dim">
         The <strong>label</strong> is what you see in dropdowns. The{" "}
         <strong>meta</strong> is an optional subtitle (shown under the label
         on box cards). The <strong>key</strong> auto-derives from the label

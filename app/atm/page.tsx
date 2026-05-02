@@ -19,7 +19,7 @@ export default async function AtmPage() {
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
         The ATM
       </h1>
-      <p className="mt-1 text-[12px] text-ink-mute">
+      <p className="mt-1 text-[13px] text-ink-dim">
         Withdraw what feels right. Nothing here is an obligation.
       </p>
 

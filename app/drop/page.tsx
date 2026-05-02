@@ -21,7 +21,7 @@ export default async function DropPage() {
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
         The Drop
       </h1>
-      <p className="mt-1 text-[12px] text-ink-mute">
+      <p className="mt-1 text-[13px] text-ink-dim">
         {ready
           ? "Triage each thought — pick a box, set time/flags/energy, send."
           : "Untriaged captures. Set up your boxes and energies before triaging."}

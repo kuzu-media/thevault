@@ -39,7 +39,7 @@ export default async function VaultInteriorPage() {
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
         The vault.
       </h1>
-      <p className="mt-1 text-[12px] text-ink-mute">
+      <p className="mt-1 text-[13px] text-ink-dim">
         Storage. Long-term places for ideas, plans, and reference.
       </p>
 

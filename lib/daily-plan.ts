@@ -143,9 +143,18 @@ export function buildSchedule({
   now,
 }: BuildScheduleArgs): ScheduledBlock[] {
   const endOfDay = parseTimeOnDate(inputs.endOfDay, inputs.date);
-  const dayStart = new Date(
+  const configuredStart = new Date(
     endOfDay.getTime() - inputs.hoursAvailable * 60 * 60_000,
   );
+  // Don't schedule into the past. If she runs Build Day at 11 AM with a
+  // 9:30 AM configured start, the first block lands at 11 AM. The
+  // configured dayStart still wins when "now" is before it (e.g. she
+  // builds at 7 AM the night before for the next morning).
+  const nowOnDate = now ?? new Date();
+  const dayStart =
+    nowOnDate > configuredStart && sameLocalDate(nowOnDate, configuredStart)
+      ? nowOnDate
+      : configuredStart;
 
   // adminPile = every counter item on today's plan, in priority order.
   // otherAdmin (neither urgent nor must) was being dropped from the
@@ -175,6 +184,7 @@ export function buildSchedule({
     cursor = appendBlocks(blocks, adminPile, cursor);
   }
   void endOfDay;
+  void nowOnDate;
 
   // Apply pins last — items with their own scheduledStart override.
   for (const block of blocks) {
@@ -196,6 +206,14 @@ export function buildSchedule({
 
 function sumMinutes(items: Item[]): number {
   return items.reduce((a, b) => a + (b.minutes ?? 0), 0);
+}
+
+function sameLocalDate(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function appendBlocks(

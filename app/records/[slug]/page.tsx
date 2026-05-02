@@ -62,7 +62,7 @@ export default async function RecordPage({
       <div className="eyebrow">— Record —</div>
       <h1 className="serif-h mt-2 text-[40px] leading-tight">{meta.label}</h1>
       {meta.meta && (
-        <p className="mt-1 text-[12px] text-ink-mute">{meta.meta}</p>
+        <p className="mt-1 text-[13px] text-ink-dim">{meta.meta}</p>
       )}
       <div className="mt-8">
         <RecordsEditor

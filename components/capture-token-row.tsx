@@ -31,7 +31,7 @@ export function CaptureTokenRow({ token }: { token: string | null }) {
       <div className="flex items-start justify-between gap-6">
         <div>
           <div className="text-ink">Bearer token</div>
-          <div className="text-[12px] text-ink-mute">
+          <div className="text-[13px] text-ink-dim">
             Used by the iPhone Shortcut to deposit. Treat like a password.
           </div>
         </div>

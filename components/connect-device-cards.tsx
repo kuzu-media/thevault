@@ -129,7 +129,7 @@ function Card({
         <div className="min-w-0">
           <div className="eyebrow text-brass">— {badge} —</div>
           <h2 className="serif-h mt-1 text-[20px] text-ink">{title}</h2>
-          <p className="mt-0.5 text-[12px] text-ink-mute">{subtitle}</p>
+          <p className="mt-0.5 text-[13px] text-ink-dim">{subtitle}</p>
         </div>
         {done && (
           <span className="shrink-0 rounded-sm border border-teal/40 bg-teal/10 px-2 py-0.5 font-mono text-[10px] tracking-wider text-teal">
@@ -509,7 +509,7 @@ curl -s -X POST '${apiUrl}' \\
           <h3 className="font-mono text-[10px] tracking-wider text-brass">
             OPTION B · Raycast script command
           </h3>
-          <p className="mt-1 text-[12px] text-ink-mute">
+          <p className="mt-1 text-[13px] text-ink-dim">
             Create → Script Command → paste this. Bind a hotkey in Raycast
             preferences.
           </p>
@@ -520,7 +520,7 @@ curl -s -X POST '${apiUrl}' \\
           <summary className="cursor-pointer font-mono text-[10px] tracking-wider text-ink-mute hover:text-brass">
             OPTION C · Automator Quick Action (system-wide)
           </summary>
-          <p className="mt-2 text-[12px] text-ink-mute">
+          <p className="mt-2 text-[13px] text-ink-dim">
             Automator → New Quick Action → Workflow receives <em>text</em> in
             any application → drag <strong>Run Shell Script</strong> → paste
             below. Save as &ldquo;Drop in Vault&rdquo;. Then System Settings →
@@ -544,7 +544,7 @@ function BookmarkletCard({ baseUrl }: { baseUrl: string }) {
       title="Drag to your bookmark bar."
       subtitle="One click on any page deposits the title + URL (or selected text) into The Drop."
     >
-      <p className="text-[12px] text-ink-mute">
+      <p className="text-[13px] text-ink-dim">
         Drag the gold button below onto your bookmarks bar. It works in any
         browser on any device.
       </p>

@@ -336,9 +336,9 @@ function ReviewStep({
       hint={
         total === 0
           ? "Nothing pulled up. Today is yours."
-          : "Skim. Set anything aside that isn't really today."
+          : "Tap + TODAY on the ones you want to schedule. Anything you don't add stays in the Counter for another day."
       }
-      submitLabel="THESE LOOK RIGHT"
+      submitLabel="ON TO THE ATM →"
       onSubmit={onNext}
     >
       <Group label="Stressors" tone="rust">

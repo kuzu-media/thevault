@@ -69,7 +69,7 @@ export default async function CounterPage({
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
         The Counter
       </h1>
-      <p className="mt-1 text-[12px] text-ink-mute">
+      <p className="mt-1 text-[13px] text-ink-dim">
         Obligations — what has to happen. Filter by stress, urgency, or area.
       </p>
 

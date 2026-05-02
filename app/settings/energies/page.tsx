@@ -56,7 +56,7 @@ export default async function EnergiesSettingsPage() {
         the daily plan to match what you can pull today. Counter items don't
         use energy; they go by urgency and must-do flags.
       </p>
-      <p className="mt-1 text-[12px] text-ink-mute">
+      <p className="mt-1 text-[13px] text-ink-dim">
         The <strong>label</strong> is what you see in dropdowns. The{" "}
         <strong>key</strong> auto-derives from the label as you type — only
         edit it directly if you really need to.

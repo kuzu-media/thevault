@@ -39,7 +39,7 @@ export default async function OnboardingPage() {
         className="mt-10 rounded-sm border border-vault-line bg-vault-panel/40 p-5"
       >
         <h2 className="serif-h text-[22px]">Start a new vault</h2>
-        <p className="mt-1 text-[12px] text-ink-mute">
+        <p className="mt-1 text-[13px] text-ink-dim">
           You&rsquo;ll be the owner. You can invite others under Settings → Members.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
