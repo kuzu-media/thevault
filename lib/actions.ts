@@ -64,13 +64,11 @@ export async function saveDayInputsPartial(
   if (!vaultId) throw new Error("No vault");
   const parsed = PartialDayInputs.parse(patch);
 
-  // First time the wizard runs today? Wipe yesterday's `today_order` so
-  // picks reset to a clean slate. We detect "first time" by the absence
-  // of a day_inputs row for today — once it exists, subsequent saves
-  // (mid-day rebuilds, edits) leave today's picks alone.
   const { data: existing } = await sb
     .from("day_inputs")
-    .select("date")
+    .select(
+      "hours_available, creative, prob_solv, tie_break, end_of_day",
+    )
     .eq("vault_id", vaultId)
     .eq("date", parsed.date)
     .maybeSingle();
@@ -83,33 +81,36 @@ export async function saveDayInputsPartial(
       .not("today_order", "is", null);
   }
 
-  // Upsert with sensible defaults so the row exists after the very first step.
-  await sb.from("day_inputs").upsert(
-    {
-      vault_id: vaultId,
-      date: parsed.date,
-      hours_available: parsed.hours_available ?? 7,
-      creative: parsed.creative ?? 3,
-      prob_solv: parsed.prob_solv ?? 3,
-      tie_break: parsed.tie_break ?? "PROB-SOLV",
-      end_of_day: parsed.end_of_day ?? "16:30",
-    },
-    { onConflict: "vault_id,date", ignoreDuplicates: false },
-  );
+  const { data: settingsRow } = await sb
+    .from("settings")
+    .select("default_hours")
+    .eq("vault_id", vaultId)
+    .maybeSingle();
+  const settingsHours = Number(settingsRow?.default_hours ?? 7);
 
-  // Then patch only the fields the caller passed (so we don't overwrite
-  // earlier answers with defaults on subsequent steps).
-  const onlyProvided: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(parsed)) {
-    if (v !== undefined && k !== "date") onlyProvided[k] = v;
-  }
-  if (Object.keys(onlyProvided).length) {
-    await sb
-      .from("day_inputs")
-      .update(onlyProvided)
-      .eq("vault_id", vaultId)
-      .eq("date", parsed.date);
-  }
+  const hoursVal =
+    parsed.hours_available ??
+    (existing?.hours_available != null
+      ? Number(existing.hours_available)
+      : settingsHours);
+
+  const merged = {
+    vault_id: vaultId,
+    date: parsed.date,
+    hours_available: hoursVal,
+    creative: Number(parsed.creative ?? existing?.creative ?? 3),
+    prob_solv: Number(parsed.prob_solv ?? existing?.prob_solv ?? 3),
+    tie_break:
+      (parsed.tie_break ?? existing?.tie_break ?? "PROB-SOLV") as
+        | "CREATIVE"
+        | "PROB-SOLV",
+    end_of_day: parsed.end_of_day ?? existing?.end_of_day ?? "16:30",
+  };
+
+  await sb.from("day_inputs").upsert(merged, {
+    onConflict: "vault_id,date",
+    ignoreDuplicates: false,
+  });
   revalidatePath("/", "layout");
 }
 

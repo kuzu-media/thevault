@@ -3,6 +3,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
+import { toast } from "sonner";
+import { parseTimeOnDate } from "@/lib/daily-plan";
 import { saveDayInputsPartial, pickFromAtm } from "@/lib/actions";
 import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 import { TodayToggle } from "./today-toggle";
@@ -11,12 +13,9 @@ import { useShortcut } from "@/lib/shortcuts";
 import { Kbd } from "./kbd";
 
 const STEPS = [
-  { n: 1, title: "Hours" },
-  { n: 2, title: "Creative" },
-  { n: 3, title: "Problem-solving" },
-  { n: 4, title: "End of day" },
-  { n: 5, title: "What's heavy" },
-  { n: 6, title: "From the ATM" },
+  { n: 1, title: "Today" },
+  { n: 2, title: "Counter" },
+  { n: 3, title: "ATM" },
 ] as const;
 
 export function BuildWizard({
@@ -65,11 +64,18 @@ export function BuildWizard({
     group: "Build day",
     options: { allowInInputs: true },
   });
-  useShortcut("enter", () => (isLast ? finish() : next()), {
-    label: "Continue",
-    group: "Build day",
-    options: { enabled: step === 5 || step === 6 },
-  });
+  useShortcut(
+    "enter",
+    () => {
+      if (step === 2) next();
+      else if (step === 3) finish();
+    },
+    {
+      label: "Continue",
+      group: "Build day",
+      options: { enabled: step === 2 || step === 3 },
+    },
+  );
 
   return (
     <div className="relative mx-auto flex min-h-[80vh] max-w-[640px] flex-col px-4 py-12 md:px-10">
@@ -77,8 +83,8 @@ export function BuildWizard({
 
       <div className="mt-12 flex-1">
         {step === 1 && (
-          <HoursStep
-            initial={inputs.hoursAvailable}
+          <DaySetupStep
+            inputs={inputs}
             date={inputs.date}
             onNext={next}
             pending={pending}
@@ -86,35 +92,6 @@ export function BuildWizard({
           />
         )}
         {step === 2 && (
-          <EnergyStep
-            initial={inputs.creative}
-            date={inputs.date}
-            onNext={next}
-            pending={pending}
-            startTransition={startTransition}
-          />
-        )}
-        {step === 3 && (
-          <ProbSolvStep
-            initial={inputs.probSolv}
-            tieInitial={inputs.tieBreak}
-            creative={inputs.creative}
-            date={inputs.date}
-            onNext={next}
-            pending={pending}
-            startTransition={startTransition}
-          />
-        )}
-        {step === 4 && (
-          <EndOfDayStep
-            initial={inputs.endOfDay}
-            date={inputs.date}
-            onNext={next}
-            pending={pending}
-            startTransition={startTransition}
-          />
-        )}
-        {step === 5 && (
           <ReviewStep
             stressors={stressors}
             timeSensitive={timeSensitive}
@@ -122,7 +99,7 @@ export function BuildWizard({
             onNext={next}
           />
         )}
-        {step === 6 && (
+        {step === 3 && (
           <AtmStep atm={atmItems} inputs={inputs} onFinish={finish} />
         )}
       </div>
@@ -168,163 +145,138 @@ function Progress({ step, total }: { step: number; total: number }) {
   );
 }
 
-// ─── Step 1 — hours ─────────────────────────────────────────────────────────
-function HoursStep({
-  initial,
+// ─── Step 1 — energies + end time (hours come from Settings → General) ─────
+function DaySetupStep({
+  inputs,
   date,
   onNext,
   pending,
   startTransition,
 }: {
-  initial: number;
+  inputs: DayInputs;
   date: string;
   onNext: () => void;
   pending: boolean;
   startTransition: (fn: () => Promise<void>) => void;
 }) {
-  const [v, setV] = useState(initial);
-  return (
-    <Step
-      title="How much time do you have today?"
-      hint="For tasks and projects. Skip meetings, lunch, errands."
-      pending={pending}
-      onSubmit={() =>
-        startTransition(async () => {
-          await saveDayInputsPartial({ date, hours_available: v });
-          onNext();
-        })
-      }
-    >
-      <NumberPlusMinus value={v} onChange={setV} suffix="hrs" min={0} max={16} step={0.5} />
-    </Step>
-  );
-}
+  const [creative, setCreative] = useState(inputs.creative);
+  const [probSolv, setProbSolv] = useState(inputs.probSolv);
+  const [tie, setTie] = useState(inputs.tieBreak);
+  const [endOfDay, setEndOfDay] = useState(inputs.endOfDay);
+  const equal = creative === probSolv;
 
-// ─── Step 2 — creative ─────────────────────────────────────────────────────
-function EnergyStep({
-  initial,
-  date,
-  onNext,
-  pending,
-  startTransition,
-}: {
-  initial: number;
-  date: string;
-  onNext: () => void;
-  pending: boolean;
-  startTransition: (fn: () => Promise<void>) => void;
-}) {
-  const [v, setV] = useState(initial);
-  return (
-    <Step
-      title="How creative do you feel?"
-      hint="One to five. Trust the gut."
-      pending={pending}
-      onSubmit={() =>
-        startTransition(async () => {
-          await saveDayInputsPartial({ date, creative: v as 1 | 2 | 3 | 4 | 5 });
-          onNext();
-        })
+  function submit() {
+    try {
+      parseTimeOnDate(endOfDay.trim(), date);
+    } catch {
+      toast.error("Couldn’t read that time — try 4:30 PM or 16:30.");
+      return;
+    }
+    startTransition(async () => {
+      try {
+        await saveDayInputsPartial({
+          date,
+          creative: creative as 1 | 2 | 3 | 4 | 5,
+          prob_solv: probSolv as 1 | 2 | 3 | 4 | 5,
+          tie_break: tie,
+          end_of_day: endOfDay.trim(),
+        });
+        onNext();
+      } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : "Couldn't save.");
       }
-    >
-      <Tabs value={v} onChange={setV} labels={["barely", "low", "okay", "good", "lit"]} />
-    </Step>
-  );
-}
+    });
+  }
 
-// ─── Step 3 — prob-solv (+ tie-break if equal) ─────────────────────────────
-function ProbSolvStep({
-  initial,
-  tieInitial,
-  creative,
-  date,
-  onNext,
-  pending,
-  startTransition,
-}: {
-  initial: number;
-  tieInitial: "CREATIVE" | "PROB-SOLV";
-  creative: number;
-  date: string;
-  onNext: () => void;
-  pending: boolean;
-  startTransition: (fn: () => Promise<void>) => void;
-}) {
-  const [v, setV] = useState(initial);
-  const [tie, setTie] = useState(tieInitial);
-  const equal = v === creative;
   return (
     <Step
-      title="How problem-solvy do you feel?"
-      hint="Linear thinking, fixing-things energy."
+      title="Set the shape of today"
+      hint="Two scores from 1–5 and when work should end. How wide the schedule is on the clock still follows “default hours” in Settings — you won’t be asked for that here."
       pending={pending}
-      onSubmit={() =>
-        startTransition(async () => {
-          await saveDayInputsPartial({
-            date,
-            prob_solv: v as 1 | 2 | 3 | 4 | 5,
-            tie_break: tie,
-          });
-          onNext();
-        })
-      }
+      onSubmit={submit}
+      submitLabel="NEXT"
     >
-      <Tabs value={v} onChange={setV} labels={["barely", "low", "okay", "good", "sharp"]} />
+      <EnergyPicker
+        label="Creative energy"
+        value={creative}
+        onChange={(n) => setCreative(n as DayInputs["creative"])}
+      />
+      <EnergyPicker
+        label="Problem-solving energy"
+        value={probSolv}
+        onChange={(n) => setProbSolv(n as DayInputs["creative"])}
+      />
       {equal && (
-        <div className="mt-10">
-          <p className="text-ink-dim">They tied. Which way today?</p>
+        <div className="mt-8">
+          <p className="text-[13px] text-ink-dim">
+            Same score — which way should today lean?
+          </p>
           <div className="mt-3 flex gap-2">
-            <ChoiceButton active={tie === "CREATIVE"} onClick={() => setTie("CREATIVE")}>
+            <ChoiceButton
+              active={tie === "CREATIVE"}
+              onClick={() => setTie("CREATIVE")}
+            >
               Creative
             </ChoiceButton>
-            <ChoiceButton active={tie === "PROB-SOLV"} onClick={() => setTie("PROB-SOLV")}>
+            <ChoiceButton
+              active={tie === "PROB-SOLV"}
+              onClick={() => setTie("PROB-SOLV")}
+            >
               Problem-solving
             </ChoiceButton>
           </div>
         </div>
       )}
+      <div className="mt-10">
+        <p className="eyebrow">End of your work day</p>
+        <input
+          type="text"
+          value={endOfDay}
+          onChange={(e) => setEndOfDay(e.target.value)}
+          placeholder="e.g. 4:30 PM or 16:30"
+          autoComplete="off"
+          className="mt-3 w-full rounded-sm border border-vault-line bg-vault-panel/60 px-4 py-3 font-mono text-[18px] text-ink outline-none placeholder:text-ink-mute focus:border-brass"
+        />
+      </div>
     </Step>
   );
 }
 
-// ─── Step 4 — end of day ────────────────────────────────────────────────────
-function EndOfDayStep({
-  initial,
-  date,
-  onNext,
-  pending,
-  startTransition,
+function EnergyPicker({
+  label,
+  value,
+  onChange,
 }: {
-  initial: string;
-  date: string;
-  onNext: () => void;
-  pending: boolean;
-  startTransition: (fn: () => Promise<void>) => void;
+  label: string;
+  value: number;
+  onChange: (n: number) => void;
 }) {
-  const [v, setV] = useState(initial);
   return (
-    <Step
-      title="When does today end?"
-      hint="Your end-of-work time. The schedule lands here."
-      pending={pending}
-      onSubmit={() =>
-        startTransition(async () => {
-          await saveDayInputsPartial({ date, end_of_day: v });
-          onNext();
-        })
-      }
-    >
-      <input
-        type="time"
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        className="serif-h w-full rounded-sm border border-vault-line bg-vault-panel/60 px-6 py-4 text-center text-[36px] text-ink outline-none focus:border-brass"
-      />
-    </Step>
+    <div className="mt-8 first:mt-0">
+      <p className="eyebrow">{label}</p>
+      <p className="mt-1 text-[12px] text-ink-dim">1 = flat · 5 = strong</p>
+      <div className="mt-3 flex gap-2">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className={clsx(
+              "flex-1 rounded-sm border py-4 font-mono text-[20px] transition",
+              n === value
+                ? "border-brass bg-brass/10 text-brass-bright"
+                : "border-vault-line/60 text-ink-mute hover:border-brass/40 hover:text-brass",
+            )}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
-// ─── Step 5 — admin review ─────────────────────────────────────────────────
+// ─── Step 2 — admin review ─────────────────────────────────────────────────
 function ReviewStep({
   stressors,
   timeSensitive,
@@ -426,7 +378,7 @@ function Empty() {
   return <div className="text-[12px] italic text-ink-mute">(nothing here)</div>;
 }
 
-// ─── Step 6 — ATM withdrawals ─────────────────────────────────────────────
+// ─── Step 3 — ATM withdrawals ────────────────────────────────────────────────
 function AtmStep({
   atm,
   inputs,
@@ -568,80 +520,6 @@ function Step({
           {pending ? "SAVING…" : submitLabel}
         </button>
       </div>
-    </div>
-  );
-}
-
-// ─── Inputs ────────────────────────────────────────────────────────────────
-function NumberPlusMinus({
-  value,
-  onChange,
-  suffix,
-  min = 0,
-  max = 24,
-  step = 1,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  suffix?: string;
-  min?: number;
-  max?: number;
-  step?: number;
-}) {
-  return (
-    <div className="flex items-center justify-center gap-6">
-      <button
-        onClick={() => onChange(Math.max(min, value - step))}
-        className="flex h-12 w-12 items-center justify-center rounded-full border border-brass/40 text-[24px] text-brass/80 hover:border-brass hover:bg-brass/10 hover:text-brass"
-      >
-        −
-      </button>
-      <div className="serif-h flex items-baseline gap-2 text-[64px] text-ink">
-        <span>{value}</span>
-        {suffix && <span className="text-[16px] text-ink-mute">{suffix}</span>}
-      </div>
-      <button
-        onClick={() => onChange(Math.min(max, value + step))}
-        className="flex h-12 w-12 items-center justify-center rounded-full border border-brass/40 text-[24px] text-brass/80 hover:border-brass hover:bg-brass/10 hover:text-brass"
-      >
-        +
-      </button>
-    </div>
-  );
-}
-
-function Tabs({
-  value,
-  onChange,
-  labels,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  labels: string[];
-}) {
-  return (
-    <div className="flex gap-2">
-      {labels.map((label, i) => {
-        const n = i + 1;
-        const active = n === value;
-        return (
-          <button
-            key={n}
-            onClick={() => onChange(n)}
-            className={clsx(
-              "flex flex-1 flex-col items-center gap-2 rounded-sm border px-2 py-4 transition",
-              active
-                ? "border-brass bg-brass/10 text-brass"
-                : "border-vault-line/60 text-ink-mute hover:border-brass/40 hover:text-brass",
-            )}
-          >
-            <span className="serif-h text-[24px]">{n}</span>
-            <span className="font-mono text-[9px] uppercase tracking-wider">
-              {label}
-            </span>
-          </button>
-        );
-      })}
     </div>
   );
 }

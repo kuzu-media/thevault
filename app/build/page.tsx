@@ -1,8 +1,5 @@
-// Wizard: build today, one question at a time.
-//
-// The user answers five morning questions, reviews what's on the
-// Counter, withdraws from the ATM, then lands on the Docket. Each step
-// persists immediately so a refresh or phone-pickup keeps their place.
+// Wizard: build today — one setup screen (energies + end time), Counter
+// review, ATM picks. Each step persists so refresh keeps your place.
 
 import { redirect } from "next/navigation";
 import { getDayInputs, getItemsByBox, getSettings } from "@/lib/data";
@@ -22,8 +19,13 @@ export default async function BuildDayPage({
   searchParams: Promise<{ step?: string }>;
 }) {
   const { step: stepParam } = await searchParams;
-  const step = Math.max(1, Math.min(6, Number(stepParam ?? 1)));
   const date = todayISO();
+  let s = Number(stepParam ?? 1);
+  if (!Number.isFinite(s) || s < 1) s = 1;
+  if (s > 6) redirect("/");
+  if (s === 5) s = 2;
+  else if (s === 6) s = 3;
+  const step = Math.max(1, Math.min(3, s));
 
   const [dayRow, counterItems, atmItems, settings] = await Promise.all([
     getDayInputs(date),
@@ -50,9 +52,7 @@ export default async function BuildDayPage({
   // ones already on today's plan.
   const classified = classify(counterItems, /* todayOnly */ false);
 
-  // Past the last step → bounce to home. Step 6 is itself a step (ATM), not
-  // the exit.
-  if (step > 6) redirect("/");
+  if (step > 3) redirect("/");
 
   return (
     <BuildWizard
