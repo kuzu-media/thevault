@@ -69,7 +69,7 @@ export default async function SettingsPage() {
         <Group title="The day">
           <Row
             label="Default hours"
-            hint="How wide your schedule is on the clock (backward from end of day). The morning wizard doesn’t ask for hours — it uses this."
+            hint="Used before today’s setup is saved (preview only). After you build today, hours come from now → your end-of-day time."
           >
             <NumberField
               name="default_hours"

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { parseTimeOnDate } from "@/lib/daily-plan";
 import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
 
 async function requireUser() {
@@ -54,6 +55,7 @@ const PartialDayInputs = z.object({
   prob_solv: z.coerce.number().int().min(1).max(5).optional(),
   tie_break: z.enum(["CREATIVE", "PROB-SOLV"]).optional(),
   end_of_day: z.string().optional(),
+  reference_now: z.string().optional(),
 });
 
 export async function saveDayInputsPartial(
@@ -88,11 +90,32 @@ export async function saveDayInputsPartial(
     .maybeSingle();
   const settingsHours = Number(settingsRow?.default_hours ?? 7);
 
-  const hoursVal =
+  let hoursVal =
     parsed.hours_available ??
     (existing?.hours_available != null
       ? Number(existing.hours_available)
       : settingsHours);
+
+  const mergedEnd =
+    parsed.end_of_day !== undefined
+      ? parsed.end_of_day.trim()
+      : (existing?.end_of_day ?? "16:30");
+
+  if (parsed.end_of_day !== undefined && parsed.hours_available === undefined) {
+    try {
+      const end = parseTimeOnDate(parsed.end_of_day.trim(), parsed.date);
+      const nowRef =
+        parsed.reference_now &&
+        !Number.isNaN(Date.parse(parsed.reference_now))
+          ? new Date(parsed.reference_now)
+          : new Date();
+      const ms = end.getTime() - nowRef.getTime();
+      hoursVal = Math.min(24, Math.max(0, ms / (60 * 60 * 1000)));
+      hoursVal = Math.round(hoursVal * 100) / 100;
+    } catch {
+      /* keep hoursVal */
+    }
+  }
 
   const merged = {
     vault_id: vaultId,
@@ -104,7 +127,7 @@ export async function saveDayInputsPartial(
       (parsed.tie_break ?? existing?.tie_break ?? "PROB-SOLV") as
         | "CREATIVE"
         | "PROB-SOLV",
-    end_of_day: parsed.end_of_day ?? existing?.end_of_day ?? "16:30",
+    end_of_day: mergedEnd,
   };
 
   await sb.from("day_inputs").upsert(merged, {

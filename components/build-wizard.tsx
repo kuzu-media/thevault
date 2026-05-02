@@ -180,6 +180,7 @@ function DaySetupStep({
           prob_solv: probSolv as 1 | 2 | 3 | 4 | 5,
           tie_break: tie,
           end_of_day: endOfDay.trim(),
+          reference_now: new Date().toISOString(),
         });
         onNext();
       } catch (e: unknown) {
@@ -191,7 +192,7 @@ function DaySetupStep({
   return (
     <Step
       title="Set the shape of today"
-      hint="Two scores from 1–5 and when work should end. How wide the schedule is on the clock still follows “default hours” in Settings — you won’t be asked for that here."
+      hint="Two scores from 1–5 and when work should end. Your schedule window runs from right now until that end time."
       pending={pending}
       onSubmit={submit}
       submitLabel="NEXT"
