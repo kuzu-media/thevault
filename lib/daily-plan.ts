@@ -126,6 +126,23 @@ export type BuildScheduleArgs = {
   now?: Date;
 };
 
+/** Working window for the docket header — not the first task’s start (pins can move that later). */
+export function dayScheduleWindow(
+  inputs: DayInputs,
+  now?: Date,
+): { dayStart: Date; endOfDay: Date } {
+  const endOfDay = parseTimeOnDate(inputs.endOfDay, inputs.date);
+  const configuredStart = new Date(
+    endOfDay.getTime() - inputs.hoursAvailable * 60 * 60_000,
+  );
+  const nowOnDate = now ?? new Date();
+  const dayStart =
+    nowOnDate > configuredStart && sameLocalDate(nowOnDate, configuredStart)
+      ? nowOnDate
+      : configuredStart;
+  return { dayStart, endOfDay };
+}
+
 // End-of-day anchored schedule.
 //
 // Logic:
@@ -142,19 +159,8 @@ export function buildSchedule({
   stressorAnchorMinutes = 91,
   now,
 }: BuildScheduleArgs): ScheduledBlock[] {
-  const endOfDay = parseTimeOnDate(inputs.endOfDay, inputs.date);
-  const configuredStart = new Date(
-    endOfDay.getTime() - inputs.hoursAvailable * 60 * 60_000,
-  );
-  // Don't schedule into the past. If she runs Build Day at 11 AM with a
-  // 9:30 AM configured start, the first block lands at 11 AM. The
-  // configured dayStart still wins when "now" is before it (e.g. she
-  // builds at 7 AM the night before for the next morning).
+  const { dayStart, endOfDay } = dayScheduleWindow(inputs, now);
   const nowOnDate = now ?? new Date();
-  const dayStart =
-    nowOnDate > configuredStart && sameLocalDate(nowOnDate, configuredStart)
-      ? nowOnDate
-      : configuredStart;
 
   // adminPile = every counter item on today's plan, in priority order.
   // otherAdmin (neither urgent nor must) was being dropped from the

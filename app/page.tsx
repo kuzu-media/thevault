@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import {
   classify,
   buildSchedule,
+  dayScheduleWindow,
   pickAtmCandidates,
 } from "@/lib/daily-plan";
 import { getItemsByBox, getDayInputs } from "@/lib/data";
@@ -63,9 +64,11 @@ export default async function DocketPage() {
   const atmPicks = atmItems
     .filter((i) => i.todayOrder !== null)
     .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0));
+  const now = new Date();
+  const { dayStart } = dayScheduleWindow(inputs, now);
   // Pass `now` so the schedule clamps to the current time when she
   // (re)builds the day mid-morning — no blocks in the past.
-  const blocks = buildSchedule({ classified, atmPicks, inputs, now: new Date() });
+  const blocks = buildSchedule({ classified, atmPicks, inputs, now });
   const stateById = new Map(
     [...counterItems, ...atmItems].map((i) => [i.id, i.state ?? "upcoming"]),
   );
@@ -86,7 +89,8 @@ export default async function DocketPage() {
             {greeting}.
           </div>
           <p className="mt-1 text-[13px] text-ink-dim">
-            {fmt12(blocks[0]?.start)} – {fmt12HHMM(inputs.endOfDay, inputs.date)}
+            {fmt12(dayStart.toISOString())} –{" "}
+            {fmt12HHMM(inputs.endOfDay, inputs.date)}
           </p>
         </div>
         <Link
