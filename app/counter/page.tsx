@@ -14,7 +14,6 @@ type Filter =
   | "stress"
   | "urgent"
   | "must"
-  | "today"
   | "quick"
   | "byarea";
 
@@ -23,9 +22,22 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "stress", label: "Stress" },
   { key: "urgent", label: "Urgent" },
   { key: "must", label: "Must" },
-  { key: "today", label: "Today's" },
   { key: "quick", label: "Quick (5–15)" },
 ];
+
+const VALID_FILTERS: readonly Filter[] = [
+  "all",
+  "stress",
+  "urgent",
+  "must",
+  "quick",
+  "byarea",
+];
+
+function coerceFilter(raw: string | undefined): Filter {
+  const r = raw ?? "all";
+  return VALID_FILTERS.includes(r as Filter) ? (r as Filter) : "all";
+}
 
 function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
   switch (f) {
@@ -35,8 +47,6 @@ function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
       return items.filter((i) => i.urgent);
     case "must":
       return items.filter((i) => i.must);
-    case "today":
-      return items.filter((i) => (i.todayOrder ?? null) !== null);
     case "quick":
       return items.filter(
         (i) => (i.minutes ?? 0) >= 5 && (i.minutes ?? 0) <= 15,
@@ -55,7 +65,7 @@ export default async function CounterPage({
   searchParams: Promise<{ filter?: string; area?: string }>;
 }) {
   const sp = await searchParams;
-  const active = (sp.filter ?? "all") as Filter;
+  const active = coerceFilter(sp.filter);
   const area = sp.area;
   const [all, boxes] = await Promise.all([
     getItemsByBox("COUNTER"),
