@@ -38,7 +38,7 @@ export default async function TillPage() {
                   )}
                 >
                   {picked && (
-                    <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-teal/70" />
+                    <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-teal" />
                   )}
 
                   {/* Title + minutes */}

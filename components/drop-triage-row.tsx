@@ -5,21 +5,17 @@ import clsx from "clsx";
 import { triageDropItem, softDeleteItem } from "@/lib/actions";
 import { EditableText } from "@/components/editable-text";
 import { FlagIcon, type FlagKind } from "@/components/flag-icons";
-import type {
-  Box,
-  Destination,
-  EnergyType,
-} from "@/lib/categories";
+import type { Box, Destination, EnergyType } from "@/lib/categories";
 import type { Item } from "@/lib/types";
 
-// Drop row layout, top to bottom:
-//   1. Title (read it first)
-//   2. Destination — TILL or DRAWER, two big tabs, the load-bearing call
-//   3. Metadata — box + minutes + (energy | urgent/must) depending on dest
-//   4. Actions — Dismiss / Send
+// Drop row, three bands:
+//   1. Title
+//   2. Destination — TILL vs DRAWER, the load-bearing call (active card is
+//        a solid colored panel; inactive is barely there)
+//   3. Metadata + actions inline (Box, Min, energy/flags, Dismiss, Send)
 //
-// A coloured left-edge tracks the destination (teal for Till, rust for
-// Drawer) so a glance tells Tracy what each row will become.
+// A 4-px coloured left edge tracks destination so a glance reads where it
+// will land.
 
 export function DropTriageRow({
   item,
@@ -83,19 +79,19 @@ export function DropTriageRow({
     <div
       className={clsx(
         "relative overflow-hidden rounded-sm border bg-vault-panel/40 transition",
-        dest === "DRAWER" ? "border-rust/30" : "border-teal/30",
+        dest === "DRAWER" ? "border-rust/40" : "border-teal/40",
       )}
     >
-      {/* Coloured left edge — fast visual signal of where this lands */}
+      {/* 4px coloured left edge — the at-a-glance signal */}
       <div
         className={clsx(
-          "absolute left-0 top-0 bottom-0 w-[3px] transition-colors",
-          dest === "DRAWER" ? "bg-rust/70" : "bg-teal/70",
+          "absolute left-0 top-0 bottom-0 w-[4px] transition-colors",
+          dest === "DRAWER" ? "bg-rust" : "bg-teal",
         )}
       />
 
       {/* 1 — Title */}
-      <div className="flex items-center gap-3 px-5 pt-4">
+      <div className="flex items-center gap-3 pl-6 pr-5 pt-3.5">
         <span className="font-mono text-[10px] tracking-wider text-brass">
           ▸ NEW
         </span>
@@ -107,46 +103,59 @@ export function DropTriageRow({
         />
       </div>
 
-      {/* 2 — Destination, the load-bearing call */}
-      <div className="px-5 pt-3">
-        <DestChoice dest={dest} onChange={setDest} />
+      {/* 2 — Destination as two large cards. Active card is a saturated
+              panel; inactive is barely there so the choice reads at a glance. */}
+      <div className="grid grid-cols-2 gap-2 pl-6 pr-5 pt-3">
+        <DestCard
+          active={dest === "TILL"}
+          onClick={() => setDest("TILL")}
+          label="TILL"
+          hint="Pull when the energy fits"
+          accent="teal"
+        />
+        <DestCard
+          active={dest === "DRAWER"}
+          onClick={() => setDest("DRAWER")}
+          label="DRAWER"
+          hint="I have to do this"
+          accent="rust"
+        />
       </div>
 
-      {/* 3 — Metadata for the chosen destination */}
-      <div className="flex flex-wrap items-center gap-2 px-5 pt-3">
-        <FieldLabel>Box</FieldLabel>
-        <select
-          value={boxKey}
-          onChange={(e) => setBoxKey(e.target.value)}
-          className="rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[11px] text-brass outline-none focus:border-brass"
-        >
-          <option value="" className="bg-vault-bg">
-            — pick —
-          </option>
-          {boxes.map((b) => (
-            <option key={b.key} value={b.key} className="bg-vault-bg">
-              {b.label}
+      {/* 3 — Metadata and actions on a single row. Borders fence the actions
+              from the metadata so Send still reads as the punctuation. */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-vault-line/40 bg-vault-bg/20 pl-6 pr-5 py-2.5">
+        <Field label="Box">
+          <select
+            value={boxKey}
+            onChange={(e) => setBoxKey(e.target.value)}
+            className="rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[11px] text-brass outline-none focus:border-brass"
+          >
+            <option value="" className="bg-vault-bg">
+              — pick —
             </option>
-          ))}
-        </select>
+            {boxes.map((b) => (
+              <option key={b.key} value={b.key} className="bg-vault-bg">
+                {b.label}
+              </option>
+            ))}
+          </select>
+        </Field>
 
-        <Sep />
-
-        <FieldLabel>Min</FieldLabel>
-        <input
-          type="number"
-          min={0}
-          max={1440}
-          value={minutes}
-          onChange={(e) => setMinutes(e.target.value)}
-          placeholder="—"
-          className="w-16 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-right font-mono text-[11px] text-ink outline-none focus:border-brass"
-        />
+        <Field label="Min">
+          <input
+            type="number"
+            min={0}
+            max={1440}
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+            placeholder="—"
+            className="w-16 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-right font-mono text-[11px] text-ink outline-none focus:border-brass"
+          />
+        </Field>
 
         {dest === "TILL" && (
-          <>
-            <Sep />
-            <FieldLabel>Energy</FieldLabel>
+          <Field label="Energy">
             <select
               value={energy}
               onChange={(e) => setEnergy(e.target.value)}
@@ -161,79 +170,52 @@ export function DropTriageRow({
                 </option>
               ))}
             </select>
-          </>
+          </Field>
         )}
 
         {dest === "DRAWER" && (
-          <>
-            <Sep />
-            <FlagToggle
-              on={urgent}
-              onChange={setUrgent}
-              kind="urgent"
-              label="Urgent"
-              color="text-rust"
-            />
-            <FlagToggle
-              on={must}
-              onChange={setMust}
-              kind="must"
-              label="Must"
-              color="text-brass"
-            />
-          </>
+          <Field label="Flags">
+            <div className="flex items-center gap-1.5">
+              <FlagToggle
+                on={urgent}
+                onChange={setUrgent}
+                kind="urgent"
+                label="Urgent"
+                color="text-rust"
+              />
+              <FlagToggle
+                on={must}
+                onChange={setMust}
+                kind="must"
+                label="Must"
+                color="text-brass"
+              />
+            </div>
+          </Field>
         )}
-      </div>
 
-      {/* 4 — Actions */}
-      <div className="mt-3 flex items-center justify-end gap-2 border-t border-vault-line/40 bg-vault-bg/30 px-5 py-2.5">
-        <button
-          onClick={dismiss}
-          disabled={pending}
-          className="rounded-sm border border-vault-line px-3 py-1 font-mono text-[10px] tracking-wider text-ink-mute hover:border-rust hover:text-rust"
-        >
-          DISMISS
-        </button>
-        <button
-          onClick={send}
-          disabled={pending || !boxKey}
-          className="brass-button px-4 py-1.5 font-mono text-[10px] tracking-[0.2em] text-[#2a1c08] disabled:opacity-50"
-        >
-          {pending ? "..." : "→ SEND"}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={dismiss}
+            disabled={pending}
+            className="rounded-sm border border-vault-line px-3 py-1.5 font-mono text-[10px] tracking-wider text-ink-mute transition hover:border-rust hover:text-rust"
+          >
+            DISMISS
+          </button>
+          <button
+            onClick={send}
+            disabled={pending || !boxKey}
+            className="brass-button px-4 py-1.5 font-mono text-[10px] tracking-[0.2em] text-[#2a1c08] disabled:opacity-50"
+          >
+            {pending ? "..." : "→ SEND"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function DestChoice({
-  dest,
-  onChange,
-}: {
-  dest: Destination;
-  onChange: (next: Destination) => void;
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      <DestButton
-        active={dest === "TILL"}
-        onClick={() => onChange("TILL")}
-        label="TILL"
-        hint="Pull when the energy fits"
-        accent="teal"
-      />
-      <DestButton
-        active={dest === "DRAWER"}
-        onClick={() => onChange("DRAWER")}
-        label="DRAWER"
-        hint="I have to do this"
-        accent="rust"
-      />
-    </div>
-  );
-}
-
-function DestButton({
+function DestCard({
   active,
   onClick,
   label,
@@ -251,18 +233,18 @@ function DestButton({
       onClick={onClick}
       className={clsx(
         "flex flex-col items-start rounded-sm border px-3 py-2 text-left transition",
-        active && accent === "teal" && "border-teal bg-teal/10",
-        active && accent === "rust" && "border-rust bg-rust/10",
+        // Active: saturated panel + brass-bright label
+        active && accent === "teal" && "border-teal bg-teal text-vault-bg",
+        active && accent === "rust" && "border-rust bg-rust text-vault-bg",
+        // Inactive: ghost outline, lots of muting
         !active &&
-          "border-vault-line bg-vault-bg/40 text-ink-mute hover:border-brass/40",
+          "border-vault-line/50 bg-transparent text-ink-mute/60 hover:border-brass/40 hover:text-ink-mute",
       )}
     >
       <span
         className={clsx(
-          "font-mono text-[10px] tracking-[0.24em]",
-          active && accent === "teal" && "text-teal",
-          active && accent === "rust" && "text-rust",
-          !active && "text-ink-mute",
+          "font-mono text-[11px] tracking-[0.24em]",
+          active && "text-vault-bg/90",
         )}
       >
         {label}
@@ -270,7 +252,7 @@ function DestButton({
       <span
         className={clsx(
           "mt-0.5 text-[12px]",
-          active ? "text-ink" : "text-ink-mute/70",
+          active ? "text-vault-bg/80" : "text-ink-mute/60",
         )}
       >
         {hint}
@@ -279,16 +261,21 @@ function DestButton({
   );
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
+    <label className="flex items-center gap-1.5">
+      <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
+        {label}
+      </span>
       {children}
-    </span>
+    </label>
   );
-}
-
-function Sep() {
-  return <span className="text-ink-mute/30">·</span>;
 }
 
 function FlagToggle({

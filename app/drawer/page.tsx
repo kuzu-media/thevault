@@ -153,12 +153,13 @@ function DrawerRow({
             : "border-vault-line/60",
       )}
     >
-      {/* Left edge — rust if stressor, brass if flagged, none otherwise */}
+      {/* Left edge — rust if stressor, brass if flagged, none otherwise.
+          4px wide so a glance down the list reads the heaviest items. */}
       {(stressor || item.urgent || item.must) && (
         <div
           className={clsx(
-            "absolute left-0 top-0 bottom-0 w-[2px]",
-            stressor ? "bg-rust/70" : "bg-brass/60",
+            "absolute left-0 top-0 bottom-0 w-[4px]",
+            stressor ? "bg-rust" : "bg-brass",
           )}
         />
       )}

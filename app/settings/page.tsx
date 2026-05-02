@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS } from "@/lib/types";
 import { getSettings } from "@/lib/data";
 import { saveSettings } from "@/lib/actions";
 import { CaptureTokenRow } from "@/components/capture-token-row";
-import { NumberField, TextInput } from "@/components/ui";
+import { NumberField } from "@/components/ui";
 
 export default async function SettingsPage() {
   const row = await getSettings();
@@ -73,11 +73,11 @@ export default async function SettingsPage() {
             label="Default end of day"
             hint="Anchor time the schedule lands at."
           >
-            <TextInput
+            <input
+              type="time"
               name="default_end_of_day"
               defaultValue={s.defaultEndOfDay}
-              placeholder="16:30"
-              className="w-[88px] text-right font-mono"
+              className="w-[120px] rounded-sm border border-vault-line bg-vault-bg/60 px-2.5 py-1.5 text-right font-mono text-[12px] text-ink outline-none transition focus:border-brass focus:bg-vault-bg/80"
             />
           </Row>
           <Row
