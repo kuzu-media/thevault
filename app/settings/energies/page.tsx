@@ -9,7 +9,7 @@ export default async function EnergiesSettingsPage() {
     <div className="mx-auto max-w-[1000px] px-4 py-8 md:px-10">
       <div className="eyebrow">— Settings · energies —</div>
       <h1 className="serif-h mt-2 text-[36px] leading-tight md:text-[40px]">
-        How energies route.
+        Energies.
       </h1>
 
       <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] tracking-wider">
@@ -40,9 +40,9 @@ export default async function EnergiesSettingsPage() {
       </div>
 
       <p className="mt-6 text-ink-dim">
-        Energies are how you label what kind of energy a task takes. Each
-        energy decides where the item goes when you triage it from The Drop:
-        TILL for energy-matched picks, DRAWER for admin obligations.
+        Energies label how a task feels — they live on Till items, used by
+        the daily plan to match what you can pull today. Drawer items don't
+        use energy; they go by urgency and must-do flags.
       </p>
 
       <EnergiesEditor initial={initial} />

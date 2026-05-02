@@ -1,6 +1,5 @@
 "use client";
 import { useState, useTransition } from "react";
-import clsx from "clsx";
 import { saveEnergyConfig } from "@/lib/actions";
 import type { EnergyType } from "@/lib/categories";
 
@@ -18,11 +17,7 @@ export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
   function add() {
     setEnergies([
       ...energies,
-      {
-        key: `ENERGY_${energies.length + 1}`,
-        label: "New energy",
-        dest: "TILL",
-      },
+      { key: `ENERGY_${energies.length + 1}`, label: "New energy" },
     ]);
   }
 
@@ -48,7 +43,6 @@ export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
       <div className="flex flex-wrap items-center gap-2 px-1 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
         <span className="flex-1 min-w-[160px]">Label</span>
         <span className="w-[140px]">Key</span>
-        <span className="w-[110px]">Sends to</span>
         <span className="w-[80px]" />
       </div>
       {energies.map((e, i) => (
@@ -72,25 +66,6 @@ export function EnergiesEditor({ initial }: { initial: EnergyType[] }) {
             placeholder="KEY"
             className="w-[140px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[10px] text-brass outline-none focus:border-brass"
           />
-          <select
-            value={e.dest}
-            onChange={(ev) =>
-              update(i, { dest: ev.target.value as EnergyType["dest"] })
-            }
-            className={clsx(
-              "w-[110px] rounded-sm border bg-vault-bg/60 px-2 py-1 font-mono text-[10px] tracking-wider outline-none focus:border-brass",
-              e.dest === "DRAWER"
-                ? "border-rust/50 text-rust"
-                : "border-teal/50 text-teal",
-            )}
-          >
-            <option value="TILL" className="bg-vault-bg">
-              TILL
-            </option>
-            <option value="DRAWER" className="bg-vault-bg">
-              DRAWER
-            </option>
-          </select>
           <button
             onClick={() => remove(i)}
             className="rounded-sm border border-vault-line px-2 py-1 font-mono text-[10px] tracking-wider text-ink-mute hover:border-rust hover:text-rust"

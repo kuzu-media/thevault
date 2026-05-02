@@ -1,14 +1,14 @@
-// Boxes are Tracy's single flat list of categories. Each item has a box +
-// an energy. Routing is determined by ENERGY, not by the box:
+// Boxes are user-defined categories — life/business/project axes. They
+// don't carry a destination on their own; a single box (e.g. SWB) can hold
+// Drawer items (obligations) and Till items (energy-matched pulls) at the
+// same time.
 //
-//   energy = ADMIN          → goes to The Drawer  (area = box.key)
-//   energy = anything else  → goes to The Till    (category = box.key)
+// Destination is its own axis, picked explicitly per item at triage time:
+//   TILL   — energy-matched pulls; carries `category`, `energy`, `minutes`
+//   DRAWER — obligations; carries `area`, `urgent`, `must`, `minutes`
 //
-// So a single box (e.g. PCS) can have items in both The Drawer (PCS admin
-// work) and The Till (PCS creative work) at the same time.
-//
-// The list lives in settings.boxes JSONB so Tracy can edit it from
-// /settings/boxes. The seed below is just the default for first-run.
+// Boxes and energies both live in `settings` JSONB so they're editable
+// from the Settings UI. No defaults — vaults start empty.
 
 import { supabaseServer } from "./supabase/server";
 
@@ -48,28 +48,23 @@ export async function getBoxes(): Promise<Box[]> {
 
 export type Destination = "TILL" | "DRAWER";
 
-// Energies are also user-editable. Each one has a destination that decides
-// where a Drop item routes when she picks that energy.
+// Energies are pure metadata — they live on Till items, used by the daily
+// energy-matching to decide what to pick today. Drawer items don't carry
+// energy. (Tracy's MENU sheet has Energy as a column; ADMIN sheet doesn't.)
 export type EnergyType = {
   key: string;
   label: string;
-  dest: Destination;
 };
 
-// No defaults — every vault starts empty. Owner sets up their own energies
-// from Settings → Energies before they can triage from The Drop.
 export const DEFAULT_ENERGIES: EnergyType[] = [];
 
 function normalizeEnergy(raw: any): EnergyType | null {
   if (!raw || typeof raw !== "object") return null;
   const key = typeof raw.key === "string" ? raw.key : null;
   if (!key) return null;
-  const dest =
-    raw.dest === "DRAWER" || raw.dest === "TILL" ? raw.dest : "TILL";
   return {
     key,
     label: typeof raw.label === "string" ? raw.label : key,
-    dest,
   };
 }
 
@@ -84,14 +79,4 @@ export async function getEnergies(): Promise<EnergyType[]> {
   return raw
     .map(normalizeEnergy)
     .filter((e): e is EnergyType => e !== null);
-}
-
-// Look up the destination for a given energy key from the user's list.
-// Falls back to TILL if the key isn't in the list (custom unknown energy).
-export function destinationForEnergy(
-  energies: EnergyType[],
-  key: string | null | undefined,
-): Destination {
-  if (!key) return "TILL";
-  return energies.find((e) => e.key === key)?.dest ?? "TILL";
 }

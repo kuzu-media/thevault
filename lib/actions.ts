@@ -139,17 +139,17 @@ export async function softDeleteItem(itemId: string) {
   revalidatePath("/");
 }
 
-// Triage a Drop item. Box + energy are both user-defined; the energy's
-// destination (looked up from settings.energies) decides Till vs Drawer.
+// Triage a Drop item. Destination is explicit — Till is for energy-matched
+// pulls (carries energy + minutes), Drawer is for obligations (carries
+// urgent/must flags + minutes). Box is the category and works on both.
 const TriagePatch = z.object({
   box_key: z.string().min(1).max(40),
-  energy: z.string().min(1).max(40),
+  dest: z.enum(["TILL", "DRAWER"]),
   minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
-  urgent: z.coerce.boolean().optional(),
-  must: z.coerce.boolean().optional(),
+  energy: z.string().max(40).nullable().optional(), // Till only
+  urgent: z.coerce.boolean().optional(), // Drawer only
+  must: z.coerce.boolean().optional(), // Drawer only
 });
-
-import { destinationForEnergy, getEnergies } from "@/lib/categories";
 
 export async function triageDropItem(
   itemId: string,
@@ -157,21 +157,22 @@ export async function triageDropItem(
 ) {
   const { sb } = await requireUser();
   const parsed = TriagePatch.parse(patch);
-  const energies = await getEnergies();
-  const dest = destinationForEnergy(energies, parsed.energy);
   const update: Record<string, unknown> = {
-    box: dest,
-    energy: parsed.energy,
+    box: parsed.dest,
     minutes: parsed.minutes ?? null,
-    urgent: parsed.urgent ?? false,
-    must: parsed.must ?? false,
   };
-  if (dest === "DRAWER") {
+  if (parsed.dest === "DRAWER") {
     update.area = parsed.box_key;
     update.category = null;
+    update.energy = null;
+    update.urgent = parsed.urgent ?? false;
+    update.must = parsed.must ?? false;
   } else {
     update.category = parsed.box_key;
     update.area = null;
+    update.energy = parsed.energy ?? null;
+    update.urgent = false;
+    update.must = false;
   }
   await sb.from("items").update(update).eq("id", itemId);
   revalidatePath("/", "layout");
@@ -372,7 +373,6 @@ const EnergyConfig = z.object({
     .max(40)
     .transform((v) => v.toUpperCase().replace(/\s/g, "-")),
   label: z.string().min(1).max(60),
-  dest: z.enum(["TILL", "DRAWER"]),
 });
 
 export async function saveEnergyConfig(
