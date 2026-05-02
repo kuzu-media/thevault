@@ -89,6 +89,18 @@ type Insert = {
 
 const baseFlags = { urgent: false, must: false, pinned: false } as const;
 
+// Normalize sheet free-text into the canonical box-key form so Counter
+// areas and ATM categories line up with settings.boxes after import.
+// Mirrors deriveKey() in components/boxes-editor.tsx.
+function deriveKey(label: string): string | null {
+  const s = label
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Z0-9_/-]/g, "")
+    .slice(0, 40);
+  return s || null;
+}
+
 function fromAdmin(rows: Row[]): Insert[] {
   // Layout: A=area, B=minutes, C=urgent, D=today's-order, E=must, F=description
   const out: Insert[] = [];
@@ -101,7 +113,7 @@ function fromAdmin(rows: Row[]): Insert[] {
       user_id: userId,
       box: "COUNTER",
       title: desc,
-      area: (r[0] ?? "").trim() || null,
+      area: deriveKey((r[0] ?? "").trim()),
       minutes: num(r[1]),
       urgent: isY(r[2]),
       must: isY(r[4]),
@@ -123,8 +135,8 @@ function fromMenu(rows: Row[]): Insert[] {
       user_id: userId,
       box: "ATM",
       title: task,
-      energy: (r[0] ?? "").trim().toUpperCase() || null,
-      category: (r[1] ?? "").trim() || null,
+      energy: deriveKey((r[0] ?? "").trim()),
+      category: deriveKey((r[1] ?? "").trim()),
       minutes: num(r[2]),
     });
   });
@@ -290,8 +302,17 @@ async function seedSettingsFromItems(inserts: Insert[]) {
   const energySet = new Set<string>();
 
   for (const it of inserts) {
-    if (it.body) recordKeys.add(it.box);
-    else if (it.box !== "COUNTER" && it.box !== "ATM") boxKeys.add(it.box);
+    if (it.body) {
+      recordKeys.add(it.box);
+    } else if (it.box !== "COUNTER" && it.box !== "ATM") {
+      boxKeys.add(it.box);
+    }
+    // Counter areas + ATM categories are also boxes — they're the user's
+    // category axis, just stored on items rather than as the box key.
+    // Without folding them in, the ATM page groups by category and
+    // /counter filters by area, but the configured boxes list omits them.
+    if (it.box === "COUNTER" && it.area) boxKeys.add(it.area);
+    if (it.box === "ATM" && it.category) boxKeys.add(it.category);
     if (it.energy) energySet.add(it.energy);
   }
 
