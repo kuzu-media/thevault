@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "The Vault",
     short_name: "Vault",
-    description: "Tracy's vault — a place for everything.",
+    description: "The Vault — a place for everything.",
     start_url: "/",
     display: "standalone",
     background_color: "#14171b",

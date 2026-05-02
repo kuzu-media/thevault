@@ -1,6 +1,11 @@
-// Port of plan_day.py classification + scheduling.
-// Tracy's logic, kept faithful to the original — just expressed in TS and
-// extended to produce timed blocks instead of an .rtf file.
+// Daily plan: bucket items by flags, pick ATM candidates by energy
+// match, and produce a timed schedule that fills the day from dayStart.
+//
+// Two related but separate concerns:
+//   classify()         → bucket counter items by urgent/must combinations
+//   pickAtmCandidates → energy-matched filter for ATM items
+//   buildSchedule     → emit timed blocks, admin-first or ATM-first
+//                        based on the stressor anchor threshold
 
 import type { DayInputs, Item } from "./types";
 
@@ -58,9 +63,12 @@ export function classify(items: Item[], todayOnly = true): Classified {
   };
 }
 
-// Till selection — port of pick_menu_choices.
+// Pick ATM items whose energy matches today's mood. Creative-leaning
+// days surface CREATIVE items, problem-solving days surface PROB-SOLV,
+// low-energy days unlock LEISURE/PEOPLE for rest. The tieBreak resolves
+// even days; "leisure" tie-break is reserved (not yet wired in the UI).
 export function pickAtmCandidates(
-  tillItems: Item[],
+  atmItems: Item[],
   inputs: DayInputs,
 ): Item[] {
   const availMinutes = inputs.hoursAvailable * 60;
@@ -68,14 +76,13 @@ export function pickAtmCandidates(
   const needLeisure = sum < 6;
   let needCreative = inputs.creative > inputs.probSolv;
   let needProb = inputs.creative < inputs.probSolv;
-  let needLeisureOverride = false;
+  const needLeisureOverride = false;
   if (inputs.creative === inputs.probSolv) {
     if (inputs.tieBreak === "CREATIVE") needCreative = true;
     else if (inputs.tieBreak === "PROB-SOLV") needProb = true;
-    // (legacy script also supports "leisure" tie-break — keep door open)
   }
 
-  return tillItems.filter((it) => {
+  return atmItems.filter((it) => {
     if (it.deletedAt) continue_safe();
     const m = it.minutes ?? 0;
     if (m <= 0 || m > availMinutes) return false;

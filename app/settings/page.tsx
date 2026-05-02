@@ -23,7 +23,9 @@ export default async function SettingsPage() {
         Settings.
       </h1>
       <p className="mt-1 text-[12px] text-ink-mute">
-        How the vault behaves. Tabs below for members, boxes, and energies.
+        How the vault behaves. The tabs below cover members, the categories
+        you file into, the energies that power ATM matching, and how to
+        connect your phone and Mac.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2 font-mono text-[10px] tracking-wider">

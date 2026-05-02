@@ -1,14 +1,14 @@
 // Boxes are user-defined categories — life/business/project axes. They
-// don't carry a destination on their own; a single box (e.g. SWB) can hold
-// Drawer items (obligations) and Till items (energy-matched pulls) at the
-// same time.
+// don't carry a destination on their own; a single box can hold both
+// Counter items (obligations) and ATM items (energy-matched pulls) at
+// the same time.
 //
-// Destination is its own axis, picked explicitly per item at triage time:
+// Destination is its own axis, picked explicitly per item at triage:
 //   ATM     — energy-matched pulls; carries `category`, `energy`, `minutes`
 //   COUNTER — obligations; carries `area`, `urgent`, `must`, `minutes`
 //
-// Boxes and energies both live in `settings` JSONB so they're editable
-// from the Settings UI. No defaults — vaults start empty.
+// Boxes, records, and energies all live in `settings` JSONB so they're
+// editable from the Settings UI. No defaults — vaults start empty.
 
 import { supabaseServer } from "./supabase/server";
 
@@ -48,9 +48,9 @@ export async function getBoxes(): Promise<Box[]> {
 
 export type Destination = "ATM" | "COUNTER";
 
-// Energies are pure metadata — they live on Till items, used by the daily
-// energy-matching to decide what to pick today. Drawer items don't carry
-// energy. (Tracy's MENU sheet has Energy as a column; ADMIN sheet doesn't.)
+// Energies are pure metadata — they live on ATM items, used by the daily
+// energy-matching to decide what to pick today. Counter items don't
+// carry energy.
 export type EnergyType = {
   key: string;
   label: string;

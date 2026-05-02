@@ -9,7 +9,7 @@ const BUCKET_COLOR: Record<string, string> = {
   TIME_SENSITIVE: "border-l-rust/60",
   MUST_DO: "border-l-brass",
   OTHER_ADMIN: "border-l-ink-mute",
-  TILL_PICK: "border-l-teal",
+  ATM_PICK: "border-l-teal",
   CUSTOM: "border-l-ink-mute",
 };
 

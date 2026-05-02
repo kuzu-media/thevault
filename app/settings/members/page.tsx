@@ -1,11 +1,8 @@
 import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
-import {
-  inviteMember,
-  setMemberRole,
-  removeMember,
-  renameVault,
-} from "@/lib/actions";
+import { inviteMember, renameVault } from "@/lib/actions";
 import { getCurrentVault } from "@/lib/data";
+import { RoleControl } from "@/components/role-control";
+import { RemoveMemberButton } from "@/components/remove-member-button";
 
 export default async function MembersPage() {
   const sb = await supabaseServer();
@@ -137,7 +134,7 @@ export default async function MembersPage() {
                 </span>
               )}
               {myRole === "owner" && m.user_id !== user?.id && (
-                <RemoveButton userId={m.user_id} />
+                <RemoveMemberButton userId={m.user_id} email={m.email} />
               )}
             </div>
           </div>
@@ -188,53 +185,3 @@ export default async function MembersPage() {
   );
 }
 
-function RoleControl({
-  userId,
-  role,
-}: {
-  userId: string;
-  role: "owner" | "editor";
-}) {
-  return (
-    <form
-      action={async (formData) => {
-        "use server";
-        const newRole = formData.get("role") as "owner" | "editor";
-        await setMemberRole(userId, newRole);
-      }}
-    >
-      <select
-        name="role"
-        defaultValue={role}
-        onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className="bg-transparent font-mono text-[10px] tracking-wider text-brass"
-      >
-        <option className="bg-vault-bg" value="editor">
-          EDITOR
-        </option>
-        <option className="bg-vault-bg" value="owner">
-          OWNER
-        </option>
-      </select>
-    </form>
-  );
-}
-
-function RemoveButton({ userId }: { userId: string }) {
-  return (
-    <form
-      action={async () => {
-        "use server";
-        await removeMember(userId);
-      }}
-    >
-      <button
-        type="submit"
-        title="Remove"
-        className="rounded-sm border border-vault-line px-2 py-1 font-mono text-[10px] tracking-wider text-ink-mute hover:border-rust hover:text-rust"
-      >
-        REMOVE
-      </button>
-    </form>
-  );
-}

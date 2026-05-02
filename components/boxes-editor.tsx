@@ -22,8 +22,8 @@ export function BoxesEditor({
   onSave = saveBoxConfig,
   singular = "BOX",
   plural = "BOXES",
-  labelPlaceholder = "Label (e.g. PCS)",
-  metaPlaceholder = "Subtitle, e.g. Polymer Clay Superstore",
+  labelPlaceholder = "Label",
+  metaPlaceholder = "Subtitle (optional)",
 }: {
   initial: Box[];
   onSave?: (rows: Box[]) => Promise<unknown>;

@@ -12,12 +12,12 @@ import type { Item } from "@/lib/types";
 
 // Drop row, two compact lines:
 //
-//   [edge]  [TILL|DRAWER]  Title (editable)              [Box ▼]
+//   [edge]  [ATM|COUNTER]  Title (editable)              [Box ▼]
 //           ⏱ 30m   energy / urgent / must               Dismiss · Send
 //
 // 4-px coloured left edge tracks the destination so a glance reads where
-// each row will land. The toggle is the only place Tracy decides; the rest
-// is metadata.
+// each row will land. The destination toggle is the only place the user
+// decides; the rest is metadata.
 
 export function DropTriageRow({
   item,

@@ -18,7 +18,7 @@ export async function proxy(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   if (!url || !key) {
-    return res; // env not set yet — let pages render fixtures
+    return res; // env not set yet — let pages render their empty states
   }
 
   const supabase = createServerClient(url, key, {

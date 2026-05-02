@@ -6,23 +6,15 @@ export type Energy = string;
 
 export type CounterStation = "DROP" | "DOCKET" | "ATM" | "COUNTER";
 
+// The four counter-station keys are reserved for daily-action surfaces;
+// every other box key is user-defined via settings.boxes / settings.records.
+// `string & {}` keeps the literal-completion hint without forcing a closed
+// union — so any user key like "GROCERIES" types fine.
 export type BoxKey =
   | "DROP"
   | "DOCKET"
   | "ATM"
   | "COUNTER"
-  | "ADMIN"
-  | "PCS_IDEAS"
-  | "PCS_DELEGATION"
-  | "READ_RESEARCH"
-  | "HEALTH_IDEAS"
-  | "MISC_IDEAS"
-  | "RON"
-  | "SWB_PLAN"
-  | "MEASUREMENTS"
-  | "LIFTING"
-  | "PCS_MISC"
-  | "NOTES"
   | (string & {});
 
 export type Item = {
@@ -38,7 +30,7 @@ export type Item = {
   category?: string | null;
   potential?: 1 | 2 | 3 | 4 | 5 | null;
   person?: string | null;
-  tag?: "Admin" | "Creative" | "Numbers" | "Ron" | (string & {}) | null;
+  tag?: string | null;
   notes?: string | null;
   body?: string | null;
 

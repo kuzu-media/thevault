@@ -12,7 +12,7 @@ import { UnhandledRejectionGuard } from "@/components/unhandled-rejection-guard"
 
 export const metadata: Metadata = {
   title: "The Vault",
-  description: "Tracy's vault.",
+  description: "A place for everything.",
 };
 
 export default function RootLayout({
