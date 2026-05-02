@@ -81,7 +81,7 @@ export default async function AtmPage() {
                       itemId={it.id}
                       field="title"
                       initial={it.title}
-                      className="min-w-0 flex-1 serif-h text-[15px]"
+                      className="min-w-0 flex-1 vault-task-title"
                       placeholder="(no title)"
                     />
                     <span className="inline-flex shrink-0 items-baseline gap-1 rounded-sm border border-vault-line/60 bg-vault-bg/40 px-2 py-0.5 transition focus-within:border-brass focus-within:bg-vault-bg/80">

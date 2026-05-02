@@ -83,3 +83,18 @@ html, body {
   font-weight: 400;
   letter-spacing: 0.01em;
 }
+
+/* Item titles in Counter, ATM, Drop triage, vault lists, Docket — sans, slightly larger than chrome */
+.vault-task-title {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+@media (min-width: 768px) {
+  .vault-task-title {
+    font-size: 17px;
+  }
+}

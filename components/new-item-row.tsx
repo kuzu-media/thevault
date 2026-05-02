@@ -36,7 +36,7 @@ export function NewItemRow({
           }
         }}
         placeholder={placeholder}
-        className="flex-1 bg-transparent text-ink placeholder:text-ink-mute outline-none"
+        className="vault-task-title flex-1 bg-transparent text-ink placeholder:text-ink-mute outline-none"
       />
       {pending && (
         <span className="font-mono text-[10px] text-brass">saving…</span>

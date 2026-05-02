@@ -92,7 +92,7 @@ export default async function BoxPage({
               </span>
             )}
             <p
-              className="min-w-[200px] flex-1 whitespace-pre-wrap break-words text-ink"
+              className="vault-task-title min-w-[200px] flex-1 whitespace-pre-wrap break-words text-ink"
               title={it.title}
             >
               {it.title}

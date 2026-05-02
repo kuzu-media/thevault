@@ -196,7 +196,7 @@ export function DropTriageRow({
           itemId={item.id}
           field="title"
           initial={item.title}
-          className="min-w-0 flex-1 serif-h text-[15px]"
+          className="min-w-0 flex-1 vault-task-title"
           placeholder="(no title)"
         />
         <select

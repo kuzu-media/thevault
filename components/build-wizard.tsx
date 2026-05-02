@@ -338,7 +338,7 @@ function Row({ item }: { item: Item }) {
       )}
       <span
         className={clsx(
-          "min-w-0 flex-1 truncate",
+          "vault-task-title min-w-0 flex-1 truncate",
           onToday ? "text-ink" : "text-ink-mute",
         )}
         title={item.title}

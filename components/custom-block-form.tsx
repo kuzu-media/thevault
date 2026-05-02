@@ -45,7 +45,7 @@ export function CustomBlockForm({ date }: { date: string }) {
         placeholder="What is the block for?"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="w-full bg-transparent serif-h text-[16px] text-ink outline-none placeholder:text-ink-mute"
+        className="vault-task-title w-full bg-transparent text-ink outline-none placeholder:text-ink-mute"
       />
       <div className="mt-3 flex items-center gap-3 font-mono text-[11px] text-ink-mute">
         <label className="flex items-center gap-2">
