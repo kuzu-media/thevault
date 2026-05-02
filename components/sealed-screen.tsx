@@ -50,6 +50,7 @@ export function SealedScreen({
         await depositText(t, "sealed");
         toast.success("Deposited.");
         setText("");
+        router.refresh();
       } catch {
         toast.error("Couldn't save.");
       }

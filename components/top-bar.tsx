@@ -18,6 +18,7 @@ export async function TopBar() {
   const { data: membership } = await sb
     .from("vault_members")
     .select("vault_id")
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (!membership) return null;

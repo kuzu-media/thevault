@@ -1,6 +1,6 @@
 "use client";
-import { Suspense, useEffect, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { depositText } from "@/lib/actions";
 
@@ -13,9 +13,10 @@ export default function DepositPage() {
 }
 
 function DepositInner() {
+  const router = useRouter();
   const params = useSearchParams();
   const [text, setText] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
 
   // Bookmarklet drops the page title + URL via ?t=
   useEffect(() => {
@@ -24,21 +25,21 @@ function DepositInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
-  function deposit(e: React.FormEvent) {
+  async function deposit(e: React.FormEvent) {
     e.preventDefault();
     const t = text.trim();
     if (!t) return;
-    startTransition(async () => {
-      try {
-        await depositText(t, "mailslot");
-        toast.success("Deposited.");
-        setText("");
-      } catch (err: unknown) {
-        toast.error(
-          err instanceof Error ? err.message : "Couldn't save.",
-        );
-      }
-    });
+    setPending(true);
+    try {
+      await depositText(t, "mailslot");
+      toast.success("Deposited.");
+      setText("");
+      router.refresh();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (

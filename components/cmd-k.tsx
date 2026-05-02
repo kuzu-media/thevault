@@ -1,14 +1,16 @@
 "use client";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { depositText } from "@/lib/actions";
 import { useShortcut } from "@/lib/shortcuts";
 import { Kbd } from "./kbd";
 
 export function CmdK() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useShortcut("mod+k", () => setOpen((v) => !v), {
@@ -32,19 +34,21 @@ export function CmdK() {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
 
-  function submit() {
+  async function submit() {
     const t = text.trim();
     if (!t) return;
-    startTransition(async () => {
-      try {
-        await depositText(t, "cmdk");
-        toast.success("Deposited.");
-        setText("");
-        setOpen(false);
-      } catch {
-        toast.error("Couldn't save.");
-      }
-    });
+    setPending(true);
+    try {
+      await depositText(t, "cmdk");
+      toast.success("Deposited.");
+      setText("");
+      setOpen(false);
+      router.refresh();
+    } catch {
+      toast.error("Couldn't save.");
+    } finally {
+      setPending(false);
+    }
   }
 
   if (!open) return null;
@@ -65,7 +69,7 @@ export function CmdK() {
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              submit();
+              void submit();
             }
           }}
           placeholder="Drop a thought…"
@@ -84,7 +88,8 @@ export function CmdK() {
             )}
           </span>
           <button
-            onClick={submit}
+            type="button"
+            onClick={() => void submit()}
             disabled={pending}
             className="brass-button px-4 py-1.5 text-[10px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
           >

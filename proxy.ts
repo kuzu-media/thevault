@@ -55,6 +55,7 @@ export async function proxy(req: NextRequest) {
     const { data: membership } = await supabase
       .from("vault_members")
       .select("vault_id")
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (!membership) {
