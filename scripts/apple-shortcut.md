@@ -28,7 +28,7 @@ Press the Action Button. Talk. Done. Item lands in **The Drop**.
 ## Variables to fill in
 
 - `YOUR-DOMAIN.app` — Vercel domain.
-- `YOUR_CAPTURE_TOKEN` — value of `CAPTURE_TOKEN` in `.env.local` and in Vercel project env.
+- `YOUR_CAPTURE_TOKEN` — copy **Bearer token** from **Settings** (generated there and saved to the database). Optionally, self‑hosted stacks can still set `CAPTURE_TOKEN` in env as a legacy shared secret instead.
 - `YOUR_USER_ID` — your `auth.uid` after signing in once. (Run a one-liner against Supabase to grab it, or copy from Settings → Connect.)
 
 ## Siri variant

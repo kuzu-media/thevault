@@ -8,38 +8,72 @@ const Body = z.object({
   userId: z.string().uuid(),
 });
 
+/** Bearer matches `settings.capture_token` for a vault the user belongs to, or legacy `CAPTURE_TOKEN` env + user’s default vault. */
+async function resolveVaultId(
+  bearerToken: string,
+  userId: string,
+): Promise<string | null> {
+  const trimmed = bearerToken.trim();
+  if (!trimmed) return null;
+
+  const sb = supabaseAdmin();
+
+  const { data: settingsHit } = await sb
+    .from("settings")
+    .select("vault_id")
+    .eq("capture_token", trimmed)
+    .maybeSingle();
+
+  if (settingsHit?.vault_id) {
+    const { data: member } = await sb
+      .from("vault_members")
+      .select("vault_id")
+      .eq("vault_id", settingsHit.vault_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    return member?.vault_id ?? null;
+  }
+
+  const envTok = process.env.CAPTURE_TOKEN?.trim();
+  if (envTok && trimmed === envTok) {
+    const { data: membership } = await sb
+      .from("vault_members")
+      .select("vault_id")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return membership?.vault_id ?? null;
+  }
+
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const auth = req.headers.get("authorization") ?? "";
-  const token = auth.replace(/^Bearer\s+/i, "");
-  if (!token || token !== process.env.CAPTURE_TOKEN) {
+  const bearerToken = auth.replace(/^Bearer\s+/i, "").trim();
+  if (!bearerToken) {
     return new Response("Unauthorized", { status: 401 });
   }
 
   let parsed;
   try {
     parsed = Body.parse(await req.json());
-  } catch (e) {
+  } catch {
     return new Response("Bad request", { status: 400 });
+  }
+
+  const vaultId = await resolveVaultId(bearerToken, parsed.userId);
+  if (!vaultId) {
+    return new Response("Unauthorized", { status: 401 });
   }
 
   const sb = supabaseAdmin();
 
-  const { data: membership } = await sb
-    .from("vault_members")
-    .select("vault_id")
-    .eq("user_id", parsed.userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!membership) {
-    return new Response("No vault for user", { status: 404 });
-  }
-
   const { data: item, error } = await sb
     .from("items")
     .insert({
-      vault_id: membership.vault_id,
+      vault_id: vaultId,
       user_id: parsed.userId,
       box: "DROP",
       title: parsed.text.trim(),
@@ -55,7 +89,7 @@ export async function POST(req: NextRequest) {
   }
 
   await sb.from("captures").insert({
-    vault_id: membership.vault_id,
+    vault_id: vaultId,
     user_id: parsed.userId,
     raw: parsed.text,
     source: parsed.source,
