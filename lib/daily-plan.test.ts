@@ -4,6 +4,7 @@ import {
   pickAtmCandidates,
   buildSchedule,
   ceilToNextQuarterHourLocal,
+  formatEndOfDay12h,
   parseTimeOnDate,
   thresholdCallout,
 } from "./daily-plan";
@@ -191,6 +192,17 @@ describe("buildSchedule", () => {
     const classified = classify([pinned]);
     const blocks = buildSchedule({ classified, atmPicks: [], inputs });
     expect(blocks[0].start).toBe("2026-05-01T15:00:00.000Z");
+  });
+});
+
+describe("formatEndOfDay12h", () => {
+  it("formats stored 24h times as 12h", () => {
+    expect(formatEndOfDay12h("16:30", "2026-05-01")).toBe("4:30 PM");
+    expect(formatEndOfDay12h("09:15", "2026-05-01")).toBe("9:15 AM");
+  });
+
+  it("normalizes existing 12h strings", () => {
+    expect(formatEndOfDay12h("4:30 PM", "2026-05-01")).toBe("4:30 PM");
   });
 });
 

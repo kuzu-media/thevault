@@ -305,6 +305,12 @@ export function parseTimeOnDate(time: string, isoDate: string): Date {
   return new Date(y, m - 1, d, h, min, 0, 0);
 }
 
+/** Canonical `h:mm AM/PM` for wizard/UI when day_inputs stores `HH:MM` or mixed formats. */
+export function formatEndOfDay12h(time: string, isoDate: string): string {
+  const d = parseTimeOnDate(time.trim(), isoDate);
+  return formatHHMM12(d);
+}
+
 // Produces the threshold-callout message the Docket header needs.
 export function thresholdCallout(
   classified: Classified,

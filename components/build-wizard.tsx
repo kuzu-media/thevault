@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { parseTimeOnDate } from "@/lib/daily-plan";
+import { formatEndOfDay12h, parseTimeOnDate } from "@/lib/daily-plan";
 import { saveDayInputsPartial, pickFromAtm } from "@/lib/actions";
 import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 import { TodayToggle } from "./today-toggle";
@@ -162,14 +162,21 @@ function DaySetupStep({
   const [creative, setCreative] = useState(inputs.creative);
   const [probSolv, setProbSolv] = useState(inputs.probSolv);
   const [tie, setTie] = useState(inputs.tieBreak);
-  const [endOfDay, setEndOfDay] = useState(inputs.endOfDay);
+  const [endOfDay, setEndOfDay] = useState(() => {
+    try {
+      return formatEndOfDay12h(inputs.endOfDay, date);
+    } catch {
+      return inputs.endOfDay;
+    }
+  });
   const equal = creative === probSolv;
 
   function submit() {
+    let normalizedEnd: string;
     try {
-      parseTimeOnDate(endOfDay.trim(), date);
+      normalizedEnd = formatEndOfDay12h(endOfDay.trim(), date);
     } catch {
-      toast.error("Couldn’t read that time — try 4:30 PM or 16:30.");
+      toast.error("Couldn’t read that time — try 4:30 PM.");
       return;
     }
     startTransition(async () => {
@@ -179,7 +186,7 @@ function DaySetupStep({
           creative: creative as 1 | 2 | 3 | 4 | 5,
           prob_solv: probSolv as 1 | 2 | 3 | 4 | 5,
           tie_break: tie,
-          end_of_day: endOfDay.trim(),
+          end_of_day: normalizedEnd,
           reference_now: new Date().toISOString(),
         });
         onNext();
@@ -234,7 +241,7 @@ function DaySetupStep({
           type="text"
           value={endOfDay}
           onChange={(e) => setEndOfDay(e.target.value)}
-          placeholder="e.g. 4:30 PM or 16:30"
+          placeholder="e.g. 4:30 PM"
           autoComplete="off"
           className="mt-3 w-full rounded-sm border border-vault-line bg-vault-panel/60 px-4 py-3 font-mono text-[18px] text-ink outline-none placeholder:text-ink-mute focus:border-brass"
         />
