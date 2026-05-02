@@ -9,11 +9,11 @@ import { redirect } from "next/navigation";
 import {
   classify,
   buildSchedule,
-  dayScheduleWindow,
   pickAtmCandidates,
 } from "@/lib/daily-plan";
 import { getItemsByBox, getDayInputs } from "@/lib/data";
 import { CustomBlockForm } from "@/components/custom-block-form";
+import { DocketDayRange } from "@/components/docket-day-range";
 import { ScheduleWithNowLine } from "@/components/now-line";
 import { UnsealGlow } from "@/components/unseal-glow";
 import type { DayInputs } from "@/lib/types";
@@ -65,7 +65,6 @@ export default async function DocketPage() {
     .filter((i) => i.todayOrder !== null)
     .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0));
   const now = new Date();
-  const { dayStart } = dayScheduleWindow(inputs, now);
   // Pass `now` so the schedule clamps to the current time when she
   // (re)builds the day mid-morning — no blocks in the past.
   const blocks = buildSchedule({ classified, atmPicks, inputs, now });
@@ -88,10 +87,11 @@ export default async function DocketPage() {
           <div className="serif-h text-[28px] text-ink md:text-[32px]">
             {greeting}.
           </div>
-          <p className="mt-1 text-[13px] text-ink-dim">
-            {fmt12(dayStart.toISOString())} –{" "}
-            {fmt12HHMM(inputs.endOfDay, inputs.date)}
-          </p>
+          <DocketDayRange
+            date={inputs.date}
+            hoursAvailable={inputs.hoursAvailable}
+            endOfDay={inputs.endOfDay}
+          />
         </div>
         <Link
           href="/build?step=1"
@@ -180,20 +180,3 @@ function fmtHrs(min: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
-function fmt12(iso?: string) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  let h = d.getHours();
-  const m = d.getMinutes();
-  const ampm = h >= 12 ? "PM" : "AM";
-  h = h % 12 || 12;
-  return `${h}:${m.toString().padStart(2, "0")} ${ampm}`;
-}
-
-// "16:30" / "4:30 PM" → "4:30 PM"
-function fmt12HHMM(t: string, date: string) {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(t);
-  if (!m) return t;
-  const iso = `${date}T${t.padStart(5, "0")}:00`;
-  return fmt12(iso);
-}
