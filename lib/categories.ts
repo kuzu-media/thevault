@@ -19,10 +19,6 @@ export type Box = {
   meta?: string;
 };
 
-// No defaults — every vault starts empty. Owner sets up their own boxes
-// from Settings → Boxes before they can triage from The Drop.
-export const DEFAULT_BOXES: Box[] = [];
-
 function normalize(raw: any): Box | null {
   if (!raw || typeof raw !== "object") return null;
   const key = typeof raw.key === "string" ? raw.key : null;
@@ -55,8 +51,6 @@ export type EnergyType = {
   key: string;
   label: string;
 };
-
-export const DEFAULT_ENERGIES: EnergyType[] = [];
 
 function normalizeEnergy(raw: any): EnergyType | null {
   if (!raw || typeof raw !== "object") return null;
@@ -91,8 +85,6 @@ export type RecordType = {
   color?: string;
   meta?: string;
 };
-
-export const DEFAULT_RECORDS: RecordType[] = [];
 
 export async function getRecords(): Promise<RecordType[]> {
   const sb = await supabaseServer();
