@@ -64,6 +64,25 @@ export async function saveDayInputsPartial(
   if (!vaultId) throw new Error("No vault");
   const parsed = PartialDayInputs.parse(patch);
 
+  // First time the wizard runs today? Wipe yesterday's `today_order` so
+  // picks reset to a clean slate. We detect "first time" by the absence
+  // of a day_inputs row for today — once it exists, subsequent saves
+  // (mid-day rebuilds, edits) leave today's picks alone.
+  const { data: existing } = await sb
+    .from("day_inputs")
+    .select("date")
+    .eq("vault_id", vaultId)
+    .eq("date", parsed.date)
+    .maybeSingle();
+  const isFirstSaveToday = !existing;
+  if (isFirstSaveToday) {
+    await sb
+      .from("items")
+      .update({ today_order: null })
+      .eq("vault_id", vaultId)
+      .not("today_order", "is", null);
+  }
+
   // Upsert with sensible defaults so the row exists after the very first step.
   await sb.from("day_inputs").upsert(
     {
