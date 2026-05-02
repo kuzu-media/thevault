@@ -43,62 +43,34 @@ export default async function VaultInteriorPage() {
         Storage. Long-term places for ideas, plans, and reference.
       </p>
 
-      {boxes.length > 0 && (
-        <>
-          <Header label="The Boxes" />
-          <Grid>
-            {boxes.map((b) => (
-              <BoxCard
-                key={b.key}
-                title={b.label}
-                count={counts.get(b.key) ?? 0}
-                href={`/vault/${slugify(b.key)}`}
-              />
-            ))}
-            <NewTile href="/settings/boxes" label="+ New box" />
-          </Grid>
-        </>
-      )}
+      {/* Boxes section — always visible. When empty, the only tile is
+          "+ New box" so the path forward is obvious. */}
+      <Header label="The Boxes" />
+      <Grid>
+        {boxes.map((b) => (
+          <BoxCard
+            key={b.key}
+            title={b.label}
+            count={counts.get(b.key) ?? 0}
+            href={`/vault/${slugify(b.key)}`}
+          />
+        ))}
+        <NewTile href="/settings/boxes" label="+ New box" />
+      </Grid>
 
-      {boxes.length === 0 && records.length === 0 && (
-        <div className="mt-10 rounded-sm border border-dashed border-vault-line/60 bg-vault-panel/20 p-8 text-center">
-          <p className="text-ink-dim">No boxes or records yet.</p>
-          <p className="mt-1 text-[12px] text-ink-mute">
-            Set up your categories to start filing thoughts.
-          </p>
-          <div className="mt-4 inline-flex gap-2">
-            <Link
-              href="/settings/boxes"
-              className="rounded-sm border border-brass/40 px-4 py-2 font-mono text-[10px] tracking-[0.18em] text-brass transition hover:bg-brass/10"
-            >
-              + ADD BOXES
-            </Link>
-            <Link
-              href="/settings/records"
-              className="rounded-sm border border-brass/40 px-4 py-2 font-mono text-[10px] tracking-[0.18em] text-brass transition hover:bg-brass/10"
-            >
-              + ADD RECORDS
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {records.length > 0 && (
-        <>
-          <Header label="The Records" />
-          <Grid>
-            {records.map((r) => (
-              <BoxCard
-                key={r.key}
-                title={r.label}
-                meta={r.meta || "reference"}
-                href={`/records/${slugify(r.key)}`}
-              />
-            ))}
-            <NewTile href="/settings/records" label="+ New record" />
-          </Grid>
-        </>
-      )}
+      {/* Records section — same treatment. */}
+      <Header label="The Records" />
+      <Grid>
+        {records.map((r) => (
+          <BoxCard
+            key={r.key}
+            title={r.label}
+            meta={r.meta || "reference"}
+            href={`/records/${slugify(r.key)}`}
+          />
+        ))}
+        <NewTile href="/settings/records" label="+ New record" />
+      </Grid>
     </div>
   );
 }
