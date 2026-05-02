@@ -4,6 +4,7 @@
 // "Build my day" entry. Once she's been through the wizard, show the schedule.
 
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   classify,
@@ -15,6 +16,7 @@ import { CustomBlockForm } from "@/components/custom-block-form";
 import { ScheduleWithNowLine } from "@/components/now-line";
 import { UnsealGlow } from "@/components/unseal-glow";
 import type { DayInputs } from "@/lib/types";
+import { VAULT_SKIP_DROP_LANDING_COOKIE } from "@/lib/vault-nav";
 
 function todayISO() {
   const d = new Date();
@@ -25,6 +27,10 @@ const DAY_GREETINGS = ["Today", "What we're holding today", "Just for today"];
 
 export default async function DocketPage() {
   const date = todayISO();
+  const cookieStore = await cookies();
+  const skipDropLanding =
+    cookieStore.get(VAULT_SKIP_DROP_LANDING_COOKIE)?.value === "1";
+
   const [counterItems, atmItems, dayRow, dropItems] = await Promise.all([
     getItemsByBox("COUNTER"),
     getItemsByBox("ATM"),
@@ -32,9 +38,9 @@ export default async function DocketPage() {
     getItemsByBox("DROP"),
   ]);
 
-  // Triage-first when the day hasn't been built yet. Untriaged thoughts
-  // need to land in their boxes before the schedule is meaningful.
-  if (!dayRow && dropItems.length > 0) {
+  // Anything in The Drop → open there first (fresh session / login). Once you’ve
+  // built today, respect “take me to Today” via cookie from nav / wizard exit.
+  if (dropItems.length > 0 && (!dayRow || !skipDropLanding)) {
     redirect("/drop");
   }
 

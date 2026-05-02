@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { toast } from "sonner";
 import { VaultDial } from "./vault-dial";
 import { depositText } from "@/lib/actions";
+import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 
 export function SealedScreen({
   sealed,
@@ -169,6 +170,7 @@ export function SealedScreen({
                 <Link
                   href="/"
                   className="rounded-sm border border-vault-line px-5 py-3 font-mono text-[10px] tracking-[0.24em] text-ink-mute hover:border-brass/40 hover:text-brass"
+                  onClick={() => markPreferTodayOverDropLanding()}
                 >
                   CANCEL
                 </Link>

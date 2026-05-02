@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getSettings } from "@/lib/data";
+import { VaultHomeLink } from "@/components/vault-home-link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { TopBarNav } from "./top-bar-nav";
 import { SealToggle } from "./seal-toggle";
@@ -28,7 +29,7 @@ export async function TopBar() {
 
   return (
     <header className="relative z-10 flex items-center justify-between gap-3 border-b border-[#3a322b]/30 bg-vault-bg/80 px-4 py-3 backdrop-blur md:px-10 md:py-4">
-      <Link href="/" className="flex shrink-0 items-center gap-2.5">
+      <VaultHomeLink className="flex shrink-0 items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
           <circle cx="11" cy="11" r="9.5" stroke="#B5853A" strokeWidth="1.4" />
           <circle cx="11" cy="11" r="4" stroke="#B5853A" strokeWidth="1.4" />
@@ -36,7 +37,7 @@ export async function TopBar() {
         <span className="serif-h hidden text-[20px] text-ink md:inline md:text-[22px]">
           The Vault
         </span>
-      </Link>
+      </VaultHomeLink>
 
       <TopBarNav />
 

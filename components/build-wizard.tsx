@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 import { saveDayInputsPartial, pickFromAtm } from "@/lib/actions";
+import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 import { TodayToggle } from "./today-toggle";
 import type { DayInputs, Item, Energy } from "@/lib/types";
 import { useShortcut } from "@/lib/shortcuts";
@@ -47,11 +48,14 @@ export function BuildWizard({
   }
 
   function prev() {
-    if (step === 1) router.push("/");
-    else router.push(`/build?step=${step - 1}`);
+    if (step === 1) {
+      markPreferTodayOverDropLanding();
+      router.push("/");
+    } else router.push(`/build?step=${step - 1}`);
   }
 
   function finish() {
+    markPreferTodayOverDropLanding();
     router.push("/");
   }
 
@@ -132,7 +136,11 @@ export function BuildWizard({
           <Kbd keys="escape" size="xs" />
           <span>← {step === 1 ? "CANCEL" : "BACK"}</span>
         </button>
-        <Link href="/" className="hover:text-brass">
+        <Link
+          href="/"
+          className="hover:text-brass"
+          onClick={() => markPreferTodayOverDropLanding()}
+        >
           SKIP &amp; OPEN VAULT
         </Link>
       </div>

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 
 const ITEMS = [
   { href: "/", label: "Today", hint: "g d", match: (p: string) => p === "/" || p.startsWith("/build") },
@@ -29,6 +30,11 @@ export function TopBarNav() {
                 ? "border-b-2 border-brass text-brass-bright"
                 : "text-ink-mute hover:text-ink",
             )}
+            onClick={
+              item.href === "/"
+                ? () => markPreferTodayOverDropLanding()
+                : undefined
+            }
           >
             {item.label}
           </Link>
