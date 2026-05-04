@@ -13,6 +13,7 @@ import { DocketDayRange } from "@/components/docket-day-range";
 import { UnsealGlow } from "@/components/unseal-glow";
 import type { DayInputs } from "@/lib/types";
 import { VAULT_SKIP_DROP_LANDING_COOKIE } from "@/lib/vault-nav";
+import { BuildPromptGreeting } from "@/components/build-prompt-greeting";
 
 function todayISO() {
   const d = new Date();
@@ -95,13 +96,12 @@ function BuildPrompt() {
     <div className="relative mx-auto flex min-h-[80vh] max-w-[640px] flex-col items-start justify-center px-4 md:px-10">
       <div className="absolute inset-0 -z-0 lamp-glow opacity-50" />
       <div className="relative">
-        <div className="eyebrow">— Good morning —</div>
+        <BuildPromptGreeting />
         <h1 className="serif-h mt-3 text-[36px] leading-tight text-ink md:text-[48px]">
           Let&rsquo;s build today.
         </h1>
         <p className="mt-3 max-w-[480px] text-ink-dim">
-          Six quick questions, the same ones you&rsquo;ve been answering each
-          morning. The schedule comes from your answers.
+          Answer your questions to begin building your day.
         </p>
         <Link
           href="/build?step=1"
