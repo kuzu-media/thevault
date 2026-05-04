@@ -13,11 +13,8 @@ export type VaultBoxTile = {
   slug: string;
 };
 
-const ROW_GRID = [
-  "grid gap-2 grid-cols-2 sm:grid-cols-4",
-  "grid gap-2 grid-cols-2 sm:grid-cols-5",
-  "grid grid-cols-3 gap-2 max-w-lg mx-auto sm:max-w-xl",
-] as const;
+const GRID =
+  "grid w-full grid-cols-2 gap-2 justify-items-stretch sm:grid-cols-4";
 
 function findTile(
   key: string | null,
@@ -33,25 +30,74 @@ function findTile(
   return orphans.find((b) => b.key === key);
 }
 
+function EmptySlot() {
+  return (
+    <div
+      className="min-h-[88px] rounded-sm border border-transparent sm:min-h-[92px]"
+      aria-hidden
+    />
+  );
+}
+
+function NewBoxLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex min-h-[88px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line px-2 py-2 text-center text-ink-mute transition hover:border-brass/40 hover:text-brass sm:min-h-[92px]"
+    >
+      <span className="serif-h text-[13px] leading-tight">{label}</span>
+    </Link>
+  );
+}
+
 export function VaultBoxesSection({
   rows,
   orphanTiles,
   itemsByBox,
-  children,
+  newBox,
 }: {
   rows: (VaultBoxTile | null)[][];
   orphanTiles: VaultBoxTile[];
   itemsByBox: Record<string, Item[]>;
-  children?: React.ReactNode;
+  newBox: { href: string; label: string };
 }) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const open = findTile(openKey, rows, orphanTiles);
 
+  const row0 = rows[0] ?? [];
+  const row0Filled = row0.filter(Boolean).length;
+  /** Fewer than three real tiles in row 1 → tuck "+ New box" into that row. */
+  const newInFirstRow = row0Filled < 3;
+  const showOrphanRow = orphanTiles.length > 0 || !newInFirstRow;
+
   return (
     <div className="mt-4 space-y-6">
       <div className="space-y-2.5">
-        {rows.map((row, ri) => (
-          <div key={ri} className={ROW_GRID[ri] ?? ROW_GRID[0]}>
+        {/* Row 1 — fixed slots + optional + New box */}
+        <div className={GRID}>
+          {row0.map((cell, ci) =>
+            cell ? (
+              <BoxCard
+                key={cell.key}
+                title={cell.label}
+                count={cell.count}
+                selected={openKey === cell.key}
+                onPress={() =>
+                  setOpenKey((k) => (k === cell.key ? null : cell.key))
+                }
+                size="compact"
+              />
+            ) : (
+              <EmptySlot key={`r0-${ci}`} />
+            ),
+          )}
+          {newInFirstRow && (
+            <NewBoxLink href={newBox.href} label={newBox.label} />
+          )}
+        </div>
+
+        {rows.slice(1).map((row, ri) => (
+          <div key={ri + 1} className={GRID}>
             {row.map((cell, ci) =>
               cell ? (
                 <BoxCard
@@ -65,18 +111,14 @@ export function VaultBoxesSection({
                   size="compact"
                 />
               ) : (
-                <div
-                  key={`empty-${ri}-${ci}`}
-                  className="hidden min-h-[88px] rounded-sm border border-transparent sm:block sm:opacity-0 sm:pointer-events-none"
-                  aria-hidden
-                />
+                <EmptySlot key={`r${ri + 1}-${ci}`} />
               ),
             )}
           </div>
         ))}
 
-        {(orphanTiles.length > 0 || children) && (
-          <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
+        {showOrphanRow && (
+          <div className={GRID}>
             {orphanTiles.map((b) => (
               <BoxCard
                 key={b.key}
@@ -89,7 +131,9 @@ export function VaultBoxesSection({
                 size="compact"
               />
             ))}
-            {children}
+            {!newInFirstRow && (
+              <NewBoxLink href={newBox.href} label={newBox.label} />
+            )}
           </div>
         )}
       </div>
@@ -107,7 +151,8 @@ export function VaultBoxesSection({
                 {open.label}
               </h2>
               <p className="mt-1 font-mono text-[10px] text-ink-mute">
-                {open.count} item{open.count === 1 ? "" : "s"}
+                {(itemsByBox[open.key] ?? []).length} item
+                {(itemsByBox[open.key] ?? []).length === 1 ? "" : "s"}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

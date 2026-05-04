@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { getItemsByBox } from "@/lib/data";
+import { getAllItems } from "@/lib/data";
 import { getBoxes } from "@/lib/categories";
 import { BoxStorageList } from "@/components/box-storage-list";
+import { sortedItemsForHubBox } from "@/lib/vault-hub-items";
 import type { BoxKey } from "@/lib/types";
 
 export default async function BoxPage({
@@ -11,10 +12,11 @@ export default async function BoxPage({
 }) {
   const { box } = await params;
   const key = box.toUpperCase().replace(/-/g, "_") as BoxKey;
-  const [list, configuredBoxes] = await Promise.all([
-    getItemsByBox(key),
+  const [allItems, configuredBoxes] = await Promise.all([
+    getAllItems(),
     getBoxes(),
   ]);
+  const list = sortedItemsForHubBox(key, allItems);
   // Settings is the source of truth for the box label. If the slug
   // doesn't resolve to a configured box, render a not-found rather
   // than prettifying the raw key — that would dishonestly imply the
