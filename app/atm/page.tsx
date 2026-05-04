@@ -18,8 +18,7 @@ type AtmFilter =
   | "picked"
   | "unpicked"
   | "quick"
-  | "bycategory"
-  | "byenergy";
+  | "bycategory";
 
 const FILTERS: { key: AtmFilter; label: string }[] = [
   { key: "all", label: "All" },
@@ -34,7 +33,6 @@ const VALID_FILTERS: readonly AtmFilter[] = [
   "unpicked",
   "quick",
   "bycategory",
-  "byenergy",
 ];
 
 const UNCATEGORIZED = "__none__";
@@ -52,9 +50,9 @@ function decodeCategoryParam(raw: string | undefined): string | undefined {
 function applyAtmFilter(
   items: Item[],
   f: AtmFilter,
-  opts: { category?: string; energy?: string },
+  opts: { category?: string },
 ): Item[] {
-  const { category, energy } = opts;
+  const { category } = opts;
   switch (f) {
     case "picked":
       return items.filter((i) => (i.todayOrder ?? null) !== null);
@@ -69,48 +67,32 @@ function applyAtmFilter(
       const want = category;
       return items.filter((i) => (i.category ?? "") === want);
     }
-    case "byenergy": {
-      if (!energy) return items;
-      const e = energy.toUpperCase();
-      return items.filter(
-        (it) => (it.energy ?? "").toUpperCase() === e,
-      );
-    }
     case "all":
     default:
       return items;
   }
 }
 
-function filterSummary(
-  f: AtmFilter,
-  category?: string,
-  energy?: string,
-): string {
+function filterSummary(f: AtmFilter, category?: string): string {
   if (f === "all") return "FILTER";
   if (f === "bycategory") {
     const c = category === "" ? "UNCATEGORIZED" : (category ?? "").toUpperCase();
     return `FILTER · ${c}`;
   }
-  if (f === "byenergy") return `FILTER · ${(energy ?? "").toUpperCase()}`;
   return `FILTER · ${f.replace(/-/g, " ").toUpperCase()}`;
 }
 
 export default async function AtmPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; category?: string; energy?: string }>;
+  searchParams: Promise<{ filter?: string; category?: string }>;
 }) {
   const sp = await searchParams;
   let active = coerceFilter(sp.filter);
   let categoryDecoded = decodeCategoryParam(sp.category);
-  const energyParam = sp.energy?.trim();
   if (active === "bycategory" && sp.category === undefined) {
     active = "all";
     categoryDecoded = undefined;
-  }
-  if (active === "byenergy" && !energyParam) {
-    active = "all";
   }
 
   const [list, boxes] = await Promise.all([
@@ -119,7 +101,6 @@ export default async function AtmPage({
   ]);
   const filtered = applyAtmFilter(list, active, {
     category: categoryDecoded,
-    energy: energyParam,
   });
 
   const labelByKey = new Map(boxes.map((b) => [b.key, b.label]));
@@ -132,14 +113,6 @@ export default async function AtmPage({
     return a.localeCompare(b);
   });
 
-  const energyKeys = [
-    ...new Set(
-      list
-        .map((it) => (it.energy ?? "").trim())
-        .filter((e) => e.length > 0),
-    ),
-  ].sort((a, b) => a.localeCompare(b));
-
   const groups = new Map<string, Item[]>();
   for (const it of filtered) {
     const key = it.category ?? "";
@@ -147,7 +120,7 @@ export default async function AtmPage({
     groups.get(key)!.push(it);
   }
 
-  function atmHref(f: AtmFilter, extra?: { category?: string; energy?: string }) {
+  function atmHref(f: AtmFilter, extra?: { category?: string }) {
     if (f === "all") return "/atm";
     const p = new URLSearchParams();
     p.set("filter", f);
@@ -157,7 +130,6 @@ export default async function AtmPage({
         extra.category === "" ? UNCATEGORIZED : extra.category,
       );
     }
-    if (extra?.energy) p.set("energy", extra.energy);
     return `/atm?${p.toString()}`;
   }
 
@@ -168,7 +140,7 @@ export default async function AtmPage({
       </h1>
       <p className="mt-1 text-[13px] text-ink-dim">
         Pull out whatever you&apos;d like to work on today. Nothing here is
-        an obligation. Filter by pick state, duration, category, or energy.
+        an obligation. Filter by pick state, duration, or category.
       </p>
 
       <details className="group mt-6" open>
@@ -176,7 +148,7 @@ export default async function AtmPage({
           <span className="inline-block transition-transform group-open:rotate-90">
             ›
           </span>{" "}
-          {filterSummary(active, categoryDecoded, energyParam)}
+          {filterSummary(active, categoryDecoded)}
         </summary>
         <div className="mt-3 flex flex-wrap gap-2">
           {FILTERS.map((f) => (
@@ -219,27 +191,6 @@ export default async function AtmPage({
                   </Link>
                 );
               })}
-            </>
-          )}
-
-          {energyKeys.length > 0 && (
-            <>
-              <span className="px-2 self-center text-ink-mute/40">·</span>
-              {energyKeys.map((en) => (
-                <Link
-                  key={en}
-                  href={atmHref("byenergy", { energy: en })}
-                  className={clsx(
-                    "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
-                    active === "byenergy" &&
-                      energyParam?.toUpperCase() === en.toUpperCase()
-                      ? "border-brass bg-brass/10 text-brass"
-                      : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
-                  )}
-                >
-                  {en}
-                </Link>
-              ))}
             </>
           )}
         </div>

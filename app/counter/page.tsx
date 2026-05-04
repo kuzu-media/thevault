@@ -147,6 +147,10 @@ export default async function CounterPage({
   );
 }
 
+/** Matches ATM row `AreaPill` chip sizing. */
+const COUNTER_AREA_PILL_CLASS =
+  "!max-h-7 max-w-[5.75rem] shrink-0 !py-0.5 !pl-1.5 !pr-1 !text-[9px] !leading-tight border-brass/40 bg-vault-bg/20";
+
 function CounterRow({
   item,
   boxes,
@@ -155,57 +159,57 @@ function CounterRow({
   boxes: { key: string; label: string }[];
 }) {
   const stressor = item.urgent && item.must;
+  const onToday = (item.todayOrder ?? null) !== null;
   return (
     <div
       className={clsx(
-        "group relative overflow-hidden rounded-sm border bg-vault-panel/30 px-4 py-3 transition hover:border-brass/40 hover:bg-vault-panel/50",
-        stressor
-          ? "border-rust/30"
-          : item.must || item.urgent
-            ? "border-brass/30"
-            : "border-vault-line/60",
+        "flex min-w-0 items-center gap-3 rounded-sm border bg-vault-panel/40 px-3 py-2 transition",
+        onToday
+          ? "border-brass/40"
+          : stressor
+            ? "border-rust/30"
+            : item.must || item.urgent
+              ? "border-brass/30"
+              : "border-vault-line/60",
       )}
     >
-      {/* Left edge — rust if stressor, brass if flagged, none otherwise.
-          4px wide so a glance down the list reads the heaviest items. */}
-      {(stressor || item.urgent || item.must) && (
+      {stressor || item.urgent || item.must ? (
         <div
           className={clsx(
-            "absolute left-0 top-0 bottom-0 w-[4px]",
+            "w-1 shrink-0 self-stretch rounded-sm",
             stressor ? "bg-rust" : "bg-brass",
           )}
+          aria-hidden
         />
-      )}
-
-      {/* Line 1 — title + minutes + today toggle, the things she scans */}
-      <div className="flex items-center gap-3">
+      ) : null}
+      <AreaPill
+        itemId={item.id}
+        initial={item.area}
+        options={boxes}
+        className={COUNTER_AREA_PILL_CLASS}
+      />
+      <EditableText
+        itemId={item.id}
+        field="title"
+        initial={item.title}
+        className={clsx(
+          "vault-task-title min-w-0 flex-1 truncate",
+          onToday ? "text-ink" : "text-ink-mute",
+        )}
+        placeholder="(no title)"
+      />
+      <span className="flex w-16 shrink-0 items-baseline justify-end gap-0.5 whitespace-nowrap font-mono text-[11px] text-ink-mute">
         <EditableText
           itemId={item.id}
-          field="title"
-          initial={item.title}
-          className="min-w-0 flex-1 vault-task-title"
-          placeholder="(no title)"
+          field="minutes"
+          initial={item.minutes}
+          className="w-10 bg-transparent px-0 text-right text-[11px]"
+          numeric
+          placeholder="—"
         />
-        <span className="inline-flex shrink-0 items-baseline gap-1 rounded-sm border border-vault-line/60 bg-vault-bg/40 px-2 py-0.5 transition focus-within:border-brass focus-within:bg-vault-bg/80">
-          <EditableText
-            itemId={item.id}
-            field="minutes"
-            initial={item.minutes}
-            className="w-12 bg-transparent text-right font-mono text-[12px]"
-            numeric
-            placeholder="—"
-          />
-          <span className="font-mono text-[10px] text-ink-mute/70">min</span>
-        </span>
-        <TodayToggle
-          itemId={item.id}
-          on={(item.todayOrder ?? null) !== null}
-          size="sm"
-        />
-      </div>
-
-      {/* Line 2 — flags + box, the things she sets */}
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span>min</span>
+      </span>
+      <div className="flex shrink-0 items-center gap-1">
         <EditableFlag
           itemId={item.id}
           field="urgent"
@@ -220,9 +224,8 @@ function CounterRow({
           kind="must"
           className="text-brass"
         />
-        <span className="text-ink-mute/30">·</span>
-        <AreaPill itemId={item.id} initial={item.area} options={boxes} />
       </div>
+      <TodayToggle itemId={item.id} on={onToday} size="sm" />
     </div>
   );
 }
