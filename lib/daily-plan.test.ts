@@ -100,9 +100,22 @@ describe("pickAtmCandidates", () => {
     expect(r).toEqual([]);
   });
 
-  it("low total energy unlocks LEISURE/PEOPLE", () => {
+  it("low total energy only surfaces LEISURE/PEOPLE areas", () => {
     const items = [
-      baseItem({ box: "ATM", energy: "LEISURE", minutes: 30, title: "rest" }),
+      baseItem({
+        box: "ATM",
+        energy: "LEISURE",
+        category: "LEISURE",
+        minutes: 30,
+        title: "rest",
+      }),
+      baseItem({
+        box: "ATM",
+        energy: "CREATIVE",
+        category: "ECO",
+        minutes: 20,
+        title: "deep work",
+      }),
     ];
     const r = pickAtmCandidates(items, {
       ...inputs,
@@ -110,6 +123,31 @@ describe("pickAtmCandidates", () => {
       probSolv: 2,
     });
     expect(r.map((x) => x.title)).toEqual(["rest"]);
+  });
+
+  it("low total energy excludes creative even when creative > prob-solv", () => {
+    const items = [
+      baseItem({
+        box: "ATM",
+        energy: "CREATIVE",
+        category: "ECO",
+        minutes: 30,
+        title: "work",
+      }),
+      baseItem({
+        box: "ATM",
+        energy: "LEISURE",
+        area: "PEOPLE",
+        minutes: 15,
+        title: "call a friend",
+      }),
+    ];
+    const r = pickAtmCandidates(items, {
+      ...inputs,
+      creative: 4,
+      probSolv: 1,
+    });
+    expect(r.map((x) => x.title)).toEqual(["call a friend"]);
   });
 });
 

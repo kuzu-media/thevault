@@ -4,11 +4,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { formatEndOfDay12h, parseTimeOnDate } from "@/lib/daily-plan";
+import {
+  formatEndOfDay12h,
+  parseTimeOnDate,
+  pickAtmCandidates,
+} from "@/lib/daily-plan";
 import { saveDayInputsPartial, pickFromAtm } from "@/lib/actions";
 import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 import { TodayToggle } from "./today-toggle";
-import type { DayInputs, Item, Energy } from "@/lib/types";
+import type { DayInputs, Item } from "@/lib/types";
 import { useShortcut } from "@/lib/shortcuts";
 import { Kbd } from "./kbd";
 
@@ -396,7 +400,7 @@ function AtmStep({
   inputs: DayInputs;
   onFinish: () => void;
 }) {
-  const matched = matchEnergy(atm, inputs).slice(0, 8);
+  const matched = pickAtmCandidates(atm, inputs).slice(0, 8);
   const allHaveCategory = matched.some((m) => !!m.category);
   const groups = new Map<string, Item[]>();
   for (const it of matched) {
@@ -473,27 +477,6 @@ function AtmRow({ item }: { item: Item }) {
       </div>
     </button>
   );
-}
-
-function matchEnergy(atm: Item[], inputs: DayInputs): Item[] {
-  const sum = inputs.creative + inputs.probSolv;
-  const lowEnergy = sum < 6;
-  let creative = inputs.creative > inputs.probSolv;
-  let probSolv = inputs.creative < inputs.probSolv;
-  if (inputs.creative === inputs.probSolv) {
-    creative = inputs.tieBreak === "CREATIVE";
-    probSolv = inputs.tieBreak === "PROB-SOLV";
-  }
-  const avail = inputs.hoursAvailable * 60;
-  return atm.filter((it) => {
-    const m = it.minutes ?? 0;
-    if (!m || m > avail) return false;
-    const e = (it.energy as Energy | null) ?? null;
-    if (lowEnergy && (e === "LEISURE" || e === "PHYSICAL")) return true;
-    if (creative && e === "CREATIVE") return true;
-    if (probSolv && e === "PROB-SOLV") return true;
-    return false;
-  });
 }
 
 // ─── Step shell ────────────────────────────────────────────────────────────

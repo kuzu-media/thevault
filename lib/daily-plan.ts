@@ -63,20 +63,31 @@ export function classify(items: Item[], todayOnly = true): Classified {
   };
 }
 
+/** ATM rows triaged to LEISURE or PEOPLE life areas (box keys on area/category). */
+export function isLeisureOrPeopleArea(it: Item): boolean {
+  const a = (it.area ?? "").trim().toUpperCase();
+  const c = (it.category ?? "").trim().toUpperCase();
+  return (
+    a === "LEISURE" ||
+    a === "PEOPLE" ||
+    c === "LEISURE" ||
+    c === "PEOPLE"
+  );
+}
+
 // Pick ATM items whose energy matches today's mood. Creative-leaning
-// days surface CREATIVE items, problem-solving days surface PROB-SOLV,
-// low-energy days unlock LEISURE/PEOPLE for rest. The tieBreak resolves
-// even days; "leisure" tie-break is reserved (not yet wired in the UI).
+// days surface CREATIVE items, problem-solving days surface PROB-SOLV.
+// When creative + prob-solv < 6, only LEISURE and PEOPLE *areas* surface
+// (no creative/prob-solv pulls). TieBreak resolves even scores on normal days.
 export function pickAtmCandidates(
   atmItems: Item[],
   inputs: DayInputs,
 ): Item[] {
   const availMinutes = inputs.hoursAvailable * 60;
   const sum = inputs.creative + inputs.probSolv;
-  const needLeisure = sum < 6;
+  const lowEnergy = sum < 6;
   let needCreative = inputs.creative > inputs.probSolv;
   let needProb = inputs.creative < inputs.probSolv;
-  const needLeisureOverride = false;
   if (inputs.creative === inputs.probSolv) {
     if (inputs.tieBreak === "CREATIVE") needCreative = true;
     else if (inputs.tieBreak === "PROB-SOLV") needProb = true;
@@ -86,17 +97,12 @@ export function pickAtmCandidates(
     if (it.deletedAt) continue_safe();
     const m = it.minutes ?? 0;
     if (m <= 0 || m > availMinutes) return false;
-    const energy = (it.energy ?? "").toUpperCase();
-    const cat = (it.category ?? "").toUpperCase();
-    if (
-      needLeisure &&
-      (energy === "LEISURE" || energy === "PEOPLE" || cat === "PEOPLE")
-    ) {
-      return true;
+    if (lowEnergy) {
+      return isLeisureOrPeopleArea(it);
     }
+    const energy = (it.energy ?? "").toUpperCase();
     if (needCreative && energy === "CREATIVE") return true;
     if (needProb && energy === "PROB-SOLV") return true;
-    if (needLeisureOverride) return energy === "LEISURE";
     return false;
   });
 }
