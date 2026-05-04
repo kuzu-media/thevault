@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { getItemsByBox } from "@/lib/data";
 import { getBoxes } from "@/lib/categories";
 import { EditableText } from "@/components/editable-text";
+import { AreaPill } from "@/components/area-pill";
 import { NewItemRow } from "@/components/new-item-row";
 import { AtmPickButton } from "@/components/atm-pick-button";
 import type { Item } from "@/lib/types";
@@ -309,10 +310,22 @@ export default async function AtmPage({
                         </span>
                       </div>
 
-                      <div className="mt-2 flex items-center justify-between gap-2">
-                        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
-                          {it.energy ?? "—"}
-                        </span>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+                            {it.energy ?? "—"}
+                          </span>
+                          <span className="text-ink-mute/30">·</span>
+                          <AreaPill
+                            itemId={it.id}
+                            initial={it.category}
+                            field="category"
+                            options={boxes.map((b) => ({
+                              key: b.key,
+                              label: b.label,
+                            }))}
+                          />
+                        </div>
                         <AtmPickButton itemId={it.id} picked={picked} />
                       </div>
                     </div>

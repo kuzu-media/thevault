@@ -1,31 +1,45 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { updateItem } from "@/lib/actions";
 import { Select } from "./ui";
 
-// Compact box-key picker. Used on Counter rows to set/change the area.
+// Compact box-key picker. Counter rows set `area`; ATM rows set `category`.
 
 export function AreaPill({
   itemId,
   initial,
   options,
+  field = "area",
 }: {
   itemId: string;
   initial?: string | null;
   options: { key: string; label: string }[];
+  field?: "area" | "category";
 }) {
-  const [area, setArea] = useState(initial ?? "");
+  const router = useRouter();
+  const [value, setValue] = useState(initial ?? "");
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setValue(initial ?? "");
+  }, [initial]);
 
   return (
     <Select
       tone="brass"
-      value={area}
+      value={value}
       onChange={(e) => {
         const v = e.target.value;
-        setArea(v);
+        setValue(v);
         startTransition(async () => {
-          await updateItem(itemId, { area: v || null });
+          await updateItem(
+            itemId,
+            field === "category"
+              ? { category: v || null, area: null }
+              : { area: v || null },
+          );
+          router.refresh();
         });
       }}
       className={pending ? "opacity-50" : undefined}
