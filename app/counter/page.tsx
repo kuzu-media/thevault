@@ -85,7 +85,7 @@ export default async function CounterPage({
         Obligations — what has to happen. Filter by stress, urgency, or area.
       </p>
 
-      <details className="group mt-6">
+      <details className="group mt-6" open>
         <summary className="cursor-pointer list-none font-mono text-[10px] tracking-[0.24em] text-ink-mute hover:text-brass">
           <span className="inline-block transition-transform group-open:rotate-90">
             ›
