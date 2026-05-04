@@ -72,7 +72,9 @@ export default async function CounterPage({
     getBoxes(),
   ]);
   const filtered = applyFilter(all, active, area);
-  const areas = boxes.map((b) => b.key);
+  const areas = boxes
+    .filter((b) => all.some((it) => it.area === b.key))
+    .map((b) => b.key);
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">

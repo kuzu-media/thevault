@@ -35,7 +35,8 @@ export default async function AtmPage() {
         The ATM
       </h1>
       <p className="mt-1 text-[13px] text-ink-dim">
-        Withdraw what feels right. Nothing here is an obligation.
+        Pull out whatever you&apos;d like to work on today. Nothing here is
+        an obligation.
       </p>
 
       <div className="mt-6">

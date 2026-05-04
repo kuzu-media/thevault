@@ -21,7 +21,7 @@ export function AtmPickButton({
         startTransition(async () => {
           try {
             await pickFromAtm(itemId, next);
-            toast.success(next ? "Withdrawn for today." : "Returned to ATM.");
+            toast.success(next ? "On today's plan." : "Returned to ATM.");
           } catch (e: any) {
             toast.error(e?.message ?? "Couldn't update.");
           }
@@ -35,7 +35,7 @@ export function AtmPickButton({
         pending && "opacity-60",
       )}
     >
-      {picked ? "✓ Withdrawn" : "+ Withdraw"}
+      {picked ? "✓ For today" : "Let's do this today"}
     </button>
   );
 }
