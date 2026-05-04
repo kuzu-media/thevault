@@ -10,6 +10,8 @@ export type BoxCardProps = {
   /** When set, the card is a button (e.g. expand in place on the vault hub). */
   onPress?: () => void;
   selected?: boolean;
+  /** Tighter tile for the Boxes hub grid. */
+  size?: "default" | "compact";
 };
 
 const ACCENT: Record<NonNullable<BoxCardProps["accent"]>, string> = {
@@ -18,12 +20,17 @@ const ACCENT: Record<NonNullable<BoxCardProps["accent"]>, string> = {
   teal: "before:bg-teal/70",
 };
 
-// Calmer card: no plaque numbers, no big count, just title + a small dim
-// "X items" line. Counts are present-but-dim, not loud.
+// Calmer card: title + a small dim "X items" line (count always when provided).
 export function BoxCard(p: BoxCardProps) {
+  const compact = p.size === "compact";
   const shell = clsx(
-    "group relative flex h-[140px] w-full flex-col justify-end rounded-sm border border-vault-line/60 bg-vault-panel/40 p-4 transition hover:border-brass/40 hover:bg-vault-panel/60 sm:w-[240px]",
-    "before:absolute before:left-0 before:top-3 before:bottom-3 before:w-[2px]",
+    "group relative flex w-full flex-col justify-end rounded-sm border border-vault-line/60 bg-vault-panel/40 transition hover:border-brass/40 hover:bg-vault-panel/60",
+    compact
+      ? "min-h-[88px] p-2.5 sm:min-h-[92px]"
+      : "h-[140px] p-4 sm:w-[240px]",
+    compact
+      ? "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[1.5px]"
+      : "before:absolute before:left-0 before:top-3 before:bottom-3 before:w-[2px]",
     ACCENT[p.accent ?? "brass"],
     p.selected &&
       "border-brass/50 bg-vault-panel/70 ring-1 ring-brass/25 hover:border-brass/60",
@@ -31,12 +38,25 @@ export function BoxCard(p: BoxCardProps) {
 
   const inner = (
     <>
-      <h3 className="serif-h text-[22px] leading-tight text-ink">{p.title}</h3>
-      <div className="mt-2 flex items-baseline justify-between font-mono text-[10px] tracking-wider text-ink-mute">
+      <h3
+        className={clsx(
+          "serif-h leading-tight text-ink",
+          compact ? "text-[14px] sm:text-[15px]" : "text-[22px]",
+        )}
+      >
+        {p.title}
+      </h3>
+      <div
+        className={clsx(
+          "mt-1.5 flex items-baseline font-mono tracking-wider text-ink-mute",
+          compact ? "text-[9px]" : "mt-2 text-[10px]",
+          p.meta ? "justify-between" : "justify-end",
+        )}
+      >
         {p.meta && <span>{p.meta.toLowerCase()}</span>}
-        {p.count !== undefined && Number(p.count) > 0 && (
+        {p.count !== undefined && (
           <span>
-            {p.count} item{p.count === 1 ? "" : "s"}
+            {p.count} item{Number(p.count) === 1 ? "" : "s"}
           </span>
         )}
       </div>

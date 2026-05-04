@@ -5,7 +5,11 @@ import { getBoxes } from "@/lib/categories";
 import { EditableText, EditableFlag } from "@/components/editable-text";
 import { AreaPill } from "@/components/area-pill";
 import { NewItemRow } from "@/components/new-item-row";
-import { SortableList } from "@/components/sortable-list";
+import {
+  CounterSectionedLists,
+  type CounterSectionGroup,
+} from "@/components/counter-sectioned-lists";
+import type { SortableItem } from "@/components/sortable-list";
 import { TodayToggle } from "@/components/today-toggle";
 import { DeleteItemButton } from "@/components/delete-item-button";
 import type { Item } from "@/lib/types";
@@ -75,6 +79,21 @@ function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
   }
 }
 
+/** Preserve `filtered` iteration order within each triage bucket. */
+function partitionCounterItemsPreservingOrder(items: Item[]) {
+  const stress: Item[] = [];
+  const urgent: Item[] = [];
+  const must: Item[] = [];
+  const plain: Item[] = [];
+  for (const it of items) {
+    if (it.urgent && it.must) stress.push(it);
+    else if (it.urgent && !it.must) urgent.push(it);
+    else if (it.must && !it.urgent) must.push(it);
+    else plain.push(it);
+  }
+  return { stress, urgent, must, plain };
+}
+
 export default async function CounterPage({
   searchParams,
 }: {
@@ -91,6 +110,60 @@ export default async function CounterPage({
   const areas = boxes
     .filter((b) => all.some((it) => it.area === b.key))
     .map((b) => b.key);
+
+  const boxOpts = boxes.map((b) => ({ key: b.key, label: b.label }));
+  const { stress, urgent, must, plain } =
+    partitionCounterItemsPreservingOrder(filtered);
+
+  const counterGroups: CounterSectionGroup[] = [];
+  if (stress.length > 0) {
+    counterGroups.push({
+      key: "stress",
+      title: "Stressors",
+      items: stress.map(
+        (it): SortableItem => ({
+          id: it.id,
+          content: <CounterRow item={it} boxes={boxOpts} />,
+        }),
+      ),
+    });
+  }
+  if (urgent.length > 0) {
+    counterGroups.push({
+      key: "urgent",
+      title: "Other Urgent",
+      items: urgent.map(
+        (it): SortableItem => ({
+          id: it.id,
+          content: <CounterRow item={it} boxes={boxOpts} />,
+        }),
+      ),
+    });
+  }
+  if (must.length > 0) {
+    counterGroups.push({
+      key: "must",
+      title: "Other Must-Do",
+      items: must.map(
+        (it): SortableItem => ({
+          id: it.id,
+          content: <CounterRow item={it} boxes={boxOpts} />,
+        }),
+      ),
+    });
+  }
+  if (plain.length > 0) {
+    counterGroups.push({
+      key: "plain",
+      title: "Other",
+      items: plain.map(
+        (it): SortableItem => ({
+          id: it.id,
+          content: <CounterRow item={it} boxes={boxOpts} />,
+        }),
+      ),
+    });
+  }
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
@@ -146,20 +219,26 @@ export default async function CounterPage({
 
       <div className="mt-6">
         <div className="mb-3">
-          <NewItemRow box="COUNTER" placeholder="+ New admin item" />
+          <NewItemRow box="COUNTER" placeholder="+ New counter item" />
         </div>
-        <SortableList
-          key={`${active}:${area ?? ""}`}
-          items={filtered.map((it) => ({
-            id: it.id,
-            content: (
-              <CounterRow
-                item={it}
-                boxes={boxes.map((b) => ({ key: b.key, label: b.label }))}
-              />
-            ),
-          }))}
-        />
+        {filtered.length === 0 ? (
+          <p className="mt-4 text-[13px] text-ink-mute">
+            {active === "all"
+              ? "Nothing on the Counter yet."
+              : "No items match this filter."}
+          </p>
+        ) : (
+          <CounterSectionedLists
+            listKey={`${active}:${area ?? ""}`}
+            syncSignature={counterGroups
+              .map(
+                (g) =>
+                  `${g.key}:${g.items.map((i) => i.id).join(",")}`,
+              )
+              .join("|")}
+            groups={counterGroups}
+          />
+        )}
       </div>
     </div>
   );

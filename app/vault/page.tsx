@@ -2,19 +2,14 @@
 // ATM / Counter) live in the top nav; here we only show the things you
 // put away.
 //
-// Strictly configured-only:
-//   Boxes   = settings.boxes (and only those)
-//   Records = settings.records (and only those)
-//
-// Items whose `box` doesn't match a configured key are NOT rendered. They
-// stay in the database (so historical data isn't destroyed), but the vault
-// only surfaces what the user has explicitly set up. Edit the lists in
-// Settings → Boxes / Records.
+// Strictly configured-only: boxes = settings.boxes (and only those).
+// Record categories live on /records; items whose `box` isn't a configured
+// box key are not shown here. Edit boxes under Settings → Boxes.
 
 import Link from "next/link";
 import { getAllItems } from "@/lib/data";
-import { getBoxes, getRecords } from "@/lib/categories";
-import { BoxCard } from "@/components/box-card";
+import { getBoxes, type Box } from "@/lib/categories";
+import { layoutVaultHubBoxRows } from "@/lib/vault-box-layout";
 import { VaultBoxesSection } from "@/components/vault-boxes-section";
 import type { Item } from "@/lib/types";
 
@@ -29,20 +24,13 @@ function vaultItemSort(a: Item, b: Item): number {
 }
 
 export default async function VaultInteriorPage() {
-  const [items, boxes, records] = await Promise.all([
-    getAllItems(),
-    getBoxes(),
-    getRecords(),
-  ]);
+  const [items, boxes] = await Promise.all([getAllItems(), getBoxes()]);
 
-  // Per-key item count, restricted to configured keys.
+  // Per-key item count for configured storage boxes only.
   const counts = new Map<string, number>();
-  const configuredKeys = new Set<string>([
-    ...boxes.map((b) => b.key),
-    ...records.map((r) => r.key),
-  ]);
+  const configuredBoxKeys = new Set<string>(boxes.map((b) => b.key));
   for (const it of items) {
-    if (!configuredKeys.has(it.box)) continue;
+    if (!configuredBoxKeys.has(it.box)) continue;
     counts.set(it.box, (counts.get(it.box) ?? 0) + 1);
   }
 
@@ -51,13 +39,26 @@ export default async function VaultInteriorPage() {
     itemsByBox[b.key] = [];
   }
   for (const it of items) {
-    if (!configuredKeys.has(it.box)) continue;
+    if (!configuredBoxKeys.has(it.box)) continue;
     if (!itemsByBox[it.box]) itemsByBox[it.box] = [];
     itemsByBox[it.box].push(it);
   }
   for (const k of Object.keys(itemsByBox)) {
     itemsByBox[k].sort(vaultItemSort);
   }
+
+  const { rows: rowBoxes, orphans } = layoutVaultHubBoxRows(boxes);
+  const toVaultTile = (b: Box) => ({
+    key: b.key,
+    label: b.label,
+    count: counts.get(b.key) ?? 0,
+    slug: slugify(b.key),
+  });
+  const tileRows =
+    boxes.length === 0
+      ? []
+      : rowBoxes.map((row) => row.map((b) => (b ? toVaultTile(b) : null)));
+  const orphanTiles = orphans.map(toVaultTile);
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
@@ -71,30 +72,12 @@ export default async function VaultInteriorPage() {
       {/* Boxes section — click a box to see its items and add new rows here. */}
       <Header label="Open a box" />
       <VaultBoxesSection
-        boxes={boxes.map((b) => ({
-          key: b.key,
-          label: b.label,
-          count: counts.get(b.key) ?? 0,
-          slug: slugify(b.key),
-        }))}
+        rows={tileRows}
+        orphanTiles={orphanTiles}
         itemsByBox={itemsByBox}
       >
-        <NewTile href="/settings/boxes" label="+ New box" />
+        <NewTile href="/settings/boxes" label="+ New box" compact />
       </VaultBoxesSection>
-
-      {/* Records section — same treatment. */}
-      <Header label="The Records" />
-      <Grid>
-        {records.map((r) => (
-          <BoxCard
-            key={r.key}
-            title={r.label}
-            meta={r.meta || "reference"}
-            href={`/records/${slugify(r.key)}`}
-          />
-        ))}
-        <NewTile href="/settings/records" label="+ New record" />
-      </Grid>
     </div>
   );
 }
@@ -103,17 +86,27 @@ function Header({ label }: { label: string }) {
   return <div className="mt-10 eyebrow text-ink-mute">— {label} —</div>;
 }
 
-function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="mt-4 flex flex-wrap gap-4">{children}</div>;
-}
-
-function NewTile({ href, label }: { href: string; label: string }) {
+function NewTile({
+  href,
+  label,
+  compact,
+}: {
+  href: string;
+  label: string;
+  compact?: boolean;
+}) {
   return (
     <Link
       href={href}
-      className="flex h-[140px] w-full flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line text-ink-mute transition hover:border-brass/40 hover:text-brass sm:w-[240px]"
+      className={
+        compact
+          ? "flex min-h-[88px] flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line px-2 py-2 text-center text-ink-mute transition hover:border-brass/40 hover:text-brass sm:min-h-[92px]"
+          : "flex h-[140px] w-full flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line text-ink-mute transition hover:border-brass/40 hover:text-brass sm:w-[240px]"
+      }
     >
-      <span className="serif-h text-[16px]">{label}</span>
+      <span className={compact ? "serif-h text-[13px] leading-tight" : "serif-h text-[16px]"}>
+        {label}
+      </span>
     </Link>
   );
 }

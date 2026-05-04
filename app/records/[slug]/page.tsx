@@ -38,10 +38,10 @@ export default async function RecordPage({
         </p>
         <div className="mt-6 flex justify-center gap-2">
           <Link
-            href="/vault"
+            href="/records"
             className="rounded-sm border border-vault-line px-4 py-2 font-mono text-[10px] tracking-[0.18em] text-ink-mute hover:border-brass/40 hover:text-brass"
           >
-            ← BACK TO BOXES
+            ← BACK TO RECORDS
           </Link>
           <Link
             href="/settings/records"

@@ -22,7 +22,16 @@ import { reorderItems } from "@/lib/actions";
 
 export type SortableItem = { id: string; content: React.ReactNode };
 
-export function SortableList({ items }: { items: SortableItem[] }) {
+type SortableListProps = {
+  items: SortableItem[];
+  /**
+   * When set, drag-end invokes this with the new row order for this list only
+   * instead of calling `reorderItems` (e.g. Counter merges several sections).
+   */
+  onReorder?: (orderedItems: SortableItem[]) => void | Promise<void>;
+};
+
+export function SortableList({ items, onReorder }: SortableListProps) {
   const [order, setOrder] = useState(items);
   const [, startTransition] = useTransition();
 
@@ -55,7 +64,11 @@ export function SortableList({ items }: { items: SortableItem[] }) {
     const next = arrayMove(order, oldIndex, newIndex);
     setOrder(next);
     startTransition(async () => {
-      await reorderItems(next.map((i) => i.id));
+      if (onReorder) {
+        await onReorder(next);
+      } else {
+        await reorderItems(next.map((i) => i.id));
+      }
     });
   }
 

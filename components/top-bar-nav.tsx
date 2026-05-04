@@ -9,7 +9,13 @@ const ITEMS = [
   { href: "/drop", label: "Drop", hint: "g r", match: (p: string) => p.startsWith("/drop") },
   { href: "/atm", label: "ATM", hint: "g a", match: (p: string) => p.startsWith("/atm") },
   { href: "/counter", label: "Counter", hint: "g c", match: (p: string) => p.startsWith("/counter") },
-  { href: "/vault", label: "Boxes", hint: "g v", match: (p: string) => p.startsWith("/vault") || p.startsWith("/records") },
+  { href: "/vault", label: "Boxes", hint: "g v", match: (p: string) => p.startsWith("/vault") },
+  {
+    href: "/records",
+    label: "RECORDS",
+    hint: "g e",
+    match: (p: string) => p === "/records" || p.startsWith("/records/"),
+  },
   { href: "/settings", label: "Settings", hint: "g s", match: (p: string) => p.startsWith("/settings") },
 ];
 
