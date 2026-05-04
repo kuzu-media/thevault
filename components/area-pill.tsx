@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useTransition } from "react";
+import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { updateItem } from "@/lib/actions";
 import { Select } from "./ui";
@@ -32,7 +33,7 @@ export function AreaPill({
     <Select
       tone="brass"
       value={value}
-      className={className}
+      className={clsx(className, pending && "opacity-50")}
       onChange={(e) => {
         const v = e.target.value;
         setValue(v);
@@ -46,7 +47,6 @@ export function AreaPill({
           router.refresh();
         });
       }}
-      className={pending ? "opacity-50" : undefined}
     >
       <option className="bg-vault-bg" value="">
         — box —
