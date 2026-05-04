@@ -18,14 +18,45 @@ type Phase = "open" | "sealing" | "sealed";
 
 const ANIM_MS = 1600;
 
+/** Dark dial art for /sealed (ceremony); default matches app light theme. */
+const DIAL_LIGHT = {
+  faceA: "#faf8f4",
+  faceB: "#e4dcd0",
+  glowA: "rgba(201,161,74,0.28)",
+  glowB: "rgba(201,161,74,0)",
+  ringStroke: "#b8aa95",
+  boltBorder: "#b8aa95",
+  boltBg: "#e9e2d6",
+  boltGlow: "rgba(201,161,74,0.22)",
+  hubBg: "#f6f1ea",
+  hubShadow: "rgba(201,161,74,0.28)",
+  lockFill: "rgba(201,161,74,0.12)",
+} as const;
+
+const DIAL_DARK = {
+  faceA: "#1f2228",
+  faceB: "#0c0e11",
+  glowA: "rgba(224,185,99,0.25)",
+  glowB: "rgba(224,185,99,0)",
+  ringStroke: "#3a322b",
+  boltBorder: "#3a322b",
+  boltBg: "#1a1d22",
+  boltGlow: "rgba(224,185,99,0.15)",
+  hubBg: "#0c0e11",
+  hubShadow: "rgba(224,185,99,0.20)",
+  lockFill: "rgba(224,185,99,0.08)",
+} as const;
+
 export function VaultDial({
   sealed,
   animate = false,
   size = 440,
+  ceremonyDark = false,
 }: {
   sealed: boolean;
   animate?: boolean;
   size?: number;
+  ceremonyDark?: boolean;
 }) {
   const [phase, setPhase] = useState<Phase>(
     sealed ? (animate ? "sealing" : "sealed") : animate ? "sealing" : "open",
@@ -51,6 +82,9 @@ export function VaultDial({
 
   const isSealed = sealed && phase !== "open";
   const animating = phase === "sealing";
+  const c = ceremonyDark ? DIAL_DARK : DIAL_LIGHT;
+  const faceId = ceremonyDark ? "dial-face-dark" : "dial-face";
+  const glowId = ceremonyDark ? "brass-glow-dark" : "brass-glow";
 
   // Outer ring rotation: 0 when open, 270° when sealed.
   const ringTurn = mounted && isSealed ? 270 : 0;
@@ -99,13 +133,13 @@ export function VaultDial({
         style={{ transform: `rotate(${ringTurn}deg)` }}
       >
         <defs>
-          <radialGradient id="dial-face" cx="50%" cy="40%" r="65%">
-            <stop offset="0%" stopColor="#faf8f4" />
-            <stop offset="100%" stopColor="#e4dcd0" />
+          <radialGradient id={faceId} cx="50%" cy="40%" r="65%">
+            <stop offset="0%" stopColor={c.faceA} />
+            <stop offset="100%" stopColor={c.faceB} />
           </radialGradient>
-          <radialGradient id="brass-glow" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stopColor="rgba(201,161,74,0.28)" />
-            <stop offset="100%" stopColor="rgba(201,161,74,0)" />
+          <radialGradient id={glowId} cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stopColor={c.glowA} />
+            <stop offset="100%" stopColor={c.glowB} />
           </radialGradient>
         </defs>
 
@@ -114,7 +148,7 @@ export function VaultDial({
           cx="220"
           cy="220"
           r="200"
-          fill="url(#brass-glow)"
+          fill={`url(#${glowId})`}
           style={{
             opacity: 0.6,
             animation: animating
@@ -129,8 +163,8 @@ export function VaultDial({
           cx="220"
           cy="220"
           r="180"
-          fill="url(#dial-face)"
-          stroke="#b8aa95"
+          fill={`url(#${faceId})`}
+          stroke={c.ringStroke}
           strokeWidth="1.5"
         />
 
@@ -207,16 +241,16 @@ export function VaultDial({
       {[0, 90, 180, 270].map((deg) => (
         <div
           key={deg}
-          className="absolute left-1/2 top-1/2 h-[18px] w-[36px] -translate-x-1/2 rounded-sm border border-[#b8aa95] bg-[#e9e2d6] transition-transform duration-700 ease-[cubic-bezier(0.65,0,0.35,1)]"
+          className="absolute left-1/2 top-1/2 h-[18px] w-[36px] -translate-x-1/2 rounded-sm border transition-transform duration-700 ease-[cubic-bezier(0.65,0,0.35,1)]"
           style={{
+            borderColor: c.boltBorder,
+            backgroundColor: c.boltBg,
             transform: `translate(-50%, -50%) rotate(${deg}deg) translateY(-${
               size / 2 - (mounted && isSealed ? 0 : 12)
             }px)`,
             transitionDelay: animating ? "400ms" : "0ms",
             boxShadow:
-              isSealed && !animating
-                ? "0 0 8px rgba(201,161,74,0.22)"
-                : undefined,
+              isSealed && !animating ? `0 0 8px ${c.boltGlow}` : undefined,
           }}
         />
       ))}
@@ -224,11 +258,15 @@ export function VaultDial({
       {/* Center plate with lock */}
       <div
         className={clsx(
-          "absolute left-1/2 top-1/2 flex h-[140px] w-[140px] flex-col items-center justify-center gap-2 rounded-full border border-brass/35 bg-[#f6f1ea] transition-shadow duration-700",
-          isSealed && "shadow-[0_0_60px_rgba(201,161,74,0.28)]",
+          "absolute left-1/2 top-1/2 flex h-[140px] w-[140px] flex-col items-center justify-center gap-2 rounded-full border border-brass/35 transition-shadow duration-700",
+          isSealed &&
+            (ceremonyDark
+              ? "shadow-[0_0_60px_rgba(224,185,99,0.20)]"
+              : "shadow-[0_0_60px_rgba(201,161,74,0.28)]"),
         )}
         style={{
           transform: "translate(-50%, -50%)",
+          backgroundColor: c.hubBg,
           animation: animating
             ? "plate-pulse 600ms ease-out 700ms 1"
             : undefined,
@@ -241,7 +279,7 @@ export function VaultDial({
               : undefined,
           }}
         >
-          <LockIcon sealed={isSealed} />
+          <LockIcon sealed={isSealed} lockFill={c.lockFill} />
         </div>
         <span
           className={clsx(
@@ -256,7 +294,13 @@ export function VaultDial({
   );
 }
 
-function LockIcon({ sealed }: { sealed: boolean }) {
+function LockIcon({
+  sealed,
+  lockFill,
+}: {
+  sealed: boolean;
+  lockFill: string;
+}) {
   return (
     <svg width="32" height="36" viewBox="0 0 32 36" fill="none">
       {/* Shackle — slides up when open */}
@@ -280,7 +324,7 @@ function LockIcon({ sealed }: { sealed: boolean }) {
         rx="2"
         stroke="#E0B963"
         strokeWidth="2.5"
-        fill="rgba(201,161,74,0.12)"
+        fill={lockFill}
       />
       {/* Keyhole */}
       <circle cx="16" cy="23" r="2" fill="#E0B963" />

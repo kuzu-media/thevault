@@ -75,9 +75,9 @@ export function SealedScreen({
   }
 
   return (
-    <div className="relative min-h-[100vh] overflow-hidden bg-vault-bg">
+    <div className="sealed-vault-scheme relative min-h-[100vh] overflow-hidden bg-vault-bg text-ink">
       {/* Subtle vignette */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(201,161,74,0.10),_transparent_70%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(224,185,99,0.06),_transparent_70%)]" />
 
       {/* Minimal sealed-mode header */}
       <header className="relative z-10 flex items-center justify-between px-6 py-5 md:px-10">
@@ -101,7 +101,7 @@ export function SealedScreen({
 
       {/* Center stage */}
       <div className="relative z-10 mx-auto flex max-w-[640px] flex-col items-center px-4 pb-16 pt-8 md:pt-12">
-        <VaultDial sealed={sealed} animate={animate} size={420} />
+        <VaultDial sealed={sealed} animate={animate} size={420} ceremonyDark />
 
         <div
           className={clsx(
