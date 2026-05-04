@@ -6,6 +6,7 @@ import { EditableText } from "@/components/editable-text";
 import { AreaPill } from "@/components/area-pill";
 import { NewItemRow } from "@/components/new-item-row";
 import { AtmPickButton } from "@/components/atm-pick-button";
+import { DeleteItemButton } from "@/components/delete-item-button";
 import type { Item } from "@/lib/types";
 
 // Convert a BOX_KEY → slug for the vault drilldown URL.
@@ -283,6 +284,7 @@ export default async function AtmPage({
                         picked={picked}
                         size="compact"
                       />
+                      <DeleteItemButton itemId={it.id} />
                     </div>
                   );
                 })}

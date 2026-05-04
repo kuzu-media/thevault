@@ -1,7 +1,7 @@
 // Distinct icons for the two flags toggled per item.
 //
-// Urgent  →  ⚡ lightning bolt — time-pressure, rust color
-// Must-do →  ★ star          — anchor / required, brass color
+// Urgent  →  ⚡ lightning bolt — time-pressure (amber; parent sets text color)
+// Must-do →  ★ star          — anchor / required (sky; parent sets text color)
 //
 // Each icon has a `filled` variant (when the flag is ON) and an outline
 // variant (when OFF) so the meaning is legible in both states.

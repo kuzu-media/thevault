@@ -7,6 +7,7 @@ import { AreaPill } from "@/components/area-pill";
 import { NewItemRow } from "@/components/new-item-row";
 import { SortableList } from "@/components/sortable-list";
 import { TodayToggle } from "@/components/today-toggle";
+import { DeleteItemButton } from "@/components/delete-item-button";
 import type { Item } from "@/lib/types";
 
 type Filter =
@@ -159,6 +160,8 @@ function CounterRow({
   boxes: { key: string; label: string }[];
 }) {
   const stressor = item.urgent && item.must;
+  const mustOnly = item.must && !item.urgent;
+  const urgentOnly = item.urgent && !item.must;
   const onToday = (item.todayOrder ?? null) !== null;
   return (
     <div
@@ -168,16 +171,22 @@ function CounterRow({
           ? "border-brass/40"
           : stressor
             ? "border-rust/30"
-            : item.must || item.urgent
-              ? "border-brass/30"
-              : "border-vault-line/60",
+            : mustOnly
+              ? "border-sky-600/35"
+              : urgentOnly
+                ? "border-amber-500/45"
+                : "border-vault-line/60",
       )}
     >
       {stressor || item.urgent || item.must ? (
         <div
           className={clsx(
             "w-1 shrink-0 self-stretch rounded-sm",
-            stressor ? "bg-rust" : "bg-brass",
+            stressor
+              ? "bg-rust"
+              : mustOnly
+                ? "bg-sky-600"
+                : "bg-amber-500",
           )}
           aria-hidden
         />
@@ -215,17 +224,18 @@ function CounterRow({
           field="urgent"
           initial={item.urgent}
           kind="urgent"
-          className="text-rust"
+          className="text-amber-700"
         />
         <EditableFlag
           itemId={item.id}
           field="must"
           initial={item.must}
           kind="must"
-          className="text-brass"
+          className="text-sky-600"
         />
       </div>
       <TodayToggle itemId={item.id} on={onToday} size="sm" />
+      <DeleteItemButton itemId={item.id} />
     </div>
   );
 }

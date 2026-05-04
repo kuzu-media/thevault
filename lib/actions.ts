@@ -180,6 +180,10 @@ export async function softDeleteItem(itemId: string) {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", itemId);
   revalidatePath("/");
+  revalidatePath("/atm");
+  revalidatePath("/counter");
+  revalidatePath("/drop");
+  revalidatePath("/vault");
 }
 
 // Triage a Drop item. Destination is explicit — Till is for energy-matched

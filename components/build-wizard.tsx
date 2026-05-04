@@ -316,10 +316,10 @@ function ReviewStep({
       <Group label="Stressors" tone="rust">
         {stressors.length === 0 ? <Empty /> : stressors.map((it) => <Row key={it.id} item={it} />)}
       </Group>
-      <Group label="Time-sensitive" tone="rust-soft">
+      <Group label="Time-sensitive" tone="amber">
         {timeSensitive.length === 0 ? <Empty /> : timeSensitive.map((it) => <Row key={it.id} item={it} />)}
       </Group>
-      <Group label="Must-do" tone="brass">
+      <Group label="Must-do" tone="sky">
         {mustDo.length === 0 ? <Empty /> : mustDo.map((it) => <Row key={it.id} item={it} />)}
       </Group>
     </Step>
@@ -363,7 +363,7 @@ function Group({
   children,
 }: {
   label: string;
-  tone: "rust" | "rust-soft" | "brass";
+  tone: "rust" | "rust-soft" | "brass" | "sky" | "amber";
   children: React.ReactNode;
 }) {
   return (
@@ -376,7 +376,11 @@ function Group({
               ? "rounded-full bg-rust"
               : tone === "rust-soft"
                 ? "rounded-full bg-rust/50"
-                : "rounded-sm bg-brass",
+                : tone === "amber"
+                  ? "rounded-full bg-amber-500"
+                  : tone === "sky"
+                    ? "rounded-sm bg-sky-600"
+                    : "rounded-sm bg-brass",
           )}
         />
         <h3 className="eyebrow">{label}</h3>

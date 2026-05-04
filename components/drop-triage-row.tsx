@@ -259,14 +259,14 @@ export function DropTriageRow({
               onChange={setUrgent}
               kind="urgent"
               label="Urgent (U)"
-              color="text-rust"
+              color="text-amber-700"
             />
             <FlagToggle
               on={must}
               onChange={setMust}
               kind="must"
               label="Must (M)"
-              color="text-brass"
+              color="text-sky-600"
             />
           </div>
         )}

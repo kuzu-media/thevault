@@ -70,7 +70,7 @@ export function EditableText({
 }
 
 // Visual key:
-//   urgent (⚡ lightning) → time pressure, rust color
+//   urgent (⚡ lightning) → time pressure, amber (see Counter / Drop)
 //   must   (★ star)       → required / anchor, brass color
 // Each renders an outline when OFF (still clearly that flag) and fills when ON.
 export function EditableFlag({

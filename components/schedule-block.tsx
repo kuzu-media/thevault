@@ -7,8 +7,8 @@ import type { ScheduledBlock } from "@/lib/daily-plan";
 
 const BUCKET_COLOR: Record<string, string> = {
   STRESSOR: "border-l-rust",
-  TIME_SENSITIVE: "border-l-rust/60",
-  MUST_DO: "border-l-brass",
+  TIME_SENSITIVE: "border-l-amber-500",
+  MUST_DO: "border-l-sky-600",
   OTHER_ADMIN: "border-l-ink-mute",
   ATM_PICK: "border-l-teal",
   CUSTOM: "border-l-ink-mute",
