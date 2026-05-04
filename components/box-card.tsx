@@ -26,7 +26,7 @@ export function BoxCard(p: BoxCardProps) {
   const shell = clsx(
     "group relative flex w-full flex-col justify-end rounded-sm border border-vault-line/60 bg-vault-panel/40 transition hover:border-brass/40 hover:bg-vault-panel/60",
     compact
-      ? "min-h-[88px] min-w-0 p-2.5 sm:min-h-[92px]"
+      ? "min-h-[96px] min-w-0 p-3 sm:min-h-[100px]"
       : "h-[140px] p-4 sm:w-[240px]",
     compact
       ? "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[1.5px]"
@@ -41,7 +41,7 @@ export function BoxCard(p: BoxCardProps) {
       <h3
         className={clsx(
           "serif-h leading-tight text-ink",
-          compact ? "min-w-0 truncate text-[14px] sm:text-[15px]" : "text-[22px]",
+          compact ? "min-w-0 truncate text-[17px] sm:text-[18px]" : "text-[22px]",
         )}
       >
         {p.title}
@@ -49,7 +49,7 @@ export function BoxCard(p: BoxCardProps) {
       <div
         className={clsx(
           "mt-1.5 flex items-baseline font-mono tracking-wider text-ink-mute",
-          compact ? "text-[9px]" : "mt-2 text-[10px]",
+          compact ? "text-[10px] sm:text-[11px]" : "mt-2 text-[10px]",
           p.meta ? "justify-between" : "justify-end",
         )}
       >

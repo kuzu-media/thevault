@@ -151,25 +151,26 @@ export default async function AtmPage({
           </span>{" "}
           {filterSummary(active, categoryDecoded)}
         </summary>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {FILTERS.map((f) => (
-            <Link
-              key={f.key}
-              href={atmHref(f.key)}
-              className={clsx(
-                "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
-                active === f.key
-                  ? "border-brass bg-brass/10 text-brass"
-                  : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
-              )}
-            >
-              {f.label}
-            </Link>
-          ))}
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map((f) => (
+              <Link
+                key={f.key}
+                href={atmHref(f.key)}
+                className={clsx(
+                  "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
+                  active === f.key
+                    ? "border-brass bg-brass/10 text-brass"
+                    : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
+                )}
+              >
+                {f.label}
+              </Link>
+            ))}
+          </div>
 
           {categoryKeys.length > 0 && (
-            <>
-              <span className="px-2 self-center text-ink-mute/40">·</span>
+            <div className="flex flex-wrap gap-2">
               {categoryKeys.map((cat) => {
                 const chipLabel =
                   cat === ""
@@ -192,7 +193,7 @@ export default async function AtmPage({
                   </Link>
                 );
               })}
-            </>
+            </div>
           )}
         </div>
       </details>

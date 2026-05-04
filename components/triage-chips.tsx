@@ -2,14 +2,20 @@
 import { useTransition } from "react";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { moveItemToBox, softDeleteItem } from "@/lib/actions";
+import { hardDeleteItem, moveItemToBox, softDeleteItem } from "@/lib/actions";
 
 export function TriageChips({
   itemId,
   targets,
+  deleteLabel = "Dismiss",
+  deleteHard = false,
 }: {
   itemId: string;
   targets: { label: string; box: string }[];
+  /** Label for the trailing remove control (default: Dismiss). */
+  deleteLabel?: string;
+  /** When true, permanently deletes the row instead of soft-delete. */
+  deleteHard?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -37,16 +43,21 @@ export function TriageChips({
         onClick={() =>
           startTransition(async () => {
             try {
-              await softDeleteItem(itemId);
-              toast.success("Dismissed.");
+              if (deleteHard) {
+                await hardDeleteItem(itemId);
+                toast.success("Deleted.");
+              } else {
+                await softDeleteItem(itemId);
+                toast.success("Dismissed.");
+              }
             } catch {
-              toast.error("Couldn't dismiss.");
+              toast.error(deleteHard ? "Couldn't delete." : "Couldn't dismiss.");
             }
           })
         }
-        className="rounded-sm border border-vault-line px-2 py-1 font-mono text-[10px] tracking-wider text-ink-mute hover:border-rust hover:text-rust"
+        className="rounded-sm border border-vault-line px-2 py-1 font-mono text-[10px] tracking-wider text-ink-mute transition hover:border-rust hover:text-rust"
       >
-        Dismiss
+        {deleteLabel}
       </button>
     </div>
   );

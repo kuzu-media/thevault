@@ -33,7 +33,7 @@ function findTile(
 function EmptySlot() {
   return (
     <div
-      className="min-h-[88px] rounded-sm border border-transparent sm:min-h-[92px]"
+      className="min-h-[96px] rounded-sm border border-transparent sm:min-h-[100px]"
       aria-hidden
     />
   );
@@ -43,9 +43,9 @@ function NewBoxLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="flex min-h-[88px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line px-2 py-2 text-center text-ink-mute transition hover:border-brass/40 hover:text-brass sm:min-h-[92px]"
+      className="flex min-h-[96px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line px-2 py-2 text-center text-ink-mute transition hover:border-brass/40 hover:text-brass sm:min-h-[100px]"
     >
-      <span className="serif-h text-[13px] leading-tight">{label}</span>
+      <span className="serif-h text-[16px] leading-tight sm:text-[17px]">{label}</span>
     </Link>
   );
 }

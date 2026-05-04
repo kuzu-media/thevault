@@ -8,7 +8,7 @@
 //   - j / arrow-down  → focus the next row
 //   - k / arrow-up    → focus the previous row
 //   - listens for `vault:drop-advance` events fired by rows after a send /
-//     dismiss; on revalidation the row leaves the DOM, so we just refocus
+//     delete; on revalidation the row leaves the DOM, so we just refocus
 //     the new first row.
 //
 // The controller renders nothing.

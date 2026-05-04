@@ -171,8 +171,7 @@ export default async function CounterPage({
         The Counter
       </h1>
       <p className="mt-1 text-[13px] text-ink-dim">
-        Obligations — what has to happen. Filter by stress lane, urgent-only,
-        must-only, minutes, or area.
+        Obligations — what has to happen.
       </p>
 
       <details className="group mt-6" open>

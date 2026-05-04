@@ -75,7 +75,7 @@ export default async function DropPage() {
           </span>
           <span className="flex items-center gap-1.5">
             <Kbd keys="enter" size="xs" /> send <Kbd keys="x" size="xs" />{" "}
-            dismiss
+            delete
           </span>
           <span className="ml-auto opacity-70">
             <Kbd keys="?" size="xs" /> all shortcuts

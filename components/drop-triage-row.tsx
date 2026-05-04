@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import clsx from "clsx";
-import { triageDropItem, softDeleteItem } from "@/lib/actions";
+import { hardDeleteItem, triageDropItem } from "@/lib/actions";
 import { EditableText } from "@/components/editable-text";
 import { FlagIcon, type FlagKind } from "@/components/flag-icons";
 import { Kbd } from "@/components/kbd";
@@ -13,7 +13,7 @@ import type { Item } from "@/lib/types";
 // Drop row, two compact lines:
 //
 //   [edge]  [ATM|COUNTER]  Title (editable)              [Box ▼]
-//           ⏱ 30m   energy / urgent / must               Dismiss · Send
+//           ⏱ 30m   energy / urgent / must               Delete · Send
 //
 // 4-px coloured left edge tracks the destination so a glance reads where
 // each row will land. The destination toggle is the only place the user
@@ -110,8 +110,8 @@ export function DropTriageRow({
       options: { enabled: focused && dest === "ATM" },
     },
   );
-  useShortcut("x", () => dismiss(), {
-    label: "Dismiss thought",
+  useShortcut("x", () => deleteThought(), {
+    label: "Delete thought",
     group: "Drop",
     options: { enabled: focused },
   });
@@ -153,15 +153,14 @@ export function DropTriageRow({
     });
   }
 
-  function dismiss() {
-    // No confirm — soft-delete is reversible from the DB. Speed > confirmation.
+  function deleteThought() {
     startTransition(async () => {
       try {
-        await softDeleteItem(item.id);
-        toast.success("Dismissed.");
+        await hardDeleteItem(item.id);
+        toast.success("Deleted.");
         window.dispatchEvent(new CustomEvent("vault:drop-advance"));
       } catch (e: any) {
-        toast.error(e?.message ?? "Couldn't dismiss.");
+        toast.error(e?.message ?? "Couldn't delete.");
       }
     });
   }
@@ -273,12 +272,12 @@ export function DropTriageRow({
 
         <div className="ml-auto flex items-center gap-1">
           <button
-            onClick={dismiss}
+            onClick={deleteThought}
             disabled={pending}
-            title="Dismiss"
+            title="Delete"
             className="rounded-sm px-2 py-1 font-mono text-[10px] tracking-wider text-ink-mute/60 transition hover:bg-rust/10 hover:text-rust"
           >
-            DISMISS
+            DELETE
           </button>
           <button
             onClick={send}

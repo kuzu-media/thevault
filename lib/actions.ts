@@ -186,6 +186,18 @@ export async function softDeleteItem(itemId: string) {
   revalidatePath("/vault");
 }
 
+/** Permanently removes the row (use sparingly; soft-delete is the default elsewhere). */
+export async function hardDeleteItem(itemId: string) {
+  const { sb } = await requireUser();
+  await sb.from("items").delete().eq("id", itemId);
+  revalidatePath("/");
+  revalidatePath("/atm");
+  revalidatePath("/counter");
+  revalidatePath("/drop");
+  revalidatePath("/vault");
+  revalidatePath("/records");
+}
+
 // Triage a Drop item. Destination is explicit — Till is for energy-matched
 // pulls (carries energy + minutes), Drawer is for obligations (carries
 // urgent/must flags + minutes). Box is the category and works on both.
