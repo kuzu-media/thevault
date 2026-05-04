@@ -11,6 +11,7 @@ import { getBoxes, type Box } from "@/lib/categories";
 import { layoutVaultHubBoxRows } from "@/lib/vault-box-layout";
 import { sortedItemsForHubBox } from "@/lib/vault-hub-items";
 import { VaultBoxesSection } from "@/components/vault-boxes-section";
+import type { Item } from "@/lib/types";
 
 export default async function VaultInteriorPage() {
   const [items, boxes] = await Promise.all([getAllItems(), getBoxes()]);
