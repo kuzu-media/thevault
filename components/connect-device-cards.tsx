@@ -277,10 +277,14 @@ function InstallMacCard({ standalone }: { standalone: boolean }) {
       <Steps
         items={[
           <>
-            <strong className="text-ink">Safari</strong>: with this site open,
-            File → <em>Add to Dock…</em> (Sonoma+). Or in{" "}
-            <strong className="text-ink">Chrome</strong>: ⋮ menu → Cast, save,
-            and share → <em>Install The Vault</em>.
+            <strong className="text-ink">Safari</strong> (easiest): with this
+            site open, File → <em>Add to Dock…</em> (macOS Sonoma+).{" "}
+            <strong className="text-ink">Chrome</strong>: look for the install
+            icon in the address bar, or ⋮ → <em>Cast, save and share</em> →{" "}
+            <em>Install page as app…</em> (only after the page has loaded once
+            with the update that adds install support). If Install is missing,
+            use <em>Create shortcut…</em> and turn on{" "}
+            <em>Open as window</em>.
           </>,
           <>
             Right-click the new Dock icon → <em>Options</em> →{" "}

@@ -9,6 +9,7 @@ import { GlobalShortcuts } from "@/components/global-shortcuts";
 import { ShortcutCheatSheet } from "@/components/shortcut-cheat-sheet";
 import { ShortcutsHintBar } from "@/components/shortcuts-hint-bar";
 import { UnhandledRejectionGuard } from "@/components/unhandled-rejection-guard";
+import { RegisterServiceWorker } from "@/components/register-service-worker";
 
 export const metadata: Metadata = {
   title: "The Vault",
@@ -29,6 +30,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-vault-bg text-ink min-h-screen">
+        <RegisterServiceWorker />
         <div className="absolute inset-0 lamp-glow pointer-events-none" />
         <ShortcutsProvider>
           <TopBarShell>
