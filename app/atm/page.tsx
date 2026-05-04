@@ -269,12 +269,12 @@ export default async function AtmPage({
                         )}
                         placeholder="(no title)"
                       />
-                      <span className="flex w-16 shrink-0 items-baseline justify-end gap-0.5 whitespace-nowrap font-mono text-[11px] text-ink-mute">
+                      <span className="flex shrink-0 items-baseline justify-end gap-1 whitespace-nowrap font-mono text-[11px] text-ink-mute tabular-nums">
                         <EditableText
                           itemId={it.id}
                           field="minutes"
                           initial={it.minutes}
-                          className="w-10 bg-transparent px-0 text-right text-[11px]"
+                          className="min-w-[3.25rem] w-16 max-w-[4.5rem] bg-transparent px-0 text-right text-[11px] tabular-nums"
                           numeric
                           placeholder="—"
                         />

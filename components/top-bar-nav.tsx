@@ -7,8 +7,8 @@ import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 const ITEMS = [
   { href: "/", label: "Today", hint: "g d", match: (p: string) => p === "/" || p.startsWith("/build") },
   { href: "/drop", label: "Drop", hint: "g r", match: (p: string) => p.startsWith("/drop") },
-  { href: "/atm", label: "ATM", hint: "g a", match: (p: string) => p.startsWith("/atm") },
   { href: "/counter", label: "Counter", hint: "g c", match: (p: string) => p.startsWith("/counter") },
+  { href: "/atm", label: "ATM", hint: "g a", match: (p: string) => p.startsWith("/atm") },
   { href: "/vault", label: "Boxes", hint: "g v", match: (p: string) => p.startsWith("/vault") },
   {
     href: "/records",
