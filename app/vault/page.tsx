@@ -15,6 +15,18 @@ import Link from "next/link";
 import { getAllItems } from "@/lib/data";
 import { getBoxes, getRecords } from "@/lib/categories";
 import { BoxCard } from "@/components/box-card";
+import { VaultBoxesSection } from "@/components/vault-boxes-section";
+import type { Item } from "@/lib/types";
+
+/** Match `getItemsByBox` ordering: today_order asc (nulls last), then created_at. */
+function vaultItemSort(a: Item, b: Item): number {
+  const ao = a.todayOrder;
+  const bo = b.todayOrder;
+  if (ao != null && bo != null && ao !== bo) return ao - bo;
+  if (ao != null && bo == null) return -1;
+  if (ao == null && bo != null) return 1;
+  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+}
 
 export default async function VaultInteriorPage() {
   const [items, boxes, records] = await Promise.all([
@@ -34,29 +46,41 @@ export default async function VaultInteriorPage() {
     counts.set(it.box, (counts.get(it.box) ?? 0) + 1);
   }
 
+  const itemsByBox: Record<string, Item[]> = {};
+  for (const b of boxes) {
+    itemsByBox[b.key] = [];
+  }
+  for (const it of items) {
+    if (!configuredKeys.has(it.box)) continue;
+    if (!itemsByBox[it.box]) itemsByBox[it.box] = [];
+    itemsByBox[it.box].push(it);
+  }
+  for (const k of Object.keys(itemsByBox)) {
+    itemsByBox[k].sort(vaultItemSort);
+  }
+
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
-        The vault.
+        The Boxes
       </h1>
       <p className="mt-1 text-[13px] text-ink-dim">
-        Storage. Long-term places for ideas, plans, and reference.
+        Put away all the projects, tasks, and ideas here.
       </p>
 
-      {/* Boxes section — always visible. When empty, the only tile is
-          "+ New box" so the path forward is obvious. */}
-      <Header label="The Boxes" />
-      <Grid>
-        {boxes.map((b) => (
-          <BoxCard
-            key={b.key}
-            title={b.label}
-            count={counts.get(b.key) ?? 0}
-            href={`/vault/${slugify(b.key)}`}
-          />
-        ))}
+      {/* Boxes section — click a box to see its items and add new rows here. */}
+      <Header label="Open a box" />
+      <VaultBoxesSection
+        boxes={boxes.map((b) => ({
+          key: b.key,
+          label: b.label,
+          count: counts.get(b.key) ?? 0,
+          slug: slugify(b.key),
+        }))}
+        itemsByBox={itemsByBox}
+      >
         <NewTile href="/settings/boxes" label="+ New box" />
-      </Grid>
+      </VaultBoxesSection>
 
       {/* Records section — same treatment. */}
       <Header label="The Records" />

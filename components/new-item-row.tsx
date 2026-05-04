@@ -6,10 +6,13 @@ export function NewItemRow({
   box,
   placeholder = "+ New item",
   defaults = {},
+  onCreated,
 }: {
   box: string;
   placeholder?: string;
   defaults?: Record<string, unknown>;
+  /** Runs after a row is successfully inserted (e.g. refresh parent lists). */
+  onCreated?: () => void;
 }) {
   const [title, setTitle] = useState("");
   const [pending, startTransition] = useTransition();
@@ -20,6 +23,7 @@ export function NewItemRow({
     startTransition(async () => {
       await createItem(box, t, defaults as any);
       setTitle("");
+      onCreated?.();
     });
   }
 

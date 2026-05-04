@@ -272,6 +272,7 @@ export async function createItem(box: string, title: string, extras: z.input<typ
     .select("id")
     .single();
   revalidatePath("/", "layout");
+  revalidatePath("/vault");
   return data?.id;
 }
 

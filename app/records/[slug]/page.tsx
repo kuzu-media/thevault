@@ -41,7 +41,7 @@ export default async function RecordPage({
             href="/vault"
             className="rounded-sm border border-vault-line px-4 py-2 font-mono text-[10px] tracking-[0.18em] text-ink-mute hover:border-brass/40 hover:text-brass"
           >
-            ← BACK TO VAULT
+            ← BACK TO BOXES
           </Link>
           <Link
             href="/settings/records"

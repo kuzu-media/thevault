@@ -35,19 +35,34 @@ const VALID_FILTERS: readonly Filter[] = [
   "byarea",
 ];
 
+/** Next may pass a single string or repeated keys as `string[]`. */
+function firstQuery(
+  v: string | string[] | undefined,
+): string | undefined {
+  if (v === undefined) return undefined;
+  return Array.isArray(v) ? v[0] : v;
+}
+
 function coerceFilter(raw: string | undefined): Filter {
   const r = raw ?? "all";
   return VALID_FILTERS.includes(r as Filter) ? (r as Filter) : "all";
 }
 
+/**
+ * Filter semantics match the row chrome on the Counter:
+ *   Stress  → both flags (rust “stressor” strip)
+ *   Urgent  → urgent only, not must (amber strip)
+ *   Must    → must only, not urgent (sky strip)
+ * Items with both flags appear only under Stress (and All), not under Urgent or Must.
+ */
 function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
   switch (f) {
     case "stress":
       return items.filter((i) => i.urgent && i.must);
     case "urgent":
-      return items.filter((i) => i.urgent);
+      return items.filter((i) => i.urgent && !i.must);
     case "must":
-      return items.filter((i) => i.must);
+      return items.filter((i) => i.must && !i.urgent);
     case "quick":
       return items.filter(
         (i) => (i.minutes ?? 0) >= 5 && (i.minutes ?? 0) <= 15,
@@ -66,8 +81,8 @@ export default async function CounterPage({
   searchParams: Promise<{ filter?: string; area?: string }>;
 }) {
   const sp = await searchParams;
-  const active = coerceFilter(sp.filter);
-  const area = sp.area;
+  const active = coerceFilter(firstQuery(sp.filter));
+  const area = firstQuery(sp.area);
   const [all, boxes] = await Promise.all([
     getItemsByBox("COUNTER"),
     getBoxes(),
@@ -83,7 +98,8 @@ export default async function CounterPage({
         The Counter
       </h1>
       <p className="mt-1 text-[13px] text-ink-dim">
-        Obligations — what has to happen. Filter by stress, urgency, or area.
+        Obligations — what has to happen. Filter by stress lane, urgent-only,
+        must-only, minutes, or area.
       </p>
 
       <details className="group mt-6" open>
@@ -133,6 +149,7 @@ export default async function CounterPage({
           <NewItemRow box="COUNTER" placeholder="+ New admin item" />
         </div>
         <SortableList
+          key={`${active}:${area ?? ""}`}
           items={filtered.map((it) => ({
             id: it.id,
             content: (
