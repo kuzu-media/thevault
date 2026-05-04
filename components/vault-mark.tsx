@@ -1,61 +1,128 @@
-// Shared mark for apple-icon, icon0, icon1 — metallic gold tile + black V.
+// Shared vault-dial mark used by every icon size (apple-icon, icon0,
+// icon1). Keeping the JSX in one place so a tweak propagates to the
+// favicon, the iOS home-screen, and the PWA install icon.
 
 import type React from "react";
 
 type Variant = "rounded" | "edge";
 
 export function VaultMark({ variant }: { variant: Variant }): React.ReactElement {
-  // "rounded": extra corner radius for manifest / maskable tiles.
-  // "edge": full-bleed square; iOS applies its own mask on the home screen.
-  const rx = variant === "rounded" ? 52 : 0;
-
+  // Apple masks its own rounded corners on the home screen icon, so the
+  // edge variant skips the rounded background and bleeds the dial out
+  // to the edges. The rounded variant is used for the manifest icons,
+  // which platforms display as a square.
   return (
     <svg viewBox="0 0 256 256" width="100%" height="100%">
       <defs>
-        <linearGradient
-          id="vault-gold-base"
-          x1="0%"
-          y1="0%"
-          x2="100%"
-          y2="100%"
-        >
-          <stop offset="0%" stopColor="#f2e6a8" />
-          <stop offset="22%" stopColor="#d4af37" />
-          <stop offset="55%" stopColor="#b8892a" />
-          <stop offset="100%" stopColor="#7a5a18" />
-        </linearGradient>
-        <radialGradient id="vault-gold-hot" cx="32%" cy="28%" r="70%">
-          <stop offset="0%" stopColor="rgba(255, 250, 220, 0.55)" />
-          <stop offset="45%" stopColor="rgba(255, 220, 140, 0.12)" />
-          <stop offset="100%" stopColor="rgba(0, 0, 0, 0)" />
+        <radialGradient id="vault-plate" cx="50%" cy="45%" r="55%">
+          <stop offset="0%" stopColor="#1f2228" />
+          <stop offset="100%" stopColor="#14171b" />
         </radialGradient>
-        <linearGradient id="vault-gold-cool" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="rgba(0, 0, 0, 0.18)" />
-          <stop offset="55%" stopColor="rgba(0, 0, 0, 0)" />
-          <stop offset="100%" stopColor="rgba(255, 255, 255, 0.08)" />
-        </linearGradient>
+        <radialGradient id="vault-hub" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stopColor="#e0b963" />
+          <stop offset="100%" stopColor="#b5853a" />
+        </radialGradient>
       </defs>
 
-      <rect width="256" height="256" rx={rx} fill="url(#vault-gold-base)" />
-      <rect width="256" height="256" rx={rx} fill="url(#vault-gold-hot)" />
-      <rect width="256" height="256" rx={rx} fill="url(#vault-gold-cool)" />
-      {variant === "rounded" ? (
-        <rect
-          width="256"
-          height="256"
-          rx={rx}
-          fill="none"
-          stroke="#4a3a12"
-          strokeWidth="2"
-          opacity={0.55}
-        />
-      ) : null}
+      {variant === "rounded" && (
+        <rect width="256" height="256" rx="52" fill="#14171b" />
+      )}
 
-      {/* Bold black V — safe inside ~80% for maskable */}
-      <path
-        fill="#0d0d0d"
-        d="M 128 198 L 68 58 L 102 58 L 128 150 L 154 58 L 188 58 Z"
+      <circle
+        cx="128"
+        cy="128"
+        r={variant === "edge" ? 110 : 98}
+        fill="url(#vault-plate)"
       />
+      <circle
+        cx="128"
+        cy="128"
+        r={variant === "edge" ? 110 : 98}
+        fill="none"
+        stroke="#b5853a"
+        strokeWidth="6"
+      />
+      <circle
+        cx="128"
+        cy="128"
+        r={variant === "edge" ? 103 : 92}
+        fill="none"
+        stroke="#6b4612"
+        strokeWidth="1"
+      />
+
+      {/* Major ticks at 12, 3, 6, 9 */}
+      <g stroke="#b5853a" strokeLinecap="round" strokeWidth="4" fill="none">
+        <line
+          x1="128"
+          y1={variant === "edge" ? 28 : 36}
+          x2="128"
+          y2={variant === "edge" ? 44 : 50}
+        />
+        <line
+          x1={variant === "edge" ? 228 : 220}
+          y1="128"
+          x2={variant === "edge" ? 212 : 206}
+          y2="128"
+        />
+        <line
+          x1="128"
+          y1={variant === "edge" ? 228 : 220}
+          x2="128"
+          y2={variant === "edge" ? 212 : 206}
+        />
+        <line
+          x1={variant === "edge" ? 28 : 36}
+          y1="128"
+          x2={variant === "edge" ? 44 : 50}
+          y2="128"
+        />
+      </g>
+
+      {/* Minor ticks */}
+      <g stroke="#b5853a" strokeLinecap="round" strokeWidth="2.4" fill="none">
+        <line x1="174" y1="48" x2="170" y2="58" />
+        <line x1="208" y1="82" x2="198" y2="86" />
+        <line x1="208" y1="174" x2="198" y2="170" />
+        <line x1="174" y1="208" x2="170" y2="198" />
+        <line x1="82" y1="208" x2="86" y2="198" />
+        <line x1="48" y1="174" x2="58" y2="170" />
+        <line x1="48" y1="82" x2="58" y2="86" />
+        <line x1="82" y1="48" x2="86" y2="58" />
+      </g>
+
+      {/* Inner concentric ring */}
+      <circle
+        cx="128"
+        cy="128"
+        r={variant === "edge" ? 68 : 62}
+        fill="none"
+        stroke="#b5853a"
+        strokeWidth="2.5"
+      />
+
+      {/* Indicator pin at 12 o'clock */}
+      <line
+        x1="128"
+        y1={variant === "edge" ? 56 : 62}
+        x2="128"
+        y2={variant === "edge" ? 92 : 92}
+        stroke="#e0b963"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+      <circle cx="128" cy="92" r="4.5" fill="#e0b963" />
+
+      {/* Center hub */}
+      <circle
+        cx="128"
+        cy="128"
+        r={variant === "edge" ? 22 : 20}
+        fill="url(#vault-hub)"
+        stroke="#6b4612"
+        strokeWidth="1"
+      />
+      <circle cx="128" cy="128" r="6" fill="#14171b" />
     </svg>
   );
 }
