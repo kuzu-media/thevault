@@ -11,11 +11,14 @@ export function AreaPill({
   initial,
   options,
   field = "area",
+  className,
 }: {
   itemId: string;
   initial?: string | null;
   options: { key: string; label: string }[];
   field?: "area" | "category";
+  /** Merged onto the `<select>` (e.g. compact chip sizing on ATM). */
+  className?: string;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(initial ?? "");
@@ -29,6 +32,7 @@ export function AreaPill({
     <Select
       tone="brass"
       value={value}
+      className={className}
       onChange={(e) => {
         const v = e.target.value;
         setValue(v);

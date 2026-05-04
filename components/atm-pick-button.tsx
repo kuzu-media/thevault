@@ -7,9 +7,12 @@ import { pickFromAtm } from "@/lib/actions";
 export function AtmPickButton({
   itemId,
   picked: initial,
+  size = "default",
 }: {
   itemId: string;
   picked: boolean;
+  /** `compact` matches build-wizard Today row action sizing. */
+  size?: "default" | "compact";
 }) {
   const [picked, setPicked] = useState(initial);
   const [pending, startTransition] = useTransition();
@@ -28,7 +31,8 @@ export function AtmPickButton({
         });
       }}
       className={clsx(
-        "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
+        "shrink-0 whitespace-nowrap rounded-sm border font-mono tracking-wider transition",
+        size === "compact" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-[10px]",
         picked
           ? "border-brass bg-brass/20 text-brass"
           : "border-brass/30 text-brass/80 hover:bg-brass/10",

@@ -254,80 +254,84 @@ export default async function AtmPage({
           Nothing matches this filter.
         </p>
       ) : (
-        [...groups.entries()].map(([cat, rows]) => {
+        [...groups.entries()].map(([cat, rows], gi) => {
           const label = labelByKey.get(cat) ?? "Uncategorized";
           const linkable = labelByKey.has(cat);
           return (
-            <section key={cat || "__uncat__"} className="mt-8">
-              <h2 className="eyebrow text-ink-mute">
-                {linkable ? (
-                  <Link
-                    href={`/vault/${slugify(cat)}`}
-                    className="transition hover:text-brass"
-                    title={`Open the ${label} box`}
-                  >
-                    — {label} —
-                  </Link>
-                ) : (
-                  <span>— {label} —</span>
-                )}
-              </h2>
-              <div className="mt-3 space-y-2">
+            <section
+              key={cat || "__uncat__"}
+              className={gi === 0 ? "mt-6" : "mt-5"}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-2 w-2 shrink-0 rounded-sm bg-brass"
+                  aria-hidden
+                />
+                <h2 className="eyebrow">
+                  {linkable ? (
+                    <Link
+                      href={`/vault/${slugify(cat)}`}
+                      className="transition hover:text-brass"
+                      title={`Open the ${label} box`}
+                    >
+                      {label}
+                    </Link>
+                  ) : (
+                    label
+                  )}
+                </h2>
+              </div>
+              <div className="mt-2 space-y-2">
                 {rows.map((it) => {
                   const picked = it.todayOrder !== null;
                   return (
                     <div
                       key={it.id}
+                      title={
+                        [it.energy, it.title].filter(Boolean).join(" · ") ||
+                        undefined
+                      }
                       className={clsx(
-                        "group relative overflow-hidden rounded-sm border bg-vault-panel/30 px-4 py-3 transition hover:border-brass/40 hover:bg-vault-panel/50",
-                        picked ? "border-teal/40" : "border-vault-line/60",
+                        "flex items-center gap-3 rounded-sm border bg-vault-panel/40 px-3 py-2 transition",
+                        picked ? "border-brass/40" : "border-vault-line/60",
                       )}
                     >
-                      {picked && (
-                        <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-teal" />
-                      )}
-
-                      <div className="flex items-center gap-3">
+                      <AreaPill
+                        itemId={it.id}
+                        initial={it.category}
+                        field="category"
+                        options={boxes.map((b) => ({
+                          key: b.key,
+                          label: b.label,
+                        }))}
+                        className="!max-h-7 max-w-[5.75rem] shrink-0 !py-0.5 !pl-1.5 !pr-1 !text-[9px] !leading-tight border-brass/40 bg-vault-bg/20"
+                      />
+                      <EditableText
+                        itemId={it.id}
+                        field="title"
+                        initial={it.title}
+                        className={clsx(
+                          "vault-task-title min-w-0 flex-1 truncate",
+                          picked ? "text-ink" : "text-ink-mute",
+                        )}
+                        placeholder="(no title)"
+                      />
+                      <span className="flex w-16 shrink-0 items-baseline justify-end gap-0.5 whitespace-nowrap font-mono text-[11px] text-ink-mute">
                         <EditableText
                           itemId={it.id}
-                          field="title"
-                          initial={it.title}
-                          className="min-w-0 flex-1 vault-task-title"
-                          placeholder="(no title)"
+                          field="minutes"
+                          initial={it.minutes}
+                          className="w-10 bg-transparent px-0 text-right text-[11px]"
+                          numeric
+                          placeholder="—"
                         />
-                        <span className="inline-flex shrink-0 items-baseline gap-1 rounded-sm border border-vault-line/60 bg-vault-bg/40 px-2 py-0.5 transition focus-within:border-brass focus-within:bg-vault-bg/80">
-                          <EditableText
-                            itemId={it.id}
-                            field="minutes"
-                            initial={it.minutes}
-                            className="w-12 bg-transparent text-right font-mono text-[12px]"
-                            numeric
-                            placeholder="—"
-                          />
-                          <span className="font-mono text-[10px] text-ink-mute/70">
-                            min
-                          </span>
-                        </span>
-                      </div>
-
-                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
-                            {it.energy ?? "—"}
-                          </span>
-                          <span className="text-ink-mute/30">·</span>
-                          <AreaPill
-                            itemId={it.id}
-                            initial={it.category}
-                            field="category"
-                            options={boxes.map((b) => ({
-                              key: b.key,
-                              label: b.label,
-                            }))}
-                          />
-                        </div>
-                        <AtmPickButton itemId={it.id} picked={picked} />
-                      </div>
+                        <span>min</span>
+                      </span>
+                      <AtmPickButton
+                        itemId={it.id}
+                        picked={picked}
+                        size="compact"
+                      />
                     </div>
                   );
                 })}
