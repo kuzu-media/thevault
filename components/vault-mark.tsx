@@ -15,8 +15,8 @@ export function VaultMark({ variant }: { variant: Variant }): React.ReactElement
     <svg viewBox="0 0 256 256" width="100%" height="100%">
       <defs>
         <radialGradient id="vault-plate" cx="50%" cy="45%" r="55%">
-          <stop offset="0%" stopColor="#1f2228" />
-          <stop offset="100%" stopColor="#14171b" />
+          <stop offset="0%" stopColor="#faf8f4" />
+          <stop offset="100%" stopColor="#e4dcd0" />
         </radialGradient>
         <radialGradient id="vault-hub" cx="50%" cy="40%" r="60%">
           <stop offset="0%" stopColor="#e0b963" />
@@ -25,7 +25,7 @@ export function VaultMark({ variant }: { variant: Variant }): React.ReactElement
       </defs>
 
       {variant === "rounded" && (
-        <rect width="256" height="256" rx="52" fill="#14171b" />
+        <rect width="256" height="256" rx="52" fill="#f3eee5" />
       )}
 
       <circle
@@ -122,7 +122,7 @@ export function VaultMark({ variant }: { variant: Variant }): React.ReactElement
         stroke="#6b4612"
         strokeWidth="1"
       />
-      <circle cx="128" cy="128" r="6" fill="#14171b" />
+      <circle cx="128" cy="128" r="6" fill="#262018" />
     </svg>
   );
 }

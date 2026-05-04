@@ -31,7 +31,7 @@ export function UnsealGlow() {
           100% { opacity: 0; }
         }
       `}</style>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(224,185,99,0.20),_transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(201,161,74,0.22),_transparent_60%)]" />
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <svg width="220" height="220" viewBox="0 0 220 220" fill="none">
           <circle

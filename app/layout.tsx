@@ -44,13 +44,13 @@ export default function RootLayout({
           <UnhandledRejectionGuard />
         </ShortcutsProvider>
         <Toaster
-          theme="dark"
+          theme="light"
           position="bottom-right"
           toastOptions={{
             style: {
-              background: "#1f2228",
-              border: "1px solid #2e2722",
-              color: "#e8ddc4",
+              background: "var(--vault-panel)",
+              border: "1px solid var(--vault-line)",
+              color: "var(--ink)",
               fontFamily: "var(--font-mono)",
             },
           }}

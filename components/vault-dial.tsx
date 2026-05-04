@@ -100,12 +100,12 @@ export function VaultDial({
       >
         <defs>
           <radialGradient id="dial-face" cx="50%" cy="40%" r="65%">
-            <stop offset="0%" stopColor="#1f2228" />
-            <stop offset="100%" stopColor="#0c0e11" />
+            <stop offset="0%" stopColor="#faf8f4" />
+            <stop offset="100%" stopColor="#e4dcd0" />
           </radialGradient>
           <radialGradient id="brass-glow" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stopColor="rgba(224,185,99,0.25)" />
-            <stop offset="100%" stopColor="rgba(224,185,99,0)" />
+            <stop offset="0%" stopColor="rgba(201,161,74,0.28)" />
+            <stop offset="100%" stopColor="rgba(201,161,74,0)" />
           </radialGradient>
         </defs>
 
@@ -130,7 +130,7 @@ export function VaultDial({
           cy="220"
           r="180"
           fill="url(#dial-face)"
-          stroke="#3a322b"
+          stroke="#b8aa95"
           strokeWidth="1.5"
         />
 
@@ -207,7 +207,7 @@ export function VaultDial({
       {[0, 90, 180, 270].map((deg) => (
         <div
           key={deg}
-          className="absolute left-1/2 top-1/2 h-[18px] w-[36px] -translate-x-1/2 rounded-sm border border-[#3a322b] bg-[#1a1d22] transition-transform duration-700 ease-[cubic-bezier(0.65,0,0.35,1)]"
+          className="absolute left-1/2 top-1/2 h-[18px] w-[36px] -translate-x-1/2 rounded-sm border border-[#b8aa95] bg-[#e9e2d6] transition-transform duration-700 ease-[cubic-bezier(0.65,0,0.35,1)]"
           style={{
             transform: `translate(-50%, -50%) rotate(${deg}deg) translateY(-${
               size / 2 - (mounted && isSealed ? 0 : 12)
@@ -215,7 +215,7 @@ export function VaultDial({
             transitionDelay: animating ? "400ms" : "0ms",
             boxShadow:
               isSealed && !animating
-                ? "0 0 8px rgba(224,185,99,0.15)"
+                ? "0 0 8px rgba(201,161,74,0.22)"
                 : undefined,
           }}
         />
@@ -224,8 +224,8 @@ export function VaultDial({
       {/* Center plate with lock */}
       <div
         className={clsx(
-          "absolute left-1/2 top-1/2 flex h-[140px] w-[140px] flex-col items-center justify-center gap-2 rounded-full border border-brass/30 bg-[#0c0e11] transition-shadow duration-700",
-          isSealed && "shadow-[0_0_60px_rgba(224,185,99,0.20)]",
+          "absolute left-1/2 top-1/2 flex h-[140px] w-[140px] flex-col items-center justify-center gap-2 rounded-full border border-brass/35 bg-[#f6f1ea] transition-shadow duration-700",
+          isSealed && "shadow-[0_0_60px_rgba(201,161,74,0.28)]",
         )}
         style={{
           transform: "translate(-50%, -50%)",
@@ -280,7 +280,7 @@ function LockIcon({ sealed }: { sealed: boolean }) {
         rx="2"
         stroke="#E0B963"
         strokeWidth="2.5"
-        fill="rgba(224,185,99,0.08)"
+        fill="rgba(201,161,74,0.12)"
       />
       {/* Keyhole */}
       <circle cx="16" cy="23" r="2" fill="#E0B963" />

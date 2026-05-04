@@ -75,9 +75,9 @@ export function SealedScreen({
   }
 
   return (
-    <div className="relative min-h-[100vh] overflow-hidden bg-[#0c0e11]">
+    <div className="relative min-h-[100vh] overflow-hidden bg-vault-bg">
       {/* Subtle vignette */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(224,185,99,0.06),_transparent_70%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(201,161,74,0.10),_transparent_70%)]" />
 
       {/* Minimal sealed-mode header */}
       <header className="relative z-10 flex items-center justify-between px-6 py-5 md:px-10">
@@ -94,7 +94,7 @@ export function SealedScreen({
           <span>·</span>
           <span>{time}</span>
         </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#3a322b] bg-vault-panel/60 text-brass-bright/70">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-vault-line bg-vault-panel/80 text-brass-bright/80">
           T
         </div>
       </header>

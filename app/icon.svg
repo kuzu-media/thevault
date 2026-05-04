@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <defs>
     <radialGradient id="plate" cx="50%" cy="45%" r="55%">
-      <stop offset="0%" stop-color="#1f2228"/>
-      <stop offset="100%" stop-color="#14171b"/>
+      <stop offset="0%" stop-color="#faf8f4"/>
+      <stop offset="100%" stop-color="#e4dcd0"/>
     </radialGradient>
     <radialGradient id="hub" cx="50%" cy="40%" r="60%">
       <stop offset="0%" stop-color="#e0b963"/>
@@ -11,7 +11,7 @@
   </defs>
 
   <!-- Rounded base -->
-  <rect width="256" height="256" rx="52" fill="#14171b"/>
+  <rect width="256" height="256" rx="52" fill="#f3eee5"/>
 
   <!-- Inset face -->
   <circle cx="128" cy="128" r="98" fill="url(#plate)"/>
@@ -52,5 +52,5 @@
 
   <!-- Center hub -->
   <circle cx="128" cy="128" r="20" fill="url(#hub)" stroke="#6b4612" stroke-width="1"/>
-  <circle cx="128" cy="128" r="6" fill="#14171b"/>
+  <circle cx="128" cy="128" r="6" fill="#262018"/>
 </svg>

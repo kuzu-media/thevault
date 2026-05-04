@@ -43,7 +43,7 @@ export function ScheduleBlock({
         BUCKET_COLOR[block.bucket] ?? "border-l-ink-mute",
         isDone && "opacity-50",
         state === "active" &&
-          "ring-1 ring-brass/70 shadow-[0_0_20px_rgba(224,185,99,0.14)]",
+          "ring-1 ring-brass/70 shadow-[0_0_20px_rgba(201,161,74,0.18)]",
         state === "skipped" && "border-dashed opacity-40",
         pending && "opacity-70",
       )}
