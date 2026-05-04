@@ -1,56 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <defs>
-    <radialGradient id="plate" cx="50%" cy="45%" r="55%">
-      <stop offset="0%" stop-color="#1f2228"/>
-      <stop offset="100%" stop-color="#14171b"/>
+    <linearGradient id="gold-base" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f2e6a8"/>
+      <stop offset="22%" stop-color="#d4af37"/>
+      <stop offset="55%" stop-color="#b8892a"/>
+      <stop offset="100%" stop-color="#7a5a18"/>
+    </linearGradient>
+    <radialGradient id="gold-hot" cx="32%" cy="28%" r="70%">
+      <stop offset="0%" stop-color="rgba(255,250,220,0.55)"/>
+      <stop offset="45%" stop-color="rgba(255,220,140,0.12)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
     </radialGradient>
-    <radialGradient id="hub" cx="50%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="#e0b963"/>
-      <stop offset="100%" stop-color="#b5853a"/>
-    </radialGradient>
+    <linearGradient id="gold-cool" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.18)"/>
+      <stop offset="55%" stop-color="rgba(0,0,0,0)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+    </linearGradient>
   </defs>
-
-  <!-- Rounded base -->
-  <rect width="256" height="256" rx="52" fill="#14171b"/>
-
-  <!-- Inset face -->
-  <circle cx="128" cy="128" r="98" fill="url(#plate)"/>
-
-  <!-- Outer brass dial ring -->
-  <circle cx="128" cy="128" r="98" fill="none" stroke="#b5853a" stroke-width="5"/>
-  <circle cx="128" cy="128" r="92" fill="none" stroke="#6b4612" stroke-width="1"/>
-
-  <!-- 12 tick marks around the dial (6 majors + 6 minors) -->
-  <g stroke="#b5853a" stroke-linecap="round" fill="none">
-    <!-- Majors at 12, 3, 6, 9 -->
-    <g stroke-width="3.5">
-      <line x1="128" y1="36" x2="128" y2="50"/>
-      <line x1="220" y1="128" x2="206" y2="128"/>
-      <line x1="128" y1="220" x2="128" y2="206"/>
-      <line x1="36" y1="128" x2="50" y2="128"/>
-    </g>
-    <!-- Minors at 1,2,4,5,7,8,10,11 -->
-    <g stroke-width="2">
-      <line x1="174" y1="48" x2="170" y2="58"/>
-      <line x1="208" y1="82" x2="198" y2="86"/>
-      <line x1="208" y1="174" x2="198" y2="170"/>
-      <line x1="174" y1="208" x2="170" y2="198"/>
-      <line x1="82" y1="208" x2="86" y2="198"/>
-      <line x1="48" y1="174" x2="58" y2="170"/>
-      <line x1="48" y1="82" x2="58" y2="86"/>
-      <line x1="82" y1="48" x2="86" y2="58"/>
-    </g>
-  </g>
-
-  <!-- Inner concentric ring -->
-  <circle cx="128" cy="128" r="62" fill="none" stroke="#b5853a" stroke-width="2.5"/>
-  <circle cx="128" cy="128" r="58" fill="none" stroke="#6b4612" stroke-width="0.8" opacity="0.7"/>
-
-  <!-- Indicator pin at 12 o'clock (the dial's "open" position) -->
-  <line x1="128" y1="62" x2="128" y2="92" stroke="#e0b963" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="128" cy="92" r="4" fill="#e0b963"/>
-
-  <!-- Center hub -->
-  <circle cx="128" cy="128" r="20" fill="url(#hub)" stroke="#6b4612" stroke-width="1"/>
-  <circle cx="128" cy="128" r="6" fill="#14171b"/>
+  <rect width="256" height="256" rx="52" fill="url(#gold-base)"/>
+  <rect width="256" height="256" rx="52" fill="url(#gold-hot)"/>
+  <rect width="256" height="256" rx="52" fill="url(#gold-cool)"/>
+  <rect width="256" height="256" rx="52" fill="none" stroke="#4a3a12" stroke-width="2" opacity="0.55"/>
+  <path fill="#0d0d0d" d="M 128 198 L 68 58 L 102 58 L 128 150 L 154 58 L 188 58 Z"/>
 </svg>
