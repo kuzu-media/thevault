@@ -4,7 +4,7 @@ import { getItemsByBox } from "@/lib/data";
 import { getBoxes } from "@/lib/categories";
 import { EditableText, EditableFlag } from "@/components/editable-text";
 import { AreaPill } from "@/components/area-pill";
-import { NewItemRow } from "@/components/new-item-row";
+import { NewCounterItemRow } from "@/components/new-counter-item-row";
 import {
   CounterSectionedLists,
   type CounterSectionGroup,
@@ -129,7 +129,7 @@ export default async function CounterPage({
   const filtered = applyFilter(all, active, area);
   const areas = boxes
     .filter((b) => all.some((it) => it.area === b.key))
-    .map((b) => b.key);
+    .map((b) => ({ key: b.key, label: b.label }));
   const filterTotals: Partial<Record<Filter, number>> = {
     all: sumMinutes(all),
     stress: sumMinutes(applyFilter(all, "stress")),
@@ -240,18 +240,18 @@ export default async function CounterPage({
           </div>
           {areas.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {areas.map((a) => (
+          {areas.map((a) => (
                 <Link
-                  key={a}
-                  href={`/counter?filter=byarea&area=${encodeURIComponent(a)}`}
+              key={a.key}
+              href={`/counter?filter=byarea&area=${encodeURIComponent(a.key)}`}
                   className={clsx(
                     "rounded-sm border px-4 py-1.5 font-mono text-[11px] tracking-wider transition",
-                    active === "byarea" && area === a
+                active === "byarea" && area === a.key
                       ? "border-brass bg-brass/10 text-brass"
                       : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
                   )}
                 >
-                  {a}
+              {a.label}
                 </Link>
               ))}
             </div>
@@ -261,7 +261,7 @@ export default async function CounterPage({
 
       <div className="mt-6">
         <div className="mb-3">
-          <NewItemRow box="COUNTER" placeholder="+ New counter item" />
+          <NewCounterItemRow boxes={boxOpts} initialArea={area ?? ""} />
         </div>
         {filtered.length === 0 ? (
           <p className="mt-4 text-[13px] text-ink-mute">

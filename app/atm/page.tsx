@@ -4,8 +4,7 @@ import { getItemsByBox } from "@/lib/data";
 import { getBoxes } from "@/lib/categories";
 import { EditableText } from "@/components/editable-text";
 import { AreaPill } from "@/components/area-pill";
-import { NewItemRow } from "@/components/new-item-row";
-import { BoxCard } from "@/components/box-card";
+import { NewAtmItemRow } from "@/components/new-atm-item-row";
 import { AtmPickButton } from "@/components/atm-pick-button";
 import { DeleteItemButton } from "@/components/delete-item-button";
 import type { Item } from "@/lib/types";
@@ -36,6 +35,19 @@ const VALID_FILTERS: readonly AtmFilter[] = [
 ];
 
 const UNCATEGORIZED = "__none__";
+const ATM_CATEGORY_ORDER = [
+  "STONEWATER BOOKS",
+  "ECOM & ECOSHIP",
+  "WRITING",
+  "READ / WATCH",
+  "FRIENDS & FAMILY",
+  "LEISURE",
+  "HOME & GARDEN",
+] as const;
+
+function normalizeLabel(v: string): string {
+  return v.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
 
 function coerceFilter(raw: string | undefined): AtmFilter {
   const r = raw ?? "all";
@@ -92,6 +104,23 @@ export default async function AtmPage({
     if (a !== "" && b === "") return -1;
     return a.localeCompare(b);
   });
+  const orderedCategoryKeys = [
+    ...categoryKeys.filter((k) => k !== "").sort((a, b) => {
+      const la = labelByKey.get(a) ?? a;
+      const lb = labelByKey.get(b) ?? b;
+      const ia = ATM_CATEGORY_ORDER.findIndex(
+        (x) => normalizeLabel(x) === normalizeLabel(la),
+      );
+      const ib = ATM_CATEGORY_ORDER.findIndex(
+        (x) => normalizeLabel(x) === normalizeLabel(lb),
+      );
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return la.localeCompare(lb);
+    }),
+    ...(categoryKeys.includes("") ? [""] : []),
+  ];
 
   const groups = new Map<string, Item[]>();
   for (const it of filtered) {
@@ -161,7 +190,7 @@ export default async function AtmPage({
       </details>
 
       <div className="mt-6">
-        <NewItemRow box="ATM" placeholder="+ New ATM option" />
+        <NewAtmItemRow boxes={boxes} initialCategory={categoryDecoded ?? ""} />
       </div>
 
       {filtered.length === 0 ? (
@@ -172,18 +201,31 @@ export default async function AtmPage({
         <>
           <div className="mt-6 eyebrow text-ink-mute">— Choose a box —</div>
           <div className="mt-3 grid w-full grid-cols-2 gap-2 justify-items-stretch sm:grid-cols-4">
-            {categoryKeys.map((cat) => {
+            {orderedCategoryKeys.map((cat) => {
               const label =
                 cat === "" ? "Uncategorized" : (labelByKey.get(cat) ?? cat);
               return (
-                <BoxCard
+                <Link
                   key={cat || "__uncat__"}
-                  title={label}
-                  count={groups.get(cat)?.length ?? 0}
-                  selected={categoryDecoded === cat}
                   href={atmHref(active, { category: cat })}
-                  size="compact"
-                />
+                  className={clsx(
+                    "group relative flex min-h-[100px] w-full min-w-0 flex-col justify-between rounded-sm border bg-vault-panel/40 px-3 py-3 text-left transition",
+                    "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[1.5px] before:bg-brass/70",
+                    categoryDecoded === cat
+                      ? "border-brass/50 bg-vault-panel/70 ring-1 ring-brass/25"
+                      : "border-vault-line/60 hover:border-brass/40 hover:bg-vault-panel/60",
+                  )}
+                >
+                  <h3 className="min-w-0 truncate text-[16px] font-semibold leading-tight text-ink sm:text-[17px]">
+                    {label}
+                  </h3>
+                  <div className="mt-2 flex items-baseline justify-end font-mono text-[10px] tracking-wider text-ink-mute">
+                    <span>
+                      {groups.get(cat)?.length ?? 0} item
+                      {(groups.get(cat)?.length ?? 0) === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                </Link>
               );
             })}
           </div>
@@ -249,7 +291,7 @@ export default async function AtmPage({
                             key: b.key,
                             label: b.label,
                           }))}
-                          className="!max-h-7 max-w-[5.75rem] shrink-0 !py-0.5 !pl-1.5 !pr-1 !text-[9px] !leading-tight border-brass/40 bg-vault-bg/20"
+                          className="!max-h-7 max-w-[9.25rem] shrink-0 !py-0.5 !pl-1.5 !pr-1 !text-[9px] !leading-tight border-brass/40 bg-vault-bg/20"
                         />
                         <EditableText
                           itemId={it.id}
