@@ -21,6 +21,7 @@ function rowToItem(r: any): Item {
     minutes: r.minutes,
     urgent: !!r.urgent,
     must: !!r.must,
+    should: !!r.should,
     todayOrder: r.today_order,
     energy: r.energy,
     category: r.category,

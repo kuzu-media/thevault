@@ -148,6 +148,7 @@ export async function syncOneVaultForDate(
         title,
         urgent: false,
         must: false,
+        should: false,
         pinned: false,
       })
       .select("id")

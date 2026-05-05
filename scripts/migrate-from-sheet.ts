@@ -88,6 +88,7 @@ type Insert = {
   minutes?: number | null;
   urgent: boolean;
   must: boolean;
+  should: boolean;
   pinned: boolean;
   today_order?: number | null;
   energy?: string | null;
@@ -99,7 +100,12 @@ type Insert = {
   body?: string | null;
 };
 
-const baseFlags = { urgent: false, must: false, pinned: false } as const;
+const baseFlags = {
+  urgent: false,
+  must: false,
+  should: false,
+  pinned: false,
+} as const;
 
 // Reserved keys for the daily-action surfaces. Must never appear in
 // settings.boxes or settings.records. Mirrors RESERVED_BOX_KEYS in

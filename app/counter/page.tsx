@@ -19,6 +19,7 @@ type Filter =
   | "stress"
   | "urgent"
   | "must"
+  | "should"
   | "quick"
   | "byarea";
 
@@ -27,6 +28,7 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "stress", label: "Stress" },
   { key: "urgent", label: "Urgent" },
   { key: "must", label: "Must" },
+  { key: "should", label: "Should" },
   { key: "quick", label: "Quick (5–15)" },
 ];
 
@@ -35,6 +37,7 @@ const VALID_FILTERS: readonly Filter[] = [
   "stress",
   "urgent",
   "must",
+  "should",
   "quick",
   "byarea",
 ];
@@ -57,6 +60,7 @@ function coerceFilter(raw: string | undefined): Filter {
  *   Stress  → both flags (rust “stressor” strip)
  *   Urgent  → urgent only, not must (amber strip)
  *   Must    → must only, not urgent (sky strip)
+ *   Should  → should only (emerald strip)
  * Items with both flags appear only under Stress (and All), not under Urgent or Must.
  */
 function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
@@ -67,6 +71,8 @@ function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
       return items.filter((i) => i.urgent && !i.must);
     case "must":
       return items.filter((i) => i.must && !i.urgent);
+    case "should":
+      return items.filter((i) => i.should && !i.must && !i.urgent);
     case "quick":
       return items.filter(
         (i) => (i.minutes ?? 0) >= 5 && (i.minutes ?? 0) <= 15,
@@ -84,14 +90,16 @@ function partitionCounterItemsPreservingOrder(items: Item[]) {
   const stress: Item[] = [];
   const urgent: Item[] = [];
   const must: Item[] = [];
+  const should: Item[] = [];
   const plain: Item[] = [];
   for (const it of items) {
     if (it.urgent && it.must) stress.push(it);
     else if (it.urgent && !it.must) urgent.push(it);
     else if (it.must && !it.urgent) must.push(it);
+    else if (it.should) should.push(it);
     else plain.push(it);
   }
-  return { stress, urgent, must, plain };
+  return { stress, urgent, must, should, plain };
 }
 
 export default async function CounterPage({
@@ -112,7 +120,7 @@ export default async function CounterPage({
     .map((b) => b.key);
 
   const boxOpts = boxes.map((b) => ({ key: b.key, label: b.label }));
-  const { stress, urgent, must, plain } =
+  const { stress, urgent, must, should, plain } =
     partitionCounterItemsPreservingOrder(filtered);
 
   const counterGroups: CounterSectionGroup[] = [];
@@ -145,6 +153,18 @@ export default async function CounterPage({
       key: "must",
       title: "Other Must-Do",
       items: must.map(
+        (it): SortableItem => ({
+          id: it.id,
+          content: <CounterRow item={it} boxes={boxOpts} />,
+        }),
+      ),
+    });
+  }
+  if (should.length > 0) {
+    counterGroups.push({
+      key: "should",
+      title: "Other Should",
+      items: should.map(
         (it): SortableItem => ({
           id: it.id,
           content: <CounterRow item={it} boxes={boxOpts} />,
@@ -257,6 +277,7 @@ function CounterRow({
   const stressor = item.urgent && item.must;
   const mustOnly = item.must && !item.urgent;
   const urgentOnly = item.urgent && !item.must;
+  const shouldOnly = item.should && !item.urgent && !item.must;
   const onToday = (item.todayOrder ?? null) !== null;
   return (
     <div
@@ -270,10 +291,12 @@ function CounterRow({
               ? "border-sky-600/35"
               : urgentOnly
                 ? "border-amber-500/45"
+                : shouldOnly
+                  ? "border-emerald-600/40"
                 : "border-vault-line/60",
       )}
     >
-      {stressor || item.urgent || item.must ? (
+      {stressor || item.urgent || item.must || item.should ? (
         <div
           className={clsx(
             "w-1 shrink-0 self-stretch rounded-sm",
@@ -281,7 +304,9 @@ function CounterRow({
               ? "bg-rust"
               : mustOnly
                 ? "bg-sky-600"
-                : "bg-amber-500",
+                : urgentOnly
+                  ? "bg-amber-500"
+                  : "bg-emerald-600",
           )}
           aria-hidden
         />
@@ -327,6 +352,13 @@ function CounterRow({
           initial={item.must}
           kind="must"
           className="text-sky-600"
+        />
+        <EditableFlag
+          itemId={item.id}
+          field="should"
+          initial={item.should}
+          kind="should"
+          className="text-green-600"
         />
       </div>
       <TodayToggle itemId={item.id} on={onToday} size="sm" />

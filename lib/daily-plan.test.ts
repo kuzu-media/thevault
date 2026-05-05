@@ -20,6 +20,7 @@ const baseItem = (over: Partial<Item>): Item => ({
   title: "x",
   urgent: false,
   must: false,
+  should: false,
   pinned: false,
   todayOrder: 1,
   createdAt: new Date().toISOString(),

@@ -200,7 +200,7 @@ export async function hardDeleteItem(itemId: string) {
 
 // Triage a Drop item. Destination is explicit — Till is for energy-matched
 // pulls (carries energy + minutes), Drawer is for obligations (carries
-// urgent/must flags + minutes). Box is the category and works on both.
+// urgent/must/should flags + minutes). Box is the category and works on both.
 const TriagePatch = z.object({
   box_key: z.string().min(1).max(40),
   dest: z.enum(["ATM", "COUNTER"]),
@@ -208,6 +208,7 @@ const TriagePatch = z.object({
   energy: z.string().max(40).nullable().optional(), // Till only
   urgent: z.coerce.boolean().optional(), // Drawer only
   must: z.coerce.boolean().optional(), // Drawer only
+  should: z.coerce.boolean().optional(), // Drawer only
 });
 
 export async function triageDropItem(
@@ -226,12 +227,14 @@ export async function triageDropItem(
     update.energy = null;
     update.urgent = parsed.urgent ?? false;
     update.must = parsed.must ?? false;
+    update.should = parsed.should ?? false;
   } else {
     update.category = parsed.box_key;
     update.area = null;
     update.energy = parsed.energy ?? null;
     update.urgent = false;
     update.must = false;
+    update.should = false;
   }
   await sb.from("items").update(update).eq("id", itemId);
   revalidatePath("/", "layout");
@@ -243,6 +246,7 @@ const ItemPatch = z.object({
   minutes: z.coerce.number().min(0).max(1440).nullable().optional(),
   urgent: z.coerce.boolean().optional(),
   must: z.coerce.boolean().optional(),
+  should: z.coerce.boolean().optional(),
   energy: z.string().max(40).nullable().optional(),
   category: z.string().max(40).nullable().optional(),
   potential: z.coerce.number().int().min(1).max(5).nullable().optional(),
@@ -278,6 +282,7 @@ export async function createItem(box: string, title: string, extras: z.input<typ
       title: title.trim(),
       urgent: parsed.urgent ?? false,
       must: parsed.must ?? false,
+      should: parsed.should ?? false,
       pinned: parsed.pinned ?? false,
       ...parsed,
     })
@@ -355,6 +360,7 @@ export async function addCustomBlock(opts: {
     minutes: opts.minutes,
     urgent: false,
     must: true,
+    should: false,
     pinned: !!start,
     scheduled_start: start?.toISOString() ?? null,
     scheduled_end: end?.toISOString() ?? null,
@@ -389,6 +395,7 @@ export async function saveRecord(box: string, body: string, title?: string) {
       body,
       urgent: false,
       must: false,
+      should: false,
       pinned: false,
     });
   }
@@ -512,6 +519,7 @@ export async function depositText(text: string, source: string = "mailslot") {
       title: trimmed.slice(0, 200),
       urgent: false,
       must: false,
+      should: false,
       pinned: false,
     })
     .select("id")

@@ -71,7 +71,8 @@ export default async function DropPage() {
             <Kbd keys="e" size="xs" /> energy
           </span>
           <span className="flex items-center gap-1.5">
-            <Kbd keys="u" size="xs" /> urgent <Kbd keys="m" size="xs" /> must
+            <Kbd keys="u" size="xs" /> urgent <Kbd keys="m" size="xs" /> must{" "}
+            <Kbd keys="s" size="xs" /> should
           </span>
           <span className="flex items-center gap-1.5">
             <Kbd keys="enter" size="xs" /> send <Kbd keys="x" size="xs" />{" "}

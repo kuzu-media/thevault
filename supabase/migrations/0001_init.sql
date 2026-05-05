@@ -13,6 +13,7 @@ create table if not exists items (
   minutes int,
   urgent boolean not null default false,
   must boolean not null default false,
+  should boolean not null default false,
   today_order int,
   energy text,
   category text,

@@ -25,6 +25,7 @@ export type Item = {
   minutes?: number | null;
   urgent: boolean;
   must: boolean;
+  should: boolean;
   todayOrder?: number | null;
   energy?: Energy | null;
   category?: string | null;

@@ -5,7 +5,7 @@ import { SortableList, type SortableItem } from "@/components/sortable-list";
 import { reorderItems } from "@/lib/actions";
 
 export type CounterSectionGroup = {
-  key: "stress" | "urgent" | "must" | "plain";
+  key: "stress" | "urgent" | "must" | "should" | "plain";
   title: string;
   items: SortableItem[];
 };
@@ -14,6 +14,7 @@ const MERGE_ORDER: CounterSectionGroup["key"][] = [
   "stress",
   "urgent",
   "must",
+  "should",
   "plain",
 ];
 

@@ -13,7 +13,7 @@ import type { Item } from "@/lib/types";
 // Drop row, two compact lines:
 //
 //   [edge]  [ATM|COUNTER]  Title (editable)              [Box ▼]
-//           ⏱ 30m   energy / urgent / must               Delete · Send
+//           ⏱ 30m   energy / urgent / must / should      Delete · Send
 //
 // 4-px coloured left edge tracks the destination so a glance reads where
 // each row will land. The destination toggle is the only place the user
@@ -32,7 +32,7 @@ export function DropTriageRow({
     item.area ?? item.category ?? "",
   );
   const [dest, setDest] = useState<Destination>(
-    item.urgent || item.must ? "COUNTER" : "ATM",
+    item.urgent || item.must || item.should ? "COUNTER" : "ATM",
   );
   const [minutes, setMinutes] = useState<string>(
     item.minutes != null ? String(item.minutes) : "",
@@ -40,6 +40,7 @@ export function DropTriageRow({
   const [energy, setEnergy] = useState<string>(item.energy ?? "");
   const [urgent, setUrgent] = useState(item.urgent);
   const [must, setMust] = useState(item.must);
+  const [should, setShould] = useState(item.should);
   const [pending, startTransition] = useTransition();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const boxSelectRef = useRef<HTMLSelectElement>(null);
@@ -82,6 +83,11 @@ export function DropTriageRow({
   });
   useShortcut("m", () => dest === "COUNTER" && setMust((v) => !v), {
     label: "Toggle Must",
+    group: "Drop",
+    options: { enabled: focused && dest === "COUNTER" },
+  });
+  useShortcut("s", () => dest === "COUNTER" && setShould((v) => !v), {
+    label: "Toggle Should",
     group: "Drop",
     options: { enabled: focused && dest === "COUNTER" },
   });
@@ -139,6 +145,7 @@ export function DropTriageRow({
           energy: dest === "ATM" ? energy || null : null,
           urgent: dest === "COUNTER" ? urgent : false,
           must: dest === "COUNTER" ? must : false,
+          should: dest === "COUNTER" ? should : false,
         });
         const label = boxes.find((b) => b.key === boxKey)?.label ?? boxKey;
         toast.success(
@@ -266,6 +273,13 @@ export function DropTriageRow({
               kind="must"
               label="Must (M)"
               color="text-sky-600"
+            />
+            <FlagToggle
+              on={should}
+              onChange={setShould}
+              kind="should"
+              label="Should (S)"
+              color="text-green-600"
             />
           </div>
         )}

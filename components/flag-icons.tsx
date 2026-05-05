@@ -1,7 +1,8 @@
-// Distinct icons for the two flags toggled per item.
+// Distinct icons for the three flags toggled per item.
 //
 // Urgent  →  ⚡ lightning bolt — time-pressure (amber; parent sets text color)
 // Must-do →  ★ star          — anchor / required (sky; parent sets text color)
+// Should  →  ◎ target        — recommended / strong nudge (emerald; parent sets text color)
 //
 // Each icon has a `filled` variant (when the flag is ON) and an outline
 // variant (when OFF) so the meaning is legible in both states.
@@ -53,7 +54,32 @@ export function MustIcon({
   );
 }
 
-export type FlagKind = "urgent" | "must";
+export function ShouldIcon({
+  filled,
+  size = 14,
+}: {
+  filled: boolean;
+  size?: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <circle cx="8" cy="8" r="5.2" strokeWidth="1.4" />
+      <circle cx="8" cy="8" r={filled ? "3.1" : "2.7"} strokeWidth="1.2" />
+      <circle cx="8" cy="8" r={filled ? "1.5" : "0.95"} fill="currentColor" strokeWidth="0" />
+    </svg>
+  );
+}
+
+export type FlagKind = "urgent" | "must" | "should";
 
 export function FlagIcon({
   kind,
@@ -64,9 +90,7 @@ export function FlagIcon({
   filled: boolean;
   size?: number;
 }) {
-  return kind === "urgent" ? (
-    <UrgentIcon filled={filled} size={size} />
-  ) : (
-    <MustIcon filled={filled} size={size} />
-  );
+  if (kind === "urgent") return <UrgentIcon filled={filled} size={size} />;
+  if (kind === "must") return <MustIcon filled={filled} size={size} />;
+  return <ShouldIcon filled={filled} size={size} />;
 }

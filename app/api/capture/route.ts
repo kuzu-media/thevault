@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       title: parsed.text.trim(),
       urgent: false,
       must: false,
+      should: false,
       pinned: false,
     })
     .select()

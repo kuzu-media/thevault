@@ -72,6 +72,7 @@ export function EditableText({
 // Visual key:
 //   urgent (⚡ lightning) → time pressure, amber (see Counter / Drop)
 //   must   (★ star)       → required / anchor, brass color
+//   should (◎ target)     → recommended / strong nudge, emerald
 // Each renders an outline when OFF (still clearly that flag) and fills when ON.
 export function EditableFlag({
   itemId,
@@ -81,7 +82,7 @@ export function EditableFlag({
   className,
 }: {
   itemId: string;
-  field: "urgent" | "must" | "pinned";
+  field: "urgent" | "must" | "should" | "pinned";
   initial: boolean;
   kind: FlagKind;
   className?: string;
@@ -90,7 +91,9 @@ export function EditableFlag({
   const [pending, startTransition] = useTransition();
   return (
     <button
-      title={kind === "urgent" ? "Urgent" : "Must"}
+      title={
+        kind === "urgent" ? "Urgent" : kind === "must" ? "Must-Do" : "Should"
+      }
       onClick={() => {
         const next = !on;
         setOn(next);
