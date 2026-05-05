@@ -1,6 +1,6 @@
 import { getRecords } from "@/lib/categories";
 import { saveRecordConfig } from "@/lib/actions";
-import { BoxesEditor } from "@/components/boxes-editor";
+import { RecordsSettingsEditor } from "@/components/records-settings-editor";
 import { SettingsSubnav } from "@/components/settings-subnav";
 
 export default async function RecordsSettingsPage() {
@@ -24,13 +24,9 @@ export default async function RecordsSettingsPage() {
         <span className="font-mono text-brass">/records/&lt;slug&gt;</span>.
       </p>
 
-      <BoxesEditor
+      <RecordsSettingsEditor
         initial={initial}
         onSave={saveRecordConfig}
-        singular="RECORD"
-        plural="RECORDS"
-        labelPlaceholder="Label (e.g. Notes)"
-        metaPlaceholder="Subtitle, e.g. Measurements & doses"
       />
     </div>
   );

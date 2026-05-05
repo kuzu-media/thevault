@@ -215,7 +215,7 @@ export default async function AtmPage({
                       : "border-vault-line/60 hover:border-brass/40 hover:bg-vault-panel/60",
                   )}
                 >
-                  <h3 className="min-w-0 truncate text-[16px] font-semibold leading-tight text-ink sm:text-[17px]">
+                  <h3 className="min-w-0 truncate text-[16px] font-medium leading-tight text-ink sm:text-[17px]">
                     {label}
                   </h3>
                   <div className="mt-2 flex items-baseline justify-end font-mono text-[10px] tracking-wider text-ink-mute">

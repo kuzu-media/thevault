@@ -90,7 +90,18 @@ export type RecordType = {
   label: string;
   color?: string;
   meta?: string;
+  folder?: "health" | "books" | "misc";
 };
+
+const RECORD_FOLDERS = new Set(["health", "books", "misc"]);
+
+function normalizeRecord(raw: any): RecordType | null {
+  const n = normalize(raw);
+  if (!n) return null;
+  const folderRaw = typeof raw?.folder === "string" ? raw.folder.toLowerCase() : undefined;
+  const folder = folderRaw && RECORD_FOLDERS.has(folderRaw) ? (folderRaw as RecordType["folder"]) : undefined;
+  return { ...n, folder };
+}
 
 export async function getRecords(): Promise<RecordType[]> {
   const sb = await supabaseServer();
@@ -100,6 +111,5 @@ export async function getRecords(): Promise<RecordType[]> {
     .maybeSingle();
   const raw = (data?.records as any[]) ?? null;
   if (!raw || !Array.isArray(raw)) return [];
-  // Same shape as Box, so reuse the box normalizer.
-  return raw.map(normalize).filter((r): r is RecordType => r !== null);
+  return raw.map(normalizeRecord).filter((r): r is RecordType => r !== null);
 }

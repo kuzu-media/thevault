@@ -508,8 +508,9 @@ export async function saveEnergyConfig(
   revalidatePath("/", "layout");
 }
 
-// Records share the box shape — same validation rules.
-const RecordConfig = BoxConfig;
+const RecordConfig = BoxConfig.extend({
+  folder: z.enum(["health", "books", "misc"]).optional(),
+});
 
 export async function saveRecordConfig(
   records: z.input<typeof RecordConfig>[],

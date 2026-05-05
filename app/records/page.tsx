@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { getRecords } from "@/lib/categories";
-import { BoxCard } from "@/components/box-card";
 import { CopyTableMarkdownButton } from "@/components/copy-table-markdown-button";
 import { RECORD_FOLDERS, groupRecordsByFolder } from "@/lib/record-folders";
 
@@ -25,16 +24,43 @@ export default async function RecordsHubPage() {
       <div className="mt-10 eyebrow text-ink-mute">— Open a folder —</div>
       <div className="mt-4 flex flex-wrap gap-4">
         {RECORD_FOLDERS.map((folder) => (
-          <BoxCard
+          <RecordFolderCard
             key={folder.key}
             title={folder.label}
-            meta={`${grouped[folder.key].length} record${grouped[folder.key].length === 1 ? "" : "s"}`}
+            count={grouped[folder.key].length}
             href={`/records/folders/${folder.key}`}
           />
         ))}
         <NewRecordTile href="/settings/records" label="+ New record" />
       </div>
     </div>
+  );
+}
+
+function RecordFolderCard({
+  title,
+  count,
+  href,
+}: {
+  title: string;
+  count: number;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group relative h-[170px] w-full rounded-sm border border-[#d4be8f] bg-[#f7edcf] shadow-[inset_0_0_0_1px_rgba(212,190,143,0.35)] transition hover:border-[#c8aa73] hover:bg-[#f6e8c1] sm:w-[320px]"
+    >
+      <div className="absolute right-4 top-[-1px] rounded-b-md rounded-t-sm border border-[#d4be8f] bg-[#f3e4be] px-5 py-1.5 shadow-[inset_0_0_0_1px_rgba(212,190,143,0.35)]">
+        <span className="font-serif text-[32px] tracking-wide text-[#4b3a24]">
+          {title.toUpperCase()}
+        </span>
+      </div>
+      <div className="absolute inset-0 rounded-sm bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(0,0,0,0.02))]" />
+      <div className="absolute bottom-3 right-4 font-mono text-[10px] tracking-[0.16em] text-[#6f5a37]/80">
+        {count} RECORD{count === 1 ? "" : "S"}
+      </div>
+    </Link>
   );
 }
 

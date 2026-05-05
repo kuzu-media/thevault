@@ -8,26 +8,8 @@ export const RECORD_FOLDERS: { key: RecordFolderKey; label: string }[] = [
   { key: "misc", label: "Misc" },
 ];
 
-function normalizeForMatch(v: string): string {
-  return v.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
-
-function isHealthRecord(record: RecordType): boolean {
-  const key = normalizeForMatch(record.key);
-  const label = normalizeForMatch(record.label);
-  return (
-    key.includes("LIFTING") ||
-    label.includes("LIFTING") ||
-    key.includes("MEASUREMENTS") ||
-    key.includes("MEASURMENTS") ||
-    label.includes("MEASUREMENTS") ||
-    label.includes("MEASURMENTS")
-  );
-}
-
 export function folderForRecord(record: RecordType): RecordFolderKey {
-  if (isHealthRecord(record)) return "health";
-  return "misc";
+  return record.folder ?? "misc";
 }
 
 export function groupRecordsByFolder(records: RecordType[]): Record<RecordFolderKey, RecordType[]> {
