@@ -27,6 +27,7 @@ export default async function RecordsHubPage() {
             href={`/records/${slugify(r.key)}`}
           />
         ))}
+        <NewRecordTile href="/records/new-table" label="+ New Table" />
         <NewRecordTile href="/settings/records" label="+ New record" />
       </div>
     </div>
