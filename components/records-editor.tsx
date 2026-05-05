@@ -94,9 +94,12 @@ export function RecordsEditor({
                 <p className="font-mono text-[10px] tracking-[0.16em] text-ink-mute">
                   HEADINGS
                 </p>
-                <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-ink">{`# Big heading
+                <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-ink">{`# Big heading   ← start of line, space after #
 ## Section
-### Subsection`}</pre>
+### Subsection
+
+Not hashtags around text (#word#).
+That stays plain text; use **bold** for emphasis.`}</pre>
               </section>
               <section>
                 <p className="font-mono text-[10px] tracking-[0.16em] text-ink-mute">
