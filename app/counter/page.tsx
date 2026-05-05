@@ -60,7 +60,7 @@ function coerceFilter(raw: string | undefined): Filter {
  *   Stress  → both flags (rust “stressor” strip)
  *   Urgent  → urgent only, not must (amber strip)
  *   Must    → must only, not urgent (sky strip)
- *   Should  → should only (emerald strip)
+ *   Should  → any item marked should (emerald strip when should-only)
  * Items with both flags appear only under Stress (and All), not under Urgent or Must.
  */
 function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
@@ -72,7 +72,7 @@ function applyFilter(items: Item[], f: Filter, area?: string): Item[] {
     case "must":
       return items.filter((i) => i.must && !i.urgent);
     case "should":
-      return items.filter((i) => i.should && !i.must && !i.urgent);
+      return items.filter((i) => i.should);
     case "quick":
       return items.filter(
         (i) => (i.minutes ?? 0) >= 5 && (i.minutes ?? 0) <= 15,

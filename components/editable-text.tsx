@@ -95,10 +95,16 @@ export function EditableFlag({
         kind === "urgent" ? "Urgent" : kind === "must" ? "Must-Do" : "Should"
       }
       onClick={() => {
+        const prev = on;
         const next = !on;
         setOn(next);
         startTransition(async () => {
-          await updateItem(itemId, { [field]: next } as any);
+          try {
+            await updateItem(itemId, { [field]: next } as any);
+          } catch (e: any) {
+            setOn(prev);
+            toast.error(e?.message ?? "Couldn't update flag.");
+          }
         });
       }}
       className={clsx(
