@@ -258,15 +258,48 @@ const ItemPatch = z.object({
   pinned: z.coerce.boolean().optional(),
 });
 
+/**
+ * Same as updateItem but returns errors for the client. Next.js strips thrown
+ * error messages from Server Actions in production; returned strings are fine.
+ */
+export async function updateItemPatch(
+  itemId: string,
+  patch: z.input<typeof ItemPatch>,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let parsed: z.infer<typeof ItemPatch>;
+  try {
+    parsed = ItemPatch.parse(patch);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Invalid update.";
+    return { ok: false, error: msg };
+  }
+  const { sb } = await requireUser();
+  const { error } = await sb.from("items").update(parsed).eq("id", itemId);
+  if (error) {
+    const code = (error as { code?: string }).code;
+    const msg = error.message ?? "Couldn't save.";
+    if (
+      code === "42703" ||
+      /column .*does not exist|could not find.*column|'should'/i.test(msg)
+    ) {
+      return {
+        ok: false,
+        error:
+          'Database is missing the "should" column. In Supabase → SQL Editor run: alter table items add column if not exists should boolean not null default false;',
+      };
+    }
+    return { ok: false, error: msg };
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function updateItem(
   itemId: string,
   patch: z.input<typeof ItemPatch>,
 ) {
-  const { sb } = await requireUser();
-  const parsed = ItemPatch.parse(patch);
-  const { error } = await sb.from("items").update(parsed).eq("id", itemId);
-  if (error) throw new Error(error.message);
-  revalidatePath("/", "layout");
+  const result = await updateItemPatch(itemId, patch);
+  if (!result.ok) throw new Error(result.error);
 }
 
 export async function createItem(box: string, title: string, extras: z.input<typeof ItemPatch> = {}) {

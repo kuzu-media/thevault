@@ -2,7 +2,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import clsx from "clsx";
-import { updateItem } from "@/lib/actions";
+import { updateItemPatch } from "@/lib/actions";
 import { FlagIcon, type FlagKind } from "./flag-icons";
 
 export function EditableText({
@@ -41,11 +41,8 @@ export function EditableText({
         ? null
         : value;
     startTransition(async () => {
-      try {
-        await updateItem(itemId, { [field]: v } as any);
-      } catch (e: any) {
-        toast.error(e?.message ?? "Couldn't save edit.");
-      }
+      const r = await updateItemPatch(itemId, { [field]: v } as any);
+      if (!r.ok) toast.error(r.error);
     });
   }
 
@@ -99,11 +96,10 @@ export function EditableFlag({
         const next = !on;
         setOn(next);
         startTransition(async () => {
-          try {
-            await updateItem(itemId, { [field]: next } as any);
-          } catch (e: any) {
+          const r = await updateItemPatch(itemId, { [field]: next } as any);
+          if (!r.ok) {
             setOn(prev);
-            toast.error(e?.message ?? "Couldn't update flag.");
+            toast.error(r.error);
           }
         });
       }}

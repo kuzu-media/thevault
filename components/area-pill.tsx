@@ -2,7 +2,8 @@
 import { useEffect, useState, useTransition } from "react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import { updateItem } from "@/lib/actions";
+import { toast } from "sonner";
+import { updateItemPatch } from "@/lib/actions";
 import { Select } from "./ui";
 
 // Compact box-key picker. Counter rows set `area`; ATM rows set `category`.
@@ -38,12 +39,17 @@ export function AreaPill({
         const v = e.target.value;
         setValue(v);
         startTransition(async () => {
-          await updateItem(
+          const r = await updateItemPatch(
             itemId,
             field === "category"
               ? { category: v || null, area: null }
               : { area: v || null },
           );
+          if (!r.ok) {
+            toast.error(r.error);
+            setValue(initial ?? "");
+            return;
+          }
           router.refresh();
         });
       }}
