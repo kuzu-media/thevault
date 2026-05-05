@@ -16,6 +16,9 @@ const FOLDERS: Array<{ key: NonNullable<RecordType["folder"]>; label: string }> 
   { key: "health", label: "Health" },
   { key: "books", label: "Books" },
   { key: "misc", label: "Misc" },
+  { key: "pcs-projects", label: "PCS Projects" },
+  { key: "qcom-projects", label: "QCOM Projects" },
+  { key: "swb-projects", label: "SWB Projects" },
 ];
 
 export function RecordsSettingsEditor({

@@ -90,10 +90,23 @@ export type RecordType = {
   label: string;
   color?: string;
   meta?: string;
-  folder?: "health" | "books" | "misc";
+  folder?:
+    | "health"
+    | "books"
+    | "misc"
+    | "pcs-projects"
+    | "qcom-projects"
+    | "swb-projects";
 };
 
-const RECORD_FOLDERS = new Set(["health", "books", "misc"]);
+const RECORD_FOLDERS = new Set([
+  "health",
+  "books",
+  "misc",
+  "pcs-projects",
+  "qcom-projects",
+  "swb-projects",
+]);
 
 function normalizeRecord(raw: any): RecordType | null {
   const n = normalize(raw);

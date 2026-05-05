@@ -570,7 +570,16 @@ export async function saveEnergyConfig(
 }
 
 const RecordConfig = BoxConfig.extend({
-  folder: z.enum(["health", "books", "misc"]).optional(),
+  folder: z
+    .enum([
+      "health",
+      "books",
+      "misc",
+      "pcs-projects",
+      "qcom-projects",
+      "swb-projects",
+    ])
+    .optional(),
 });
 
 export async function saveRecordConfig(
