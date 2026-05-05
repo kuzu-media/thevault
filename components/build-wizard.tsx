@@ -46,7 +46,6 @@ export function BuildWizard({
   mustDo: Item[];
   otherAdmin: Item[];
 }) {
-  void counterItems;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -114,6 +113,7 @@ export function BuildWizard({
         {step === 4 && (
           <AtmStep
             atm={atmItems}
+            counterItems={counterItems}
             inputs={inputs}
             boxes={boxes}
             onFinish={finish}
@@ -424,11 +424,13 @@ function atmBoxLabel(category: string, boxes: Box[]): string {
 // Step 4: ATM box-first withdrawals.
 function AtmStep({
   atm,
+  counterItems,
   inputs,
   boxes,
   onFinish,
 }: {
   atm: Item[];
+  counterItems: Item[];
   inputs: DayInputs;
   boxes: Box[];
   onFinish: () => void;
@@ -442,12 +444,24 @@ function AtmStep({
     ),
   );
   const [selected, setSelected] = useState<string[]>(categories.slice(0, 1));
-  /** % of day budget to the first selected box when two are chosen (0–100). */
+  /** % of ATM pool to the first selected box when two are chosen (0–100). */
   const [splitPct, setSplitPct] = useState(50);
-  /** % of day budget for the lone selected box (0–100). */
+  /** % of ATM pool for the lone selected box (0–100). */
   const [singleUsePct, setSingleUsePct] = useState(100);
 
   const dayBudgetHours = Math.max(0, inputs.hoursAvailable);
+  const windowMinutes = roundHoursToMinutes(dayBudgetHours);
+  const counterOnTodayItems = counterItems.filter(
+    (i) => (i.todayOrder ?? null) !== null,
+  );
+  const counterOnTodayMinutes = counterOnTodayItems.reduce(
+    (s, i) => s + (i.minutes ?? 0),
+    0,
+  );
+  const counterOnTodayHours = counterOnTodayMinutes / 60;
+  /** Time left for ATM after Counter items marked “on Today” in step 3. */
+  const atmPoolHours = Math.max(0, dayBudgetHours - counterOnTodayHours);
+  const counterExceedsWindow = counterOnTodayMinutes > windowMinutes;
 
   function toggleCategory(category: string) {
     setSelected((prev) => {
@@ -464,12 +478,12 @@ function AtmStep({
     if (selected.length === 0) return 0;
     if (selected.length === 1) {
       return selected[0] === category
-        ? (dayBudgetHours * singleUsePct) / 100
+        ? (atmPoolHours * singleUsePct) / 100
         : 0;
     }
     const [a, b] = selected;
-    if (category === a) return (dayBudgetHours * splitPct) / 100;
-    if (category === b) return (dayBudgetHours * (100 - splitPct)) / 100;
+    if (category === a) return (atmPoolHours * splitPct) / 100;
+    if (category === b) return (atmPoolHours * (100 - splitPct)) / 100;
     return 0;
   }
 
@@ -499,11 +513,12 @@ function AtmStep({
     (sum, c) => sum + hoursBudgetFor(c),
     0,
   );
-  const leftoverHours = Math.max(0, dayBudgetHours - totalAllocated);
+  const leftoverHours = Math.max(
+    0,
+    dayBudgetHours - counterOnTodayHours - totalAllocated,
+  );
   const atmSharePercent =
-    dayBudgetHours > 0
-      ? Math.round((totalAllocated / dayBudgetHours) * 100)
-      : 0;
+    atmPoolHours > 0 ? Math.round((totalAllocated / atmPoolHours) * 100) : 0;
 
   function submit() {
     if (selected.length === 0) {
@@ -531,7 +546,7 @@ function AtmStep({
   return (
     <Step
       title="Pick 1-2 ATM boxes"
-      hint="Use your day budget (from step 1) to say how much time goes to each box — no hour math. Tasks fill in list order until each budget runs out."
+      hint="ATMs split only the time left after Counter tasks you put on Today (step 3). Sliders use that pool — tasks fill in list order until each box budget runs out."
       submitLabel="BUILD THE DAY"
       onSubmit={submit}
       pending={pending}
@@ -542,17 +557,51 @@ function AtmStep({
         </p>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-sm border border-brass/30 bg-brass/5 px-4 py-3">
-            <p className="font-mono text-[10px] tracking-[0.2em] text-ink-mute">
-              TODAY&apos;S TIME WINDOW
-            </p>
-            <p className="mt-1 serif-h text-[22px] leading-tight text-ink">
-              {formatHoursProse(dayBudgetHours)}
-            </p>
-            <p className="mt-1 text-[12px] text-ink-dim">
-              From your end time in step 1. Split this between ATM boxes; anything
-              you leave unassigned stays open for Counter work and slack.
-            </p>
+          <div className="space-y-3 rounded-sm border border-brass/30 bg-brass/5 px-4 py-3">
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.2em] text-ink-mute">
+                TODAY&apos;S TIME WINDOW
+              </p>
+              <p className="mt-1 serif-h text-[22px] leading-tight text-ink">
+                {formatHoursProse(dayBudgetHours)}
+              </p>
+              <p className="mt-1 text-[12px] text-ink-dim">
+                From step 1 (now → end of day).
+              </p>
+            </div>
+            {counterOnTodayMinutes > 0 && (
+              <div className="border-t border-brass/25 pt-3">
+                <p className="font-mono text-[10px] tracking-[0.2em] text-ink-mute">
+                  COUNTER · ON TODAY (STEP 3)
+                </p>
+                <p className="mt-1 text-[15px] font-medium text-ink">
+                  {formatDurationFromMinutes(counterOnTodayMinutes)}
+                  <span className="ml-2 font-normal text-ink-dim">
+                    · {counterOnTodayItems.length} task
+                    {counterOnTodayItems.length === 1 ? "" : "s"}
+                  </span>
+                </p>
+              </div>
+            )}
+            <div className="border-t border-brass/25 pt-3">
+              <p className="font-mono text-[10px] tracking-[0.2em] text-ink-mute">
+                LEFT FOR ATM
+              </p>
+              <p className="mt-1 serif-h text-[22px] leading-tight text-brass-bright">
+                {formatHoursProse(atmPoolHours)}
+              </p>
+              <p className="mt-1 text-[12px] text-ink-dim">
+                Sliders below split this pool only (Counter time is already
+                reserved).
+              </p>
+            </div>
+            {counterExceedsWindow && (
+              <p className="rounded-sm border border-rust/40 bg-rust/5 px-3 py-2 text-[12px] text-ink-dim">
+                Counter on Today is longer than your day window. ATM budget is
+                0 until you take items off Today or move your end time (step
+                1).
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -575,11 +624,11 @@ function AtmStep({
 
           {selected.length > 0 && (
             <div className="space-y-4">
-              {selected.length === 1 && dayBudgetHours > 0 && (
+              {selected.length === 1 && atmPoolHours > 0 && (
                 <div className="rounded-sm border border-vault-line/60 bg-vault-panel/30 p-4">
                   <label className="block">
                     <span className="font-mono text-[10px] tracking-wider text-ink-mute">
-                      How much of today goes to{" "}
+                      How much of your ATM time goes to{" "}
                       <span className="text-ink">
                         {atmBoxLabel(selected[0], boxes)}
                       </span>
@@ -595,7 +644,7 @@ function AtmStep({
                         setSingleUsePct(Number(e.target.value))
                       }
                       className="mt-3 w-full accent-brass"
-                      aria-valuetext={`${singleUsePct}% of day budget`}
+                      aria-valuetext={`${singleUsePct}% of ATM pool`}
                     />
                     <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px] text-ink">
                       <span>
@@ -605,17 +654,17 @@ function AtmStep({
                         <span className="text-ink-dim">for ATM</span>
                       </span>
                       <span className="font-mono text-[11px] text-ink-mute">
-                        {singleUsePct}% of {formatHoursProse(dayBudgetHours)}
+                        {singleUsePct}% of {formatHoursProse(atmPoolHours)}
                       </span>
                     </div>
                   </label>
                 </div>
               )}
 
-              {selected.length === 2 && dayBudgetHours > 0 && (
+              {selected.length === 2 && atmPoolHours > 0 && (
                 <div className="rounded-sm border border-vault-line/60 bg-vault-panel/30 p-4">
                   <p className="font-mono text-[10px] tracking-wider text-ink-mute">
-                    SPLIT YOUR {formatHoursProse(dayBudgetHours)} ATM BUDGET
+                    SPLIT YOUR {formatHoursProse(atmPoolHours)} ATM BUDGET
                   </p>
                   <input
                     type="range"
@@ -660,6 +709,14 @@ function AtmStep({
                 </p>
               )}
 
+              {dayBudgetHours > 0 && atmPoolHours <= 0 && !counterExceedsWindow && (
+                <p className="rounded-sm border border-dashed border-vault-line/80 bg-vault-panel/30 px-3 py-2 text-[12px] text-ink-dim">
+                  No time left for ATM: Counter on Today already fills your day
+                  window. Take something off Today (step 3) or extend your end
+                  time (step 1) to free ATM budget.
+                </p>
+              )}
+
               {selected.map((category) => {
                 const hours = hoursBudgetFor(category);
                 const { used, picked } = estimateFill(category, hours);
@@ -686,18 +743,17 @@ function AtmStep({
                 <p>
                   <span className="text-ink">ATM pulls: </span>
                   {formatHoursProse(totalAllocated)}
-                  {dayBudgetHours > 0 ? (
+                  {atmPoolHours > 0 ? (
                     <span className="text-ink-mute">
                       {" "}
-                      ({atmSharePercent}% of today&apos;s window)
+                      ({atmSharePercent}% of ATM pool)
                     </span>
                   ) : null}
                 </p>
                 {leftoverHours > 0.0001 && (
                   <p className="mt-1">
-                    <span className="text-ink">Not scheduled here: </span>
-                    {formatHoursProse(leftoverHours)} for Counter / buffer /
-                    unstructured
+                    <span className="text-ink">Unscheduled in your window: </span>
+                    {formatHoursProse(leftoverHours)} (slack / overrun room)
                   </p>
                 )}
               </div>
