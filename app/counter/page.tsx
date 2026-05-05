@@ -227,7 +227,7 @@ export default async function CounterPage({
               key={f.key}
               href={f.key === "all" ? "/counter" : `/counter?filter=${f.key}`}
               className={clsx(
-                "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
+                "rounded-sm border px-4 py-1.5 font-mono text-[11px] tracking-wider transition",
                 active === f.key
                   ? "border-brass bg-brass/10 text-brass"
                   : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
@@ -244,7 +244,7 @@ export default async function CounterPage({
               key={a}
               href={`/counter?filter=byarea&area=${encodeURIComponent(a)}`}
               className={clsx(
-                "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
+                "rounded-sm border px-4 py-1.5 font-mono text-[11px] tracking-wider transition",
                 active === "byarea" && area === a
                   ? "border-brass bg-brass/10 text-brass"
                   : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
@@ -303,7 +303,7 @@ function CounterRow({
   return (
     <div
       className={clsx(
-        "flex min-w-0 items-center gap-3 rounded-sm border bg-vault-panel/40 px-3 py-2 transition",
+        "flex min-w-0 items-start gap-3 rounded-sm border bg-vault-panel/40 px-3 py-2 transition",
         onToday
           ? "border-brass/40"
           : stressor
@@ -332,58 +332,64 @@ function CounterRow({
           aria-hidden
         />
       ) : null}
-      <AreaPill
-        itemId={item.id}
-        initial={item.area}
-        options={boxes}
-        className={COUNTER_AREA_PILL_CLASS}
-      />
-      <EditableText
-        itemId={item.id}
-        field="title"
-        initial={item.title}
-        className={clsx(
-          "vault-task-title min-w-0 flex-1 truncate",
-          onToday ? "text-ink" : "text-ink-mute",
-        )}
-        placeholder="(no title)"
-      />
-      <span className="flex shrink-0 items-baseline justify-end gap-1 whitespace-nowrap font-mono text-[11px] text-ink-mute tabular-nums">
-        <EditableText
-          itemId={item.id}
-          field="minutes"
-          initial={item.minutes}
-          className="min-w-[3.25rem] w-16 max-w-[4.5rem] bg-transparent px-0 text-right text-[11px] tabular-nums"
-          numeric
-          placeholder="—"
-        />
-        <span>min</span>
-      </span>
-      <div className="flex shrink-0 items-center gap-1">
-        <EditableFlag
-          itemId={item.id}
-          field="urgent"
-          initial={item.urgent}
-          kind="urgent"
-          className="text-amber-700"
-        />
-        <EditableFlag
-          itemId={item.id}
-          field="must"
-          initial={item.must}
-          kind="must"
-          className="text-sky-600"
-        />
-        <EditableFlag
-          itemId={item.id}
-          field="should"
-          initial={item.should}
-          kind="should"
-          className="text-green-500"
-        />
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-3">
+          <EditableText
+            itemId={item.id}
+            field="title"
+            initial={item.title}
+            className={clsx(
+              "vault-task-title min-w-0 flex-1 truncate",
+              onToday ? "text-ink" : "text-ink-mute",
+            )}
+            placeholder="(no title)"
+          />
+          <span className="flex shrink-0 items-baseline justify-end gap-1 whitespace-nowrap font-mono text-[11px] text-ink-mute tabular-nums">
+            <EditableText
+              itemId={item.id}
+              field="minutes"
+              initial={item.minutes}
+              className="min-w-[3.25rem] w-16 max-w-[4.5rem] bg-transparent px-0 text-right text-[11px] tabular-nums"
+              numeric
+              placeholder="—"
+            />
+            <span>min</span>
+          </span>
+          <div className="flex shrink-0 items-center gap-1">
+            <EditableFlag
+              itemId={item.id}
+              field="urgent"
+              initial={item.urgent}
+              kind="urgent"
+              className="text-amber-700"
+            />
+            <EditableFlag
+              itemId={item.id}
+              field="must"
+              initial={item.must}
+              kind="must"
+              className="text-sky-600"
+            />
+            <EditableFlag
+              itemId={item.id}
+              field="should"
+              initial={item.should}
+              kind="should"
+              className="text-green-500"
+            />
+          </div>
+          <TodayToggle itemId={item.id} on={onToday} size="sm" />
+          <DeleteItemButton itemId={item.id} />
+        </div>
+        <div className="mt-1.5">
+          <AreaPill
+            itemId={item.id}
+            initial={item.area}
+            options={boxes}
+            className={COUNTER_AREA_PILL_CLASS}
+          />
+        </div>
       </div>
-      <TodayToggle itemId={item.id} on={onToday} size="sm" />
-      <DeleteItemButton itemId={item.id} />
     </div>
   );
 }

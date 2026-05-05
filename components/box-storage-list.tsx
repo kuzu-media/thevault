@@ -45,7 +45,7 @@ export function BoxStorageList({
               itemId={it.id}
               field="minutes"
               initial={it.minutes}
-              className="w-10 text-right"
+              className="w-12 text-right"
               numeric
               placeholder="—"
             />
