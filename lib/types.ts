@@ -27,6 +27,7 @@ export type Item = {
   must: boolean;
   should: boolean;
   todayOrder?: number | null;
+  atmOrder?: number | null;
   energy?: Energy | null;
   category?: string | null;
   potential?: 1 | 2 | 3 | 4 | 5 | null;

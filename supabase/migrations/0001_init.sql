@@ -15,6 +15,7 @@ create table if not exists items (
   must boolean not null default false,
   should boolean not null default false,
   today_order int,
+  atm_order int,
   energy text,
   category text,
   potential int check (potential between 1 and 5),

@@ -23,6 +23,7 @@ function rowToItem(r: any): Item {
     must: !!r.must,
     should: !!r.should,
     todayOrder: r.today_order,
+    atmOrder: r.atm_order,
     energy: r.energy,
     category: r.category,
     potential: r.potential,
@@ -45,13 +46,21 @@ function rowToItem(r: any): Item {
 export async function getItemsByBox(box: BoxKey): Promise<Item[]> {
   if (!envReady()) return [];
   const sb = await supabaseServer();
-  const { data, error } = await sb
+  let query = sb
     .from("items")
     .select("*")
     .eq("box", box)
-    .is("deleted_at", null)
-    .order("today_order", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: true });
+    .is("deleted_at", null);
+  if (box === "ATM") {
+    query = query
+      .order("atm_order", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
+  } else {
+    query = query
+      .order("today_order", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
+  }
+  const { data, error } = await query;
   if (error) {
     console.warn("getItemsByBox error", error.message);
     return [];

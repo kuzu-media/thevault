@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { formatEndOfDay12h } from "@/lib/daily-plan";
+import { formatEndOfDay12h, parseTimeOnDate } from "@/lib/daily-plan";
 import { saveDayInputsPartial, pickFromAtm } from "@/lib/actions";
 import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 import { DropTriageRow } from "@/components/drop-triage-row";
@@ -181,8 +181,12 @@ function DaySetupStep({
   });
   function submit() {
     let normalizedEnd: string;
+    let hoursAvailable: number;
     try {
       normalizedEnd = formatEndOfDay12h(endOfDay.trim(), date);
+      const end = parseTimeOnDate(normalizedEnd, date);
+      const ms = end.getTime() - Date.now();
+      hoursAvailable = Math.round(Math.max(0, Math.min(24, ms / 3_600_000)) * 100) / 100;
     } catch {
       toast.error("Couldn’t read that time — try 4:30 PM.");
       return;
@@ -191,8 +195,8 @@ function DaySetupStep({
       try {
         await saveDayInputsPartial({
           date,
+          hours_available: hoursAvailable,
           end_of_day: normalizedEnd,
-          reference_now: new Date().toISOString(),
         });
         onNext();
       } catch (e: unknown) {

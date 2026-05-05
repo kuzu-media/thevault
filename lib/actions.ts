@@ -342,6 +342,18 @@ export async function reorderItems(itemIds: string[]) {
   revalidatePath("/", "layout");
 }
 
+// ATM list ordering inside a selected category panel.
+export async function reorderAtmItems(itemIds: string[]) {
+  const { sb } = await requireUser();
+  await Promise.all(
+    itemIds.map((id, i) =>
+      sb.from("items").update({ atm_order: i + 1 }).eq("id", id).eq("box", "ATM"),
+    ),
+  );
+  revalidatePath("/atm");
+  revalidatePath("/build");
+}
+
 // Universal "on today's plan" toggle. Used by both ATM (Withdraw) and
 // Counter (Today). today_order = rank across ALL items currently on
 // today's plan; null = not on today.
