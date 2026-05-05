@@ -129,6 +129,10 @@ export default async function AtmPage({
   }
   const selectedCategoryItems =
     categoryDecoded === undefined ? [] : groups.get(categoryDecoded) ?? [];
+  const selectedCategoryTotalMinutes = selectedCategoryItems.reduce(
+    (sum, i) => sum + (i.minutes ?? 0),
+    0,
+  );
   const selectedCategoryLabel =
     categoryDecoded === ""
       ? "Uncategorized"
@@ -239,7 +243,10 @@ export default async function AtmPage({
                   </h2>
                   <p className="mt-1 font-mono text-[10px] text-ink-mute">
                     {selectedCategoryItems.length} item
-                    {selectedCategoryItems.length === 1 ? "" : "s"}
+                    {selectedCategoryItems.length === 1 ? "" : "s"} ~{" "}
+                    {selectedCategoryTotalMinutes}{" "}
+                    minute
+                    {selectedCategoryTotalMinutes === 1 ? "" : "s"}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
