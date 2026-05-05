@@ -112,7 +112,12 @@ export function BuildWizard({
           />
         )}
         {step === 4 && (
-          <AtmStep atm={atmItems} inputs={inputs} onFinish={finish} />
+          <AtmStep
+            atm={atmItems}
+            inputs={inputs}
+            boxes={boxes}
+            onFinish={finish}
+          />
         )}
       </div>
 
@@ -395,14 +400,37 @@ function Empty() {
   return <div className="text-[12px] italic text-ink-mute">(nothing here)</div>;
 }
 
+function roundHoursToMinutes(h: number): number {
+  return Math.max(0, Math.round(h * 60));
+}
+
+function formatDurationFromMinutes(totalMin: number): string {
+  if (totalMin <= 0) return "0 min";
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m} min`;
+}
+
+function formatHoursProse(totalHours: number): string {
+  return formatDurationFromMinutes(roundHoursToMinutes(totalHours));
+}
+
+function atmBoxLabel(category: string, boxes: Box[]): string {
+  return boxes.find((b) => b.key === category)?.label ?? category;
+}
+
 // Step 4: ATM box-first withdrawals.
 function AtmStep({
   atm,
   inputs,
+  boxes,
   onFinish,
 }: {
   atm: Item[];
   inputs: DayInputs;
+  boxes: Box[];
   onFinish: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -414,19 +442,12 @@ function AtmStep({
     ),
   );
   const [selected, setSelected] = useState<string[]>(categories.slice(0, 1));
-  const [hoursByCategory, setHoursByCategory] = useState<Record<string, string>>(
-    () =>
-      categories.reduce(
-        (acc, c) => ({
-          ...acc,
-          [c]:
-            c === categories[0]
-              ? String(Math.max(0, Math.round(inputs.hoursAvailable * 100) / 100))
-              : "0",
-        }),
-        {} as Record<string, string>,
-      ),
-  );
+  /** % of day budget to the first selected box when two are chosen (0–100). */
+  const [splitPct, setSplitPct] = useState(50);
+  /** % of day budget for the lone selected box (0–100). */
+  const [singleUsePct, setSingleUsePct] = useState(100);
+
+  const dayBudgetHours = Math.max(0, inputs.hoursAvailable);
 
   function toggleCategory(category: string) {
     setSelected((prev) => {
@@ -434,13 +455,22 @@ function AtmStep({
       if (exists) return prev.filter((c) => c !== category);
       if (prev.length >= 2) return prev;
       const next = [...prev, category];
-      // Default split: evenly divide available hours when 2 boxes selected.
-      if (next.length === 2) {
-        const each = (inputs.hoursAvailable / 2).toFixed(2);
-        setHoursByCategory((h) => ({ ...h, [next[0]]: each, [next[1]]: each }));
-      }
+      if (next.length === 2) setSplitPct(50);
       return next;
     });
+  }
+
+  function hoursBudgetFor(category: string): number {
+    if (selected.length === 0) return 0;
+    if (selected.length === 1) {
+      return selected[0] === category
+        ? (dayBudgetHours * singleUsePct) / 100
+        : 0;
+    }
+    const [a, b] = selected;
+    if (category === a) return (dayBudgetHours * splitPct) / 100;
+    if (category === b) return (dayBudgetHours * (100 - splitPct)) / 100;
+    return 0;
   }
 
   function estimateFill(category: string, hours: number) {
@@ -466,9 +496,14 @@ function AtmStep({
   }
 
   const totalAllocated = selected.reduce(
-    (sum, c) => sum + Number(hoursByCategory[c] || 0),
+    (sum, c) => sum + hoursBudgetFor(c),
     0,
   );
+  const leftoverHours = Math.max(0, dayBudgetHours - totalAllocated);
+  const atmSharePercent =
+    dayBudgetHours > 0
+      ? Math.round((totalAllocated / dayBudgetHours) * 100)
+      : 0;
 
   function submit() {
     if (selected.length === 0) {
@@ -477,7 +512,7 @@ function AtmStep({
     }
     const payload = selected.map((category) => ({
       category,
-      hours: Number(hoursByCategory[category] || 0),
+      hours: hoursBudgetFor(category),
     }));
     if (!payload.some((p) => p.hours > 0)) {
       toast.error("Set at least one box budget above 0 hours.");
@@ -496,7 +531,7 @@ function AtmStep({
   return (
     <Step
       title="Pick 1-2 ATM boxes"
-      hint="Choose up to two boxes, set hours for each, then we'll auto-fill tasks in block order from those boxes."
+      hint="Use your day budget (from step 1) to say how much time goes to each box — no hour math. Tasks fill in list order until each budget runs out."
       submitLabel="BUILD THE DAY"
       onSubmit={submit}
       pending={pending}
@@ -507,6 +542,19 @@ function AtmStep({
         </p>
       ) : (
         <div className="space-y-4">
+          <div className="rounded-sm border border-brass/30 bg-brass/5 px-4 py-3">
+            <p className="font-mono text-[10px] tracking-[0.2em] text-ink-mute">
+              TODAY&apos;S TIME WINDOW
+            </p>
+            <p className="mt-1 serif-h text-[22px] leading-tight text-ink">
+              {formatHoursProse(dayBudgetHours)}
+            </p>
+            <p className="mt-1 text-[12px] text-ink-dim">
+              From your end time in step 1. Split this between ATM boxes; anything
+              you leave unassigned stays open for Counter work and slack.
+            </p>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <button
@@ -520,57 +568,137 @@ function AtmStep({
                     : "border-vault-line/60 text-ink-mute hover:border-brass/40 hover:text-brass",
                 )}
               >
-                {category}
+                {atmBoxLabel(category, boxes)}
               </button>
             ))}
           </div>
 
           {selected.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {selected.length === 1 && dayBudgetHours > 0 && (
+                <div className="rounded-sm border border-vault-line/60 bg-vault-panel/30 p-4">
+                  <label className="block">
+                    <span className="font-mono text-[10px] tracking-wider text-ink-mute">
+                      How much of today goes to{" "}
+                      <span className="text-ink">
+                        {atmBoxLabel(selected[0], boxes)}
+                      </span>
+                      ?
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={singleUsePct}
+                      onChange={(e) =>
+                        setSingleUsePct(Number(e.target.value))
+                      }
+                      className="mt-3 w-full accent-brass"
+                      aria-valuetext={`${singleUsePct}% of day budget`}
+                    />
+                    <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px] text-ink">
+                      <span>
+                        <span className="text-brass-bright">
+                          {formatHoursProse(hoursBudgetFor(selected[0]))}
+                        </span>{" "}
+                        <span className="text-ink-dim">for ATM</span>
+                      </span>
+                      <span className="font-mono text-[11px] text-ink-mute">
+                        {singleUsePct}% of {formatHoursProse(dayBudgetHours)}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              )}
+
+              {selected.length === 2 && dayBudgetHours > 0 && (
+                <div className="rounded-sm border border-vault-line/60 bg-vault-panel/30 p-4">
+                  <p className="font-mono text-[10px] tracking-wider text-ink-mute">
+                    SPLIT YOUR {formatHoursProse(dayBudgetHours)} ATM BUDGET
+                  </p>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={splitPct}
+                    onChange={(e) => setSplitPct(Number(e.target.value))}
+                    className="mt-3 w-full accent-brass"
+                    aria-valuetext={`${splitPct}% to ${atmBoxLabel(selected[0], boxes)}`}
+                  />
+                  <div className="mt-3 flex flex-wrap items-start justify-between gap-3 text-[13px]">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-ink">
+                        {atmBoxLabel(selected[0], boxes)}
+                      </p>
+                      <p className="mt-0.5 text-brass-bright">
+                        {formatHoursProse(hoursBudgetFor(selected[0]))}
+                      </p>
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <p className="truncate font-medium text-ink">
+                        {atmBoxLabel(selected[1], boxes)}
+                      </p>
+                      <p className="mt-0.5 text-brass-bright">
+                        {formatHoursProse(hoursBudgetFor(selected[1]))}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-[11px] text-ink-mute">
+                    Slide toward a box to give it more of the total; the other
+                    shrinks automatically.
+                  </p>
+                </div>
+              )}
+
+              {dayBudgetHours <= 0 && (
+                <p className="rounded-sm border border-dashed border-rust/40 bg-rust/5 px-3 py-2 text-[12px] text-ink-dim">
+                  No hours left in your day window (step 1). Adjust end time or
+                  continue — you can still build, but ATM budgets will be 0
+                  until that changes.
+                </p>
+              )}
+
               {selected.map((category) => {
-                const hours = Number(hoursByCategory[category] || 0);
+                const hours = hoursBudgetFor(category);
                 const { used, picked } = estimateFill(category, hours);
                 return (
                   <div
                     key={category}
                     className="rounded-sm border border-vault-line/60 bg-vault-panel/40 p-3"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-mono text-[11px] tracking-wider text-ink">
-                        {category}
-                      </p>
-                      <label className="flex items-center gap-2 font-mono text-[10px] text-ink-mute">
-                        HOURS
-                        <input
-                          type="number"
-                          min={0}
-                          max={24}
-                          step={0.25}
-                          value={hoursByCategory[category] ?? "0"}
-                          onChange={(e) =>
-                            setHoursByCategory((h) => ({
-                              ...h,
-                              [category]: e.target.value,
-                            }))
-                          }
-                          className="w-20 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-right text-[11px] text-ink outline-none focus:border-brass"
-                        />
-                      </label>
-                    </div>
+                    <p className="font-mono text-[11px] tracking-wider text-ink">
+                      {atmBoxLabel(category, boxes)}
+                    </p>
                     <p className="mt-2 text-[12px] text-ink-dim">
-                      Estimated fill: {picked} task{picked === 1 ? "" : "s"} ·{" "}
-                      {used} min
+                      Likely fill (in list order, min &gt; 0):{" "}
+                      <span className="text-ink">
+                        {picked} task{picked === 1 ? "" : "s"} ·{" "}
+                        {formatDurationFromMinutes(used)}
+                      </span>
                     </p>
                   </div>
                 );
               })}
-              <div className="rounded-sm border border-vault-line/50 bg-vault-bg/30 px-3 py-2 text-[12px] text-ink-dim">
-                Total allocated: {totalAllocated.toFixed(2)}h
-                {totalAllocated > inputs.hoursAvailable && (
-                  <span className="text-rust">
-                    {" "}
-                    (above available {inputs.hoursAvailable.toFixed(2)}h)
-                  </span>
+
+              <div className="rounded-sm border border-vault-line/50 bg-vault-bg/30 px-3 py-2.5 text-[12px] text-ink-dim">
+                <p>
+                  <span className="text-ink">ATM pulls: </span>
+                  {formatHoursProse(totalAllocated)}
+                  {dayBudgetHours > 0 ? (
+                    <span className="text-ink-mute">
+                      {" "}
+                      ({atmSharePercent}% of today&apos;s window)
+                    </span>
+                  ) : null}
+                </p>
+                {leftoverHours > 0.0001 && (
+                  <p className="mt-1">
+                    <span className="text-ink">Not scheduled here: </span>
+                    {formatHoursProse(leftoverHours)} for Counter / buffer /
+                    unstructured
+                  </p>
                 )}
               </div>
             </div>
