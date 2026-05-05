@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createItem } from "@/lib/actions";
+import { CounterFlagDraft } from "@/components/editable-text";
 import {
   MinutesInlineInput,
   parseMinutesField,
@@ -20,6 +21,9 @@ export function NewCounterItemRow({
   const [title, setTitle] = useState("");
   const [area, setArea] = useState(initialArea);
   const [minutes, setMinutes] = useState("");
+  const [urgent, setUrgent] = useState(false);
+  const [must, setMust] = useState(false);
+  const [should, setShould] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function add() {
@@ -30,10 +34,16 @@ export function NewCounterItemRow({
       await createItem("COUNTER", t, {
         area,
         category: null,
+        urgent,
+        must,
+        should,
         ...(m !== undefined ? { minutes: m } : {}),
       });
       setTitle("");
       setMinutes("");
+      setUrgent(false);
+      setMust(false);
+      setShould(false);
       router.refresh();
     });
   }
@@ -74,6 +84,26 @@ export function NewCounterItemRow({
         onChange={setMinutes}
         aria-label="Minutes for new counter item"
       />
+      <div className="flex shrink-0 items-center gap-1">
+        <CounterFlagDraft
+          on={urgent}
+          onChange={setUrgent}
+          kind="urgent"
+          activeClassName="text-amber-700"
+        />
+        <CounterFlagDraft
+          on={must}
+          onChange={setMust}
+          kind="must"
+          activeClassName="text-sky-600"
+        />
+        <CounterFlagDraft
+          on={should}
+          onChange={setShould}
+          kind="should"
+          activeClassName="text-green-500"
+        />
+      </div>
       <button
         type="button"
         onClick={add}

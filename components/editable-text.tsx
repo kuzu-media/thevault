@@ -66,6 +66,36 @@ export function EditableText({
   );
 }
 
+/** Same visuals as EditableFlag, for local state before insert (e.g. new Counter row). */
+export function CounterFlagDraft({
+  on,
+  onChange,
+  kind,
+  activeClassName,
+}: {
+  on: boolean;
+  onChange: (next: boolean) => void;
+  kind: FlagKind;
+  activeClassName: string;
+}) {
+  return (
+    <button
+      type="button"
+      title={
+        kind === "urgent" ? "Urgent" : kind === "must" ? "Must-Do" : "Should"
+      }
+      onClick={() => onChange(!on)}
+      className={clsx(
+        "flex h-6 w-6 shrink-0 items-center justify-center rounded-sm leading-none transition",
+        on ? activeClassName : "text-ink-mute/40 hover:text-ink-mute",
+      )}
+      aria-pressed={on}
+    >
+      <FlagIcon kind={kind} filled={on} />
+    </button>
+  );
+}
+
 // Visual key:
 //   urgent (⚡ lightning) → time pressure, amber (see Counter / Drop)
 //   must   (★ star)       → required / anchor, brass color
