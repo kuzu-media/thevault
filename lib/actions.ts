@@ -264,7 +264,8 @@ export async function updateItem(
 ) {
   const { sb } = await requireUser();
   const parsed = ItemPatch.parse(patch);
-  await sb.from("items").update(parsed).eq("id", itemId);
+  const { error } = await sb.from("items").update(parsed).eq("id", itemId);
+  if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }
 
