@@ -58,6 +58,17 @@ function decodeCategoryParam(raw: string | undefined): string | undefined {
   return raw === UNCATEGORIZED ? "" : raw;
 }
 
+/** e.g. 120 → "2 hours", 90 → "1 hour, 30 minutes", 45 → "45 minutes". */
+function formatHoursMinutesProse(totalMinutes: number): string {
+  if (totalMinutes <= 0) return "0 minutes";
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  const parts: string[] = [];
+  if (h > 0) parts.push(`${h} hour${h === 1 ? "" : "s"}`);
+  if (m > 0) parts.push(`${m} minute${m === 1 ? "" : "s"}`);
+  return parts.join(", ");
+}
+
 function applyAtmFilter(items: Item[], f: AtmFilter): Item[] {
   switch (f) {
     case "picked":
@@ -244,9 +255,7 @@ export default async function AtmPage({
                   <p className="mt-1 font-mono text-[10px] text-ink-mute">
                     {selectedCategoryItems.length} item
                     {selectedCategoryItems.length === 1 ? "" : "s"} ~{" "}
-                    {selectedCategoryTotalMinutes}{" "}
-                    minute
-                    {selectedCategoryTotalMinutes === 1 ? "" : "s"}
+                    {formatHoursMinutesProse(selectedCategoryTotalMinutes)}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
