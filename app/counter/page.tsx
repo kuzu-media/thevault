@@ -42,6 +42,18 @@ const VALID_FILTERS: readonly Filter[] = [
   "byarea",
 ];
 
+function sumMinutes(items: Item[]): number {
+  return items.reduce((sum, item) => sum + (item.minutes ?? 0), 0);
+}
+
+function formatMinutesShort(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${minutes}m`;
+}
+
 /** Next may pass a single string or repeated keys as `string[]`. */
 function firstQuery(
   v: string | string[] | undefined,
@@ -118,6 +130,14 @@ export default async function CounterPage({
   const areas = boxes
     .filter((b) => all.some((it) => it.area === b.key))
     .map((b) => b.key);
+  const filterTotals: Partial<Record<Filter, number>> = {
+    all: sumMinutes(all),
+    stress: sumMinutes(applyFilter(all, "stress")),
+    urgent: sumMinutes(applyFilter(all, "urgent")),
+    must: sumMinutes(applyFilter(all, "must")),
+    should: sumMinutes(applyFilter(all, "should")),
+    quick: sumMinutes(applyFilter(all, "quick")),
+  };
 
   const boxOpts = boxes.map((b) => ({ key: b.key, label: b.label }));
   const { stress, urgent, must, should, plain } =
@@ -213,7 +233,7 @@ export default async function CounterPage({
                   : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
               )}
             >
-              {f.label}
+              {`${f.label}: ${formatMinutesShort(filterTotals[f.key] ?? 0)}`}
             </Link>
           ))}
           {areas.length > 0 && (
@@ -265,7 +285,8 @@ export default async function CounterPage({
 
 /** Matches ATM row `AreaPill` chip sizing. */
 const COUNTER_AREA_PILL_CLASS =
-  "!max-h-7 max-w-[5.75rem] shrink-0 !py-0.5 !pl-1.5 !pr-1 !text-[9px] !leading-tight border-brass/40 bg-vault-bg/20";
+  // Wider so long area labels (e.g. "Home & Garden") don't truncate.
+  "!max-h-7 max-w-[9.25rem] shrink-0 !py-0.5 !pl-1.5 !pr-1 !text-[9px] !leading-tight border-brass/40 bg-vault-bg/20";
 
 function CounterRow({
   item,
