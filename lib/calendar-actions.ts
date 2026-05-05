@@ -47,6 +47,41 @@ export async function saveGoogleCalendarSettings(formData: FormData) {
   revalidatePath("/settings/calendar");
 }
 
+export async function saveGoogleCalendarSettingsPatch(input: {
+  calendar_id: string;
+  timezone: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  let parsed: z.infer<typeof CalendarSettingsSchema>;
+  try {
+    parsed = CalendarSettingsSchema.parse(input);
+  } catch (e: unknown) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Invalid calendar settings.",
+    };
+  }
+  try {
+    const { sb, vaultId } = await requireUserAndVault();
+    const { error } = await sb.from("google_calendar_connections").upsert(
+      {
+        vault_id: vaultId,
+        calendar_id: parsed.calendar_id,
+        timezone: parsed.timezone,
+        modified_at: new Date().toISOString(),
+      },
+      { onConflict: "vault_id", ignoreDuplicates: false },
+    );
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/settings/calendar");
+    return { ok: true };
+  } catch (e: unknown) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Couldn't save settings.",
+    };
+  }
+}
+
 export async function disconnectGoogleCalendar() {
   const { sb, vaultId } = await requireUserAndVault();
   const admin = supabaseAdmin();

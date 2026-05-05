@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
-  saveGoogleCalendarSettings,
+  saveGoogleCalendarSettingsPatch,
   disconnectGoogleCalendar,
   syncGoogleCalendarForMyVaultNow,
 } from "@/lib/calendar-actions";
@@ -34,6 +34,18 @@ export function GoogleCalendarPanel({
   const [calendars, setCalendars] = useState<Cal[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [syncing, startSync] = useTransition();
+  const [saving, startSave] = useTransition();
+  const [selectedCalendarId, setSelectedCalendarId] = useState(
+    calendarId || "primary",
+  );
+  const [selectedTimezone, setSelectedTimezone] = useState(
+    timezone || DEFAULT_TZ,
+  );
+
+  useEffect(() => {
+    setSelectedCalendarId(calendarId || "primary");
+    setSelectedTimezone(timezone || DEFAULT_TZ);
+  }, [calendarId, timezone]);
 
   useEffect(() => {
     const err = search.get("error");
@@ -106,7 +118,25 @@ export function GoogleCalendarPanel({
           {loadErr && (
             <p className="text-[13px] text-rust">{loadErr}</p>
           )}
-          <form action={saveGoogleCalendarSettings} className="space-y-4">
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              startSave(() => {
+                void (async () => {
+                  const r = await saveGoogleCalendarSettingsPatch({
+                    calendar_id: selectedCalendarId,
+                    timezone: selectedTimezone,
+                  });
+                  if (!r.ok) {
+                    toast.error(r.error);
+                    return;
+                  }
+                  toast.success("Calendar settings saved.");
+                })();
+              });
+            }}
+          >
             <div className="flex flex-col gap-1">
               <label className="text-[12px] text-ink-mute" htmlFor="calendar_id">
                 Which calendar
@@ -114,7 +144,8 @@ export function GoogleCalendarPanel({
               <select
                 id="calendar_id"
                 name="calendar_id"
-                defaultValue={calendarId || "primary"}
+                value={selectedCalendarId}
+                onChange={(e) => setSelectedCalendarId(e.target.value)}
                 className="max-w-md rounded-sm border border-vault-line bg-vault-bg/60 px-2.5 py-2 text-[13px] text-ink outline-none focus:border-brass"
                 required
               >
@@ -139,7 +170,8 @@ export function GoogleCalendarPanel({
               <select
                 id="timezone"
                 name="timezone"
-                defaultValue={tzValue}
+                value={selectedTimezone}
+                onChange={(e) => setSelectedTimezone(e.target.value)}
                 className="max-w-md rounded-sm border border-vault-line bg-vault-bg/60 px-2.5 py-2 text-[13px] text-ink outline-none focus:border-brass"
                 required
               >
@@ -153,9 +185,10 @@ export function GoogleCalendarPanel({
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="submit"
+                disabled={saving}
                 className="brass-button px-4 py-2 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08]"
               >
-                SAVE
+                {saving ? "SAVING…" : "SAVE"}
               </button>
               <button
                 type="button"
