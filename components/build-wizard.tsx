@@ -546,7 +546,6 @@ function AtmStep({
   return (
     <Step
       title="Pick 1-2 ATM boxes"
-      hint="ATMs split only the time left after Counter tasks you put on Today (step 3). Sliders use that pool — tasks fill in list order until each box budget runs out."
       submitLabel="BUILD THE DAY"
       onSubmit={submit}
       pending={pending}
@@ -557,53 +556,6 @@ function AtmStep({
         </p>
       ) : (
         <div className="space-y-4">
-          <div className="space-y-3 rounded-sm border border-brass/30 bg-brass/5 px-4 py-3">
-            <div>
-              <p className="font-mono text-[10px] tracking-[0.2em] text-ink-mute">
-                TODAY&apos;S TIME WINDOW
-              </p>
-              <p className="mt-1 serif-h text-[22px] leading-tight text-ink">
-                {formatHoursProse(dayBudgetHours)}
-              </p>
-              <p className="mt-1 text-[12px] text-ink-dim">
-                From step 1 (now → end of day).
-              </p>
-            </div>
-            {counterOnTodayMinutes > 0 && (
-              <div className="border-t border-brass/25 pt-3">
-                <p className="font-mono text-[10px] tracking-[0.2em] text-ink-mute">
-                  COUNTER · ON TODAY (STEP 3)
-                </p>
-                <p className="mt-1 text-[15px] font-medium text-ink">
-                  {formatDurationFromMinutes(counterOnTodayMinutes)}
-                  <span className="ml-2 font-normal text-ink-dim">
-                    · {counterOnTodayItems.length} task
-                    {counterOnTodayItems.length === 1 ? "" : "s"}
-                  </span>
-                </p>
-              </div>
-            )}
-            <div className="border-t border-brass/25 pt-3">
-              <p className="font-mono text-[10px] tracking-[0.2em] text-ink-mute">
-                LEFT FOR ATM
-              </p>
-              <p className="mt-1 serif-h text-[22px] leading-tight text-brass-bright">
-                {formatHoursProse(atmPoolHours)}
-              </p>
-              <p className="mt-1 text-[12px] text-ink-dim">
-                Sliders below split this pool only (Counter time is already
-                reserved).
-              </p>
-            </div>
-            {counterExceedsWindow && (
-              <p className="rounded-sm border border-rust/40 bg-rust/5 px-3 py-2 text-[12px] text-ink-dim">
-                Counter on Today is longer than your day window. ATM budget is
-                0 until you take items off Today or move your end time (step
-                1).
-              </p>
-            )}
-          </div>
-
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <button
@@ -621,6 +573,13 @@ function AtmStep({
               </button>
             ))}
           </div>
+
+          {counterExceedsWindow && (
+            <p className="rounded-sm border border-rust/40 bg-rust/5 px-3 py-2 text-[12px] text-ink-dim">
+              Counter on Today is longer than your day window. ATM budget is 0
+              until you take items off Today or move your end time (step 1).
+            </p>
+          )}
 
           {selected.length > 0 && (
             <div className="space-y-4">
@@ -776,7 +735,7 @@ function Step({
   submitDisabled = false,
 }: {
   title: string;
-  hint: string;
+  hint?: string;
   children: React.ReactNode;
   onSubmit: () => void;
   submitLabel?: string;
@@ -788,8 +747,8 @@ function Step({
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
         {title}
       </h1>
-      <p className="mt-2 text-ink-dim">{hint}</p>
-      <div className="mt-10">{children}</div>
+      {hint ? <p className="mt-2 text-ink-dim">{hint}</p> : null}
+      <div className={hint ? "mt-10" : "mt-6"}>{children}</div>
       <div className="mt-12 flex justify-end">
         <button
           onClick={onSubmit}
