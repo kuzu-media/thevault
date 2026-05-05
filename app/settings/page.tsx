@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS } from "@/lib/types";
 import { getSettings } from "@/lib/data";
 import { saveSettings } from "@/lib/actions";
 import { CaptureTokenRow } from "@/components/capture-token-row";
+import { SettingsSubnav } from "@/components/settings-subnav";
 import { NumberField } from "@/components/ui";
 
 export default async function SettingsPage() {
@@ -22,47 +23,12 @@ export default async function SettingsPage() {
       </h1>
       <p className="mt-1 text-[13px] text-ink-dim">
         How the vault behaves. The tabs below cover members, the categories
-        you file into, the energies that power ATM matching, and how to
-        connect your phone and Mac.
+        you file into, the energies that power ATM matching, Google Calendar
+        to Drop, and how to connect your phone and Mac.
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-2 font-mono text-[10px] tracking-wider">
-        <Link
-          href="/settings"
-          className="rounded-sm border border-brass bg-brass/10 px-3 py-1.5 text-brass"
-        >
-          GENERAL
-        </Link>
-        <Link
-          href="/settings/members"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          MEMBERS
-        </Link>
-        <Link
-          href="/settings/boxes"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          BOXES
-        </Link>
-        <Link
-          href="/settings/records"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          RECORDS
-        </Link>
-        <Link
-          href="/settings/energies"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          ENERGIES
-        </Link>
-        <Link
-          href="/settings/connect"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          CONNECT
-        </Link>
+      <div className="mt-4">
+        <SettingsSubnav />
       </div>
 
       <form action={saveSettings} className="mt-8 space-y-6">

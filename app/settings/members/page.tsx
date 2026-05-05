@@ -3,6 +3,7 @@ import { inviteMember, renameVault } from "@/lib/actions";
 import { getCurrentVault } from "@/lib/data";
 import { RoleControl } from "@/components/role-control";
 import { RemoveMemberButton } from "@/components/remove-member-button";
+import { SettingsSubnav } from "@/components/settings-subnav";
 
 export default async function MembersPage() {
   const sb = await supabaseServer();
@@ -51,43 +52,8 @@ export default async function MembersPage() {
         Who can open this vault.
       </h1>
 
-      <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] tracking-wider">
-        <a
-          href="/settings"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          GENERAL
-        </a>
-        <a
-          href="/settings/members"
-          className="rounded-sm border border-brass bg-brass/10 px-3 py-1 text-brass"
-        >
-          MEMBERS
-        </a>
-        <a
-          href="/settings/boxes"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          BOXES
-        </a>
-        <a
-          href="/settings/records"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          RECORDS
-        </a>
-        <a
-          href="/settings/energies"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          ENERGIES
-        </a>
-        <a
-          href="/settings/connect"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          CONNECT
-        </a>
+      <div className="mt-3">
+        <SettingsSubnav />
       </div>
 
       {vault && myRole === "owner" && (

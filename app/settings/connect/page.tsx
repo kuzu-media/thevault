@@ -4,11 +4,11 @@
 // without opening a tab. Each card is one mechanism with its own
 // copyable snippet pre-filled with the user's id + token + base URL.
 
-import Link from "next/link";
 import { headers } from "next/headers";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getSettings } from "@/lib/data";
 import { ConnectDeviceCards } from "@/components/connect-device-cards";
+import { SettingsSubnav } from "@/components/settings-subnav";
 
 export default async function ConnectPage() {
   const sb = await supabaseServer();
@@ -34,43 +34,8 @@ export default async function ConnectPage() {
         word away.
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-2 font-mono text-[10px] tracking-wider">
-        <Link
-          href="/settings"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          GENERAL
-        </Link>
-        <Link
-          href="/settings/members"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          MEMBERS
-        </Link>
-        <Link
-          href="/settings/boxes"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          BOXES
-        </Link>
-        <Link
-          href="/settings/records"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          RECORDS
-        </Link>
-        <Link
-          href="/settings/energies"
-          className="rounded-sm border border-vault-line px-3 py-1.5 text-ink-mute transition hover:border-brass/40 hover:text-brass"
-        >
-          ENERGIES
-        </Link>
-        <Link
-          href="/settings/connect"
-          className="rounded-sm border border-brass bg-brass/10 px-3 py-1.5 text-brass"
-        >
-          CONNECT
-        </Link>
+      <div className="mt-4">
+        <SettingsSubnav />
       </div>
 
       <ConnectDeviceCards

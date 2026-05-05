@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { getEnergies } from "@/lib/categories";
 import { EnergiesEditor } from "@/components/energies-editor";
+import { SettingsSubnav } from "@/components/settings-subnav";
 
 export default async function EnergiesSettingsPage() {
   const initial = await getEnergies();
@@ -12,43 +12,8 @@ export default async function EnergiesSettingsPage() {
         Energies.
       </h1>
 
-      <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] tracking-wider">
-        <Link
-          href="/settings"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          GENERAL
-        </Link>
-        <Link
-          href="/settings/members"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          MEMBERS
-        </Link>
-        <Link
-          href="/settings/boxes"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          BOXES
-        </Link>
-        <Link
-          href="/settings/records"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          RECORDS
-        </Link>
-        <Link
-          href="/settings/energies"
-          className="rounded-sm border border-brass bg-brass/10 px-3 py-1 text-brass"
-        >
-          ENERGIES
-        </Link>
-        <Link
-          href="/settings/connect"
-          className="rounded-sm border border-vault-line px-3 py-1 text-ink-mute hover:border-brass/40 hover:text-brass"
-        >
-          CONNECT
-        </Link>
+      <div className="mt-3">
+        <SettingsSubnav />
       </div>
 
       <p className="mt-6 text-ink-dim">
