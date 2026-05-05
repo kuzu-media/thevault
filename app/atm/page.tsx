@@ -5,6 +5,7 @@ import { getBoxes } from "@/lib/categories";
 import { EditableText } from "@/components/editable-text";
 import { AreaPill } from "@/components/area-pill";
 import { NewItemRow } from "@/components/new-item-row";
+import { BoxCard } from "@/components/box-card";
 import { AtmPickButton } from "@/components/atm-pick-button";
 import { DeleteItemButton } from "@/components/delete-item-button";
 import type { Item } from "@/lib/types";
@@ -18,8 +19,7 @@ type AtmFilter =
   | "all"
   | "picked"
   | "unpicked"
-  | "quick"
-  | "bycategory";
+  | "quick";
 
 const FILTERS: { key: AtmFilter; label: string }[] = [
   { key: "all", label: "All" },
@@ -33,7 +33,6 @@ const VALID_FILTERS: readonly AtmFilter[] = [
   "picked",
   "unpicked",
   "quick",
-  "bycategory",
 ];
 
 const UNCATEGORIZED = "__none__";
@@ -48,12 +47,7 @@ function decodeCategoryParam(raw: string | undefined): string | undefined {
   return raw === UNCATEGORIZED ? "" : raw;
 }
 
-function applyAtmFilter(
-  items: Item[],
-  f: AtmFilter,
-  opts: { category?: string },
-): Item[] {
-  const { category } = opts;
+function applyAtmFilter(items: Item[], f: AtmFilter): Item[] {
   switch (f) {
     case "picked":
       return items.filter((i) => (i.todayOrder ?? null) !== null);
@@ -63,23 +57,14 @@ function applyAtmFilter(
       return items.filter(
         (i) => (i.minutes ?? 0) >= 5 && (i.minutes ?? 0) <= 15,
       );
-    case "bycategory": {
-      if (category === undefined) return items;
-      const want = category;
-      return items.filter((i) => (i.category ?? "") === want);
-    }
     case "all":
     default:
       return items;
   }
 }
 
-function filterSummary(f: AtmFilter, category?: string): string {
+function filterSummary(f: AtmFilter): string {
   if (f === "all") return "FILTER";
-  if (f === "bycategory") {
-    const c = category === "" ? "UNCATEGORIZED" : (category ?? "").toUpperCase();
-    return `FILTER · ${c}`;
-  }
   return `FILTER · ${f.replace(/-/g, " ").toUpperCase()}`;
 }
 
@@ -89,20 +74,14 @@ export default async function AtmPage({
   searchParams: Promise<{ filter?: string; category?: string }>;
 }) {
   const sp = await searchParams;
-  let active = coerceFilter(sp.filter);
-  let categoryDecoded = decodeCategoryParam(sp.category);
-  if (active === "bycategory" && sp.category === undefined) {
-    active = "all";
-    categoryDecoded = undefined;
-  }
+  const active = coerceFilter(sp.filter);
+  const categoryDecoded = decodeCategoryParam(sp.category);
 
   const [list, boxes] = await Promise.all([
     getItemsByBox("ATM"),
     getBoxes(),
   ]);
-  const filtered = applyAtmFilter(list, active, {
-    category: categoryDecoded,
-  });
+  const filtered = applyAtmFilter(list, active);
 
   const labelByKey = new Map(boxes.map((b) => [b.key, b.label]));
 
@@ -120,18 +99,28 @@ export default async function AtmPage({
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(it);
   }
+  const selectedCategoryItems =
+    categoryDecoded === undefined ? [] : groups.get(categoryDecoded) ?? [];
+  const selectedCategoryLabel =
+    categoryDecoded === ""
+      ? "Uncategorized"
+      : categoryDecoded
+        ? (labelByKey.get(categoryDecoded) ?? categoryDecoded)
+        : null;
 
-  function atmHref(f: AtmFilter, extra?: { category?: string }) {
-    if (f === "all") return "/atm";
+  function atmHref(f: AtmFilter, extra?: { category?: string | null }) {
     const p = new URLSearchParams();
-    p.set("filter", f);
-    if (extra?.category !== undefined) {
+    if (f !== "all") p.set("filter", f);
+    if (extra?.category !== undefined && extra?.category !== null) {
       p.set(
         "category",
         extra.category === "" ? UNCATEGORIZED : extra.category,
       );
+    } else if (extra?.category === null) {
+      p.delete("category");
     }
-    return `/atm?${p.toString()}`;
+    const q = p.toString();
+    return q ? `/atm?${q}` : "/atm";
   }
 
   return (
@@ -149,16 +138,16 @@ export default async function AtmPage({
           <span className="inline-block transition-transform group-open:rotate-90">
             ›
           </span>{" "}
-          {filterSummary(active, categoryDecoded)}
+          {filterSummary(active)}
         </summary>
         <div className="mt-3 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
             {FILTERS.map((f) => (
               <Link
                 key={f.key}
-                href={atmHref(f.key)}
+                href={atmHref(f.key, { category: categoryDecoded ?? null })}
                 className={clsx(
-                  "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
+                  "rounded-sm border px-4 py-1.5 font-mono text-[11px] tracking-wider transition",
                   active === f.key
                     ? "border-brass bg-brass/10 text-brass"
                     : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
@@ -168,33 +157,6 @@ export default async function AtmPage({
               </Link>
             ))}
           </div>
-
-          {categoryKeys.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {categoryKeys.map((cat) => {
-                const chipLabel =
-                  cat === ""
-                    ? "Uncategorized"
-                    : labelByKey.get(cat) ?? cat;
-                const hrefCat = cat === "" ? UNCATEGORIZED : cat;
-                return (
-                  <Link
-                    key={cat || "__empty__"}
-                    href={atmHref("bycategory", { category: cat })}
-                    className={clsx(
-                      "rounded-sm border px-3 py-1 font-mono text-[10px] tracking-wider transition",
-                      active === "bycategory" && categoryDecoded === cat
-                        ? "border-brass bg-brass/10 text-brass"
-                        : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
-                    )}
-                    title={hrefCat}
-                  >
-                    {chipLabel}
-                  </Link>
-                );
-              })}
-            </div>
-          )}
         </div>
       </details>
 
@@ -207,92 +169,123 @@ export default async function AtmPage({
           Nothing matches this filter.
         </p>
       ) : (
-        [...groups.entries()].map(([cat, rows], gi) => {
-          const label = labelByKey.get(cat) ?? "Uncategorized";
-          const linkable = labelByKey.has(cat);
-          return (
-            <section
-              key={cat || "__uncat__"}
-              className={gi === 0 ? "mt-6" : "mt-5"}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="h-2 w-2 shrink-0 rounded-sm bg-brass"
-                  aria-hidden
+        <>
+          <div className="mt-6 eyebrow text-ink-mute">— Choose a box —</div>
+          <div className="mt-3 grid w-full grid-cols-2 gap-2 justify-items-stretch sm:grid-cols-4">
+            {categoryKeys.map((cat) => {
+              const label =
+                cat === "" ? "Uncategorized" : (labelByKey.get(cat) ?? cat);
+              return (
+                <BoxCard
+                  key={cat || "__uncat__"}
+                  title={label}
+                  count={groups.get(cat)?.length ?? 0}
+                  selected={categoryDecoded === cat}
+                  href={atmHref(active, { category: cat })}
+                  size="compact"
                 />
-                <h2 className="eyebrow">
-                  {linkable ? (
-                    <Link
-                      href={`/vault/${slugify(cat)}`}
-                      className="transition hover:text-brass"
-                      title={`Open the ${label} box`}
-                    >
-                      {label}
-                    </Link>
-                  ) : (
-                    label
-                  )}
-                </h2>
+              );
+            })}
+          </div>
+
+          {categoryDecoded !== undefined && (
+            <section className="mt-6 rounded-sm border border-vault-line/80 bg-vault-panel/30 p-4 md:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-vault-line/50 pb-4">
+                <div>
+                  <div className="eyebrow text-ink-mute">— In this box —</div>
+                  <h2 className="serif-h mt-1 text-[26px] leading-tight text-ink md:text-[30px]">
+                    {selectedCategoryLabel}
+                  </h2>
+                  <p className="mt-1 font-mono text-[10px] text-ink-mute">
+                    {selectedCategoryItems.length} item
+                    {selectedCategoryItems.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {categoryDecoded &&
+                    categoryDecoded !== "" &&
+                    labelByKey.has(categoryDecoded) && (
+                      <Link
+                        href={`/vault/${slugify(categoryDecoded)}`}
+                        className="rounded-sm border border-vault-line px-3 py-1.5 font-mono text-[10px] tracking-[0.16em] text-ink-mute transition hover:border-brass/40 hover:text-brass"
+                      >
+                        Open full page
+                      </Link>
+                    )}
+                  <Link
+                    href={atmHref(active, { category: null })}
+                    className="rounded-sm border border-vault-line px-3 py-1.5 font-mono text-[10px] tracking-[0.16em] text-ink-mute transition hover:border-brass/40 hover:text-brass"
+                  >
+                    Close
+                  </Link>
+                </div>
               </div>
-              <div className="mt-2 space-y-2">
-                {rows.map((it) => {
-                  const picked = it.todayOrder !== null;
-                  return (
-                    <div
-                      key={it.id}
-                      title={
-                        [it.energy, it.title].filter(Boolean).join(" · ") ||
-                        undefined
-                      }
-                      className={clsx(
-                        "flex items-center gap-3 rounded-sm border bg-vault-panel/40 px-3 py-2 transition",
-                        picked ? "border-brass/40" : "border-vault-line/60",
-                      )}
-                    >
-                      <AreaPill
-                        itemId={it.id}
-                        initial={it.category}
-                        field="category"
-                        options={boxes.map((b) => ({
-                          key: b.key,
-                          label: b.label,
-                        }))}
-                        className="!max-h-7 max-w-[5.75rem] shrink-0 !py-0.5 !pl-1.5 !pr-1 !text-[9px] !leading-tight border-brass/40 bg-vault-bg/20"
-                      />
-                      <EditableText
-                        itemId={it.id}
-                        field="title"
-                        initial={it.title}
+
+              {selectedCategoryItems.length === 0 ? (
+                <p className="mt-4 text-[13px] text-ink-mute">
+                  No items in this box for the current filter.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-2">
+                  {selectedCategoryItems.map((it) => {
+                    const picked = it.todayOrder !== null;
+                    return (
+                      <div
+                        key={it.id}
+                        title={
+                          [it.energy, it.title].filter(Boolean).join(" · ") ||
+                          undefined
+                        }
                         className={clsx(
-                          "vault-task-title min-w-0 flex-1 truncate",
-                          picked ? "text-ink" : "text-ink-mute",
+                          "flex items-center gap-3 rounded-sm border bg-vault-panel/40 px-3 py-2 transition",
+                          picked ? "border-brass/40" : "border-vault-line/60",
                         )}
-                        placeholder="(no title)"
-                      />
-                      <span className="flex shrink-0 items-baseline justify-end gap-1 whitespace-nowrap font-mono text-[11px] text-ink-mute tabular-nums">
+                      >
+                        <AreaPill
+                          itemId={it.id}
+                          initial={it.category}
+                          field="category"
+                          options={boxes.map((b) => ({
+                            key: b.key,
+                            label: b.label,
+                          }))}
+                          className="!max-h-7 max-w-[5.75rem] shrink-0 !py-0.5 !pl-1.5 !pr-1 !text-[9px] !leading-tight border-brass/40 bg-vault-bg/20"
+                        />
                         <EditableText
                           itemId={it.id}
-                          field="minutes"
-                          initial={it.minutes}
-                          className="min-w-[3.25rem] w-16 max-w-[4.5rem] bg-transparent px-0 text-right text-[11px] tabular-nums"
-                          numeric
-                          placeholder="—"
+                          field="title"
+                          initial={it.title}
+                          className={clsx(
+                            "vault-task-title min-w-0 flex-1 truncate",
+                            picked ? "text-ink" : "text-ink-mute",
+                          )}
+                          placeholder="(no title)"
                         />
-                        <span>min</span>
-                      </span>
-                      <AtmPickButton
-                        itemId={it.id}
-                        picked={picked}
-                        size="compact"
-                      />
-                      <DeleteItemButton itemId={it.id} />
-                    </div>
-                  );
-                })}
-              </div>
+                        <span className="flex shrink-0 items-baseline justify-end gap-1 whitespace-nowrap font-mono text-[11px] text-ink-mute tabular-nums">
+                          <EditableText
+                            itemId={it.id}
+                            field="minutes"
+                            initial={it.minutes}
+                            className="min-w-[3.25rem] w-16 max-w-[4.5rem] bg-transparent px-0 text-right text-[11px] tabular-nums"
+                            numeric
+                            placeholder="—"
+                          />
+                          <span>min</span>
+                        </span>
+                        <AtmPickButton
+                          itemId={it.id}
+                          picked={picked}
+                          size="compact"
+                        />
+                        <DeleteItemButton itemId={it.id} />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
-          );
-        })
+          )}
+        </>
       )}
     </div>
   );
