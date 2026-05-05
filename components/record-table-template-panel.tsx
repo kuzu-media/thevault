@@ -12,7 +12,9 @@ export function RecordTableTemplatePanel({ markdown }: { markdown: string }) {
   function copy() {
     void navigator.clipboard
       .writeText(markdown)
-      .then(() => toast.success("Table markdown copied."))
+      .then(() =>
+        toast.success("Copied. Open a record, tap EDIT, and paste."),
+      )
       .catch(() => toast.error("Couldn't copy."));
   }
 
@@ -24,7 +26,7 @@ export function RecordTableTemplatePanel({ markdown }: { markdown: string }) {
           onClick={copy}
           className="rounded-sm border border-brass bg-brass/10 px-4 py-2 text-[13px] text-brass transition hover:bg-brass/20"
         >
-          Copy markdown
+          Copy table text
         </button>
         <button
           type="button"
