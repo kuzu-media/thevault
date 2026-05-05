@@ -141,7 +141,7 @@ export default async function AtmPage({
       </h1>
       <p className="mt-1 text-[13px] text-ink-dim">
         Pull out whatever you&apos;d like to work on today. Nothing here is
-        an obligation. Filter by pick state, duration, or category.
+        an obligation.
       </p>
 
       <details className="group mt-6" open>

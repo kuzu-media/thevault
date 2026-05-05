@@ -65,7 +65,7 @@ export function RecordsEditor({
       </div>
 
       {mode === "read" ? (
-        <article className="prose prose-invert prose-headings:font-serif max-w-none text-ink">
+        <article className="prose prose-headings:font-serif max-w-none text-ink">
           {body.trim() ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
           ) : (

@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { getRecords } from "@/lib/categories";
 import { BoxCard } from "@/components/box-card";
+import { CopyTableMarkdownButton } from "@/components/copy-table-markdown-button";
 
 export default async function RecordsHubPage() {
   const records = await getRecords();
@@ -13,9 +14,12 @@ export default async function RecordsHubPage() {
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
         Records
       </h1>
-      <p className="mt-1 text-[13px] text-ink-dim">
-        Reference — long-form notes and lists, one page per record.
-      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <p className="text-[13px] text-ink-dim">
+          Reference — long-form notes and lists, one page per record.
+        </p>
+        <CopyTableMarkdownButton />
+      </div>
 
       <div className="mt-10 eyebrow text-ink-mute">— Open a record —</div>
       <div className="mt-4 flex flex-wrap gap-4">
@@ -27,7 +31,6 @@ export default async function RecordsHubPage() {
             href={`/records/${slugify(r.key)}`}
           />
         ))}
-        <NewRecordTile href="/records/new-table" label="+ New Table" />
         <NewRecordTile href="/settings/records" label="+ New record" />
       </div>
     </div>
