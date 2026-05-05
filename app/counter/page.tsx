@@ -358,7 +358,7 @@ function CounterRow({
           field="should"
           initial={item.should}
           kind="should"
-          className="text-green-600"
+          className="text-green-500"
         />
       </div>
       <TodayToggle itemId={item.id} on={onToday} size="sm" />

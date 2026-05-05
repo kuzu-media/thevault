@@ -279,7 +279,7 @@ export function DropTriageRow({
               onChange={setShould}
               kind="should"
               label="Should (S)"
-              color="text-green-600"
+              color="text-green-500"
             />
           </div>
         )}
