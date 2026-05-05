@@ -324,6 +324,8 @@ export async function createItem(box: string, title: string, extras: z.input<typ
     .single();
   revalidatePath("/", "layout");
   revalidatePath("/vault");
+  revalidatePath("/counter");
+  revalidatePath("/atm");
   return data?.id;
 }
 

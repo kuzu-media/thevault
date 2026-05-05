@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createItem } from "@/lib/actions";
+import {
+  MinutesInlineInput,
+  parseMinutesField,
+} from "@/components/minutes-inline-input";
 import { Select } from "@/components/ui";
 
 export function NewCounterItemRow({
@@ -15,14 +19,21 @@ export function NewCounterItemRow({
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [area, setArea] = useState(initialArea);
+  const [minutes, setMinutes] = useState("");
   const [pending, startTransition] = useTransition();
 
   function add() {
     const t = title.trim();
     if (!t || !area) return;
     startTransition(async () => {
-      await createItem("COUNTER", t, { area, category: null });
+      const m = parseMinutesField(minutes);
+      await createItem("COUNTER", t, {
+        area,
+        category: null,
+        ...(m !== undefined ? { minutes: m } : {}),
+      });
       setTitle("");
+      setMinutes("");
       router.refresh();
     });
   }
@@ -58,6 +69,11 @@ export function NewCounterItemRow({
           </option>
         ))}
       </Select>
+      <MinutesInlineInput
+        value={minutes}
+        onChange={setMinutes}
+        aria-label="Minutes for new counter item"
+      />
       <button
         type="button"
         onClick={add}

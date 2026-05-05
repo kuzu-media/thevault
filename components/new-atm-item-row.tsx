@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createItem } from "@/lib/actions";
+import {
+  MinutesInlineInput,
+  parseMinutesField,
+} from "@/components/minutes-inline-input";
 import { Select } from "@/components/ui";
 
 export function NewAtmItemRow({
@@ -15,14 +19,21 @@ export function NewAtmItemRow({
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(initialCategory);
+  const [minutes, setMinutes] = useState("");
   const [pending, startTransition] = useTransition();
 
   function add() {
     const t = title.trim();
     if (!t || !category) return;
     startTransition(async () => {
-      await createItem("ATM", t, { category, area: null });
+      const m = parseMinutesField(minutes);
+      await createItem("ATM", t, {
+        category,
+        area: null,
+        ...(m !== undefined ? { minutes: m } : {}),
+      });
       setTitle("");
+      setMinutes("");
       router.refresh();
     });
   }
@@ -58,6 +69,11 @@ export function NewAtmItemRow({
           </option>
         ))}
       </Select>
+      <MinutesInlineInput
+        value={minutes}
+        onChange={setMinutes}
+        aria-label="Minutes for new ATM item"
+      />
       <button
         type="button"
         onClick={add}
