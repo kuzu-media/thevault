@@ -36,12 +36,12 @@ export async function saveGoogleCalendarSettings(formData: FormData) {
 
   const { error } = await sb
     .from("google_calendar_connections")
-    .update({
+    .upsert({
+      vault_id: vaultId,
       calendar_id: parsed.calendar_id,
       timezone: parsed.timezone,
       modified_at: new Date().toISOString(),
-    })
-    .eq("vault_id", vaultId);
+    }, { onConflict: "vault_id", ignoreDuplicates: false });
 
   if (error) throw new Error(error.message);
   revalidatePath("/settings/calendar");
