@@ -221,38 +221,41 @@ export default async function CounterPage({
           </span>{" "}
           {active === "all" ? "FILTER" : `FILTER · ${active.toUpperCase()}`}
         </summary>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {FILTERS.map((f) => (
-            <Link
-              key={f.key}
-              href={f.key === "all" ? "/counter" : `/counter?filter=${f.key}`}
-              className={clsx(
-                "rounded-sm border px-4 py-1.5 font-mono text-[11px] tracking-wider transition",
-                active === f.key
-                  ? "border-brass bg-brass/10 text-brass"
-                  : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
-              )}
-            >
-              {`${f.label}: ${formatMinutesShort(filterTotals[f.key] ?? 0)}`}
-            </Link>
-          ))}
+        <div className="mt-3 space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map((f) => (
+              <Link
+                key={f.key}
+                href={f.key === "all" ? "/counter" : `/counter?filter=${f.key}`}
+                className={clsx(
+                  "rounded-sm border px-4 py-1.5 font-mono text-[11px] tracking-wider transition",
+                  active === f.key
+                    ? "border-brass bg-brass/10 text-brass"
+                    : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
+                )}
+              >
+                {`${f.label}: ${formatMinutesShort(filterTotals[f.key] ?? 0)}`}
+              </Link>
+            ))}
+          </div>
           {areas.length > 0 && (
-            <span className="px-2 self-center text-ink-mute/40">·</span>
+            <div className="flex flex-wrap gap-2">
+              {areas.map((a) => (
+                <Link
+                  key={a}
+                  href={`/counter?filter=byarea&area=${encodeURIComponent(a)}`}
+                  className={clsx(
+                    "rounded-sm border px-4 py-1.5 font-mono text-[11px] tracking-wider transition",
+                    active === "byarea" && area === a
+                      ? "border-brass bg-brass/10 text-brass"
+                      : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
+                  )}
+                >
+                  {a}
+                </Link>
+              ))}
+            </div>
           )}
-          {areas.map((a) => (
-            <Link
-              key={a}
-              href={`/counter?filter=byarea&area=${encodeURIComponent(a)}`}
-              className={clsx(
-                "rounded-sm border px-4 py-1.5 font-mono text-[11px] tracking-wider transition",
-                active === "byarea" && area === a
-                  ? "border-brass bg-brass/10 text-brass"
-                  : "border-vault-line text-ink-mute hover:border-brass/40 hover:text-brass",
-              )}
-            >
-              {a}
-            </Link>
-          ))}
         </div>
       </details>
 
@@ -332,8 +335,14 @@ function CounterRow({
           aria-hidden
         />
       ) : null}
-      <div className="grid min-w-0 flex-1 grid-rows-[auto_auto] gap-1.5">
+      <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-3">
+          <AreaPill
+            itemId={item.id}
+            initial={item.area}
+            options={boxes}
+            className={COUNTER_AREA_PILL_CLASS}
+          />
           <EditableText
             itemId={item.id}
             field="title"
@@ -380,14 +389,6 @@ function CounterRow({
           </div>
           <TodayToggle itemId={item.id} on={onToday} size="sm" />
           <DeleteItemButton itemId={item.id} />
-        </div>
-        <div className="row-start-2 flex w-full items-center">
-          <AreaPill
-            itemId={item.id}
-            initial={item.area}
-            options={boxes}
-            className={COUNTER_AREA_PILL_CLASS}
-          />
         </div>
       </div>
     </div>
