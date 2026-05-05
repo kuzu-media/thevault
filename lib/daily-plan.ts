@@ -283,7 +283,7 @@ function appendBlocks(
       start: start.toISOString(),
       end: end.toISOString(),
       pinned: it.pinned,
-      area: it.area,
+      area: it.area ?? it.category,
     });
     c = end;
   }

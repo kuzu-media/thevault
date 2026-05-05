@@ -75,15 +75,64 @@ export function RecordsEditor({
           )}
         </article>
       ) : (
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onBlur={save}
-          rows={24}
-          spellCheck
-          className="w-full rounded-sm border border-vault-line bg-vault-panel/40 p-4 font-mono text-[13px] leading-relaxed text-ink outline-none focus:border-brass"
-          placeholder="# Start writing in markdown…"
-        />
+        <div className="space-y-3">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onBlur={save}
+            rows={24}
+            spellCheck
+            className="w-full rounded-sm border border-vault-line bg-vault-panel/40 p-4 font-mono text-[13px] leading-relaxed text-ink outline-none focus:border-brass"
+            placeholder="# Start writing in markdown…"
+          />
+          <details className="rounded-sm border border-vault-line bg-vault-panel/30 px-4 py-3">
+            <summary className="cursor-pointer font-mono text-[10px] tracking-[0.18em] text-ink-mute hover:text-brass">
+              MARKDOWN CHEAT SHEET
+            </summary>
+            <div className="mt-3 grid gap-4 text-[12px] text-ink-dim md:grid-cols-2">
+              <section>
+                <p className="font-mono text-[10px] tracking-[0.16em] text-ink-mute">
+                  HEADINGS
+                </p>
+                <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-ink">{`# Big heading
+## Section
+### Subsection`}</pre>
+              </section>
+              <section>
+                <p className="font-mono text-[10px] tracking-[0.16em] text-ink-mute">
+                  TEXT EMPHASIS
+                </p>
+                <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-ink">{`**bold**
+*italic*
+~~strikethrough~~`}</pre>
+              </section>
+              <section>
+                <p className="font-mono text-[10px] tracking-[0.16em] text-ink-mute">
+                  LISTS
+                </p>
+                <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-ink">{`- bullet
+1. numbered
+- [ ] task
+- [x] done task`}</pre>
+              </section>
+              <section>
+                <p className="font-mono text-[10px] tracking-[0.16em] text-ink-mute">
+                  LINE BREAKS
+                </p>
+                <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-ink">{`Blank line between paragraphs
+End line with two spaces for a soft break`}</pre>
+              </section>
+              <section className="md:col-span-2">
+                <p className="font-mono text-[10px] tracking-[0.16em] text-ink-mute">
+                  TABLES
+                </p>
+                <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-ink">{`| Item | Value |
+| --- | --- |
+| Sleep | 7h |`}</pre>
+              </section>
+            </div>
+          </details>
+        </div>
       )}
     </div>
   );

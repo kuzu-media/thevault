@@ -385,6 +385,67 @@ export async function pickFromAtm(itemId: string, picked: boolean) {
   return setTodayPlan(itemId, picked);
 }
 
+const AtmBoxBudgetSchema = z.object({
+  category: z.string().min(1).max(40),
+  hours: z.coerce.number().min(0).max(24),
+});
+
+// Apply ATM picks in block order by selected boxes + hour budgets.
+export async function applyAtmBoxBudgets(
+  selections: z.input<typeof AtmBoxBudgetSchema>[],
+) {
+  const { sb } = await requireUser();
+  const vaultId = await currentVaultId();
+  if (!vaultId) throw new Error("No vault");
+
+  const parsed = selections
+    .map((s) => AtmBoxBudgetSchema.parse(s))
+    .filter((s) => s.hours > 0);
+
+  // Rebuild ATM picks from scratch for this step.
+  await sb
+    .from("items")
+    .update({ today_order: null })
+    .eq("vault_id", vaultId)
+    .eq("box", "ATM")
+    .not("today_order", "is", null);
+
+  let todayOrder = 0;
+  for (const sel of parsed) {
+    let remaining = Math.round(sel.hours * 60);
+    if (remaining <= 0) continue;
+
+    const { data: rows, error } = await sb
+      .from("items")
+      .select("id, minutes")
+      .eq("vault_id", vaultId)
+      .eq("box", "ATM")
+      .eq("category", sel.category)
+      .is("deleted_at", null)
+      .order("atm_order", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    for (const row of rows ?? []) {
+      const minutes = Number(row.minutes ?? 0);
+      if (minutes <= 0) continue;
+      if (minutes > remaining) continue;
+      todayOrder += 1;
+      remaining -= minutes;
+      const { error: pickErr } = await sb
+        .from("items")
+        .update({ today_order: todayOrder })
+        .eq("id", row.id);
+      if (pickErr) throw new Error(pickErr.message);
+      if (remaining <= 0) break;
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/atm");
+  revalidatePath("/build");
+}
+
 // Custom block on the Docket — creates a pinned, scheduled COUNTER item.
 export async function addCustomBlock(opts: {
   title: string;

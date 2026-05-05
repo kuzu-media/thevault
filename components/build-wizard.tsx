@@ -5,7 +5,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { toast } from "sonner";
 import { formatEndOfDay12h, parseTimeOnDate } from "@/lib/daily-plan";
-import { saveDayInputsPartial, pickFromAtm } from "@/lib/actions";
+import { saveDayInputsPartial, applyAtmBoxBudgets } from "@/lib/actions";
 import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 import { DropTriageRow } from "@/components/drop-triage-row";
 import { TodayToggle } from "./today-toggle";
@@ -77,12 +77,11 @@ export function BuildWizard({
     "enter",
     () => {
       if (step === 3) next();
-      else if (step === 4) finish();
     },
     {
       label: "Continue",
       group: "Build day",
-      options: { enabled: step === 3 || step === 4 },
+      options: { enabled: step === 3 },
     },
   );
 
@@ -113,7 +112,7 @@ export function BuildWizard({
           />
         )}
         {step === 4 && (
-          <AtmStep atm={atmItems} onFinish={finish} />
+          <AtmStep atm={atmItems} inputs={inputs} onFinish={finish} />
         )}
       </div>
 
@@ -399,11 +398,14 @@ function Empty() {
 // Step 4: ATM box-first withdrawals.
 function AtmStep({
   atm,
+  inputs,
   onFinish,
 }: {
   atm: Item[];
+  inputs: DayInputs;
   onFinish: () => void;
 }) {
+  const [pending, startTransition] = useTransition();
   const categories = Array.from(
     new Set(
       atm
@@ -411,41 +413,109 @@ function AtmStep({
         .filter((category): category is string => Boolean(category)),
     ),
   );
-  const [selectedCategory, setSelectedCategory] = useState<string>(
-    categories[0] ?? "",
+  const [selected, setSelected] = useState<string[]>(categories.slice(0, 1));
+  const [hoursByCategory, setHoursByCategory] = useState<Record<string, string>>(
+    () =>
+      categories.reduce(
+        (acc, c) => ({
+          ...acc,
+          [c]:
+            c === categories[0]
+              ? String(Math.max(0, Math.round(inputs.hoursAvailable * 100) / 100))
+              : "0",
+        }),
+        {} as Record<string, string>,
+      ),
   );
-  const visible =
-    selectedCategory.length > 0
-      ? atm.filter((item) => item.category === selectedCategory)
-      : [];
-  const groups = new Map<string, Item[]>();
-  for (const it of visible) {
-    const k = (it.category ?? "Pull") as string;
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k)!.push(it);
+
+  function toggleCategory(category: string) {
+    setSelected((prev) => {
+      const exists = prev.includes(category);
+      if (exists) return prev.filter((c) => c !== category);
+      if (prev.length >= 2) return prev;
+      const next = [...prev, category];
+      // Default split: evenly divide available hours when 2 boxes selected.
+      if (next.length === 2) {
+        const each = (inputs.hoursAvailable / 2).toFixed(2);
+        setHoursByCategory((h) => ({ ...h, [next[0]]: each, [next[1]]: each }));
+      }
+      return next;
+    });
   }
+
+  function estimateFill(category: string, hours: number) {
+    const budget = Math.max(0, Math.round(hours * 60));
+    const items = atm
+      .filter((item) => item.category === category && (item.minutes ?? 0) > 0)
+      .sort((a, b) => {
+        const ao = a.atmOrder ?? Number.MAX_SAFE_INTEGER;
+        const bo = b.atmOrder ?? Number.MAX_SAFE_INTEGER;
+        return ao === bo ? a.createdAt.localeCompare(b.createdAt) : ao - bo;
+      });
+    let used = 0;
+    let picked = 0;
+    for (const it of items) {
+      const m = it.minutes ?? 0;
+      if (m <= 0) continue;
+      if (used + m > budget) continue;
+      used += m;
+      picked += 1;
+      if (used >= budget) break;
+    }
+    return { used, picked };
+  }
+
+  const totalAllocated = selected.reduce(
+    (sum, c) => sum + Number(hoursByCategory[c] || 0),
+    0,
+  );
+
+  function submit() {
+    if (selected.length === 0) {
+      toast.error("Pick at least one ATM box.");
+      return;
+    }
+    const payload = selected.map((category) => ({
+      category,
+      hours: Number(hoursByCategory[category] || 0),
+    }));
+    if (!payload.some((p) => p.hours > 0)) {
+      toast.error("Set at least one box budget above 0 hours.");
+      return;
+    }
+    startTransition(async () => {
+      try {
+        await applyAtmBoxBudgets(payload);
+        onFinish();
+      } catch (e: any) {
+        toast.error(e?.message ?? "Couldn't apply ATM box budgets.");
+      }
+    });
+  }
+
   return (
     <Step
-      title="Withdraw anything from the ATM?"
-      hint="Choose a box first, then mark ATM tasks for today."
+      title="Pick 1-2 ATM boxes"
+      hint="Choose up to two boxes, set hours for each, then we'll auto-fill tasks in block order from those boxes."
       submitLabel="BUILD THE DAY"
-      onSubmit={onFinish}
+      onSubmit={submit}
+      pending={pending}
     >
       {categories.length === 0 ? (
         <p className="rounded-sm border border-dashed border-vault-line/60 px-4 py-6 text-center text-ink-mute">
           No ATM boxes found yet.
         </p>
       ) : (
-        <>
+        <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <button
                 key={category}
                 type="button"
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => toggleCategory(category)}
                 className={clsx(
                   "rounded-sm border px-3 py-2 text-[12px] transition",
-                  category === selectedCategory
+                  selected.includes(category)
                     ? "border-brass bg-brass/10 text-brass-bright"
                     : "border-vault-line/60 text-ink-mute hover:border-brass/40 hover:text-brass",
                 )}
@@ -454,58 +524,60 @@ function AtmStep({
               </button>
             ))}
           </div>
-          {[...groups.entries()].map(([cat, rows]) => (
-            <div key={cat} className="mt-5">
-              <h3 className="eyebrow">— {cat.toLowerCase()} —</h3>
-              <div className="mt-2 space-y-2">
-                {rows.map((it) => (
-                  <AtmRow key={it.id} item={it} />
-                ))}
+
+          {selected.length > 0 && (
+            <div className="space-y-3">
+              {selected.map((category) => {
+                const hours = Number(hoursByCategory[category] || 0);
+                const { used, picked } = estimateFill(category, hours);
+                return (
+                  <div
+                    key={category}
+                    className="rounded-sm border border-vault-line/60 bg-vault-panel/40 p-3"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-mono text-[11px] tracking-wider text-ink">
+                        {category}
+                      </p>
+                      <label className="flex items-center gap-2 font-mono text-[10px] text-ink-mute">
+                        HOURS
+                        <input
+                          type="number"
+                          min={0}
+                          max={24}
+                          step={0.25}
+                          value={hoursByCategory[category] ?? "0"}
+                          onChange={(e) =>
+                            setHoursByCategory((h) => ({
+                              ...h,
+                              [category]: e.target.value,
+                            }))
+                          }
+                          className="w-20 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-right text-[11px] text-ink outline-none focus:border-brass"
+                        />
+                      </label>
+                    </div>
+                    <p className="mt-2 text-[12px] text-ink-dim">
+                      Estimated fill: {picked} task{picked === 1 ? "" : "s"} ·{" "}
+                      {used} min
+                    </p>
+                  </div>
+                );
+              })}
+              <div className="rounded-sm border border-vault-line/50 bg-vault-bg/30 px-3 py-2 text-[12px] text-ink-dim">
+                Total allocated: {totalAllocated.toFixed(2)}h
+                {totalAllocated > inputs.hoursAvailable && (
+                  <span className="text-rust">
+                    {" "}
+                    (above available {inputs.hoursAvailable.toFixed(2)}h)
+                  </span>
+                )}
               </div>
             </div>
-          ))}
-        </>
+          )}
+        </div>
       )}
     </Step>
-  );
-}
-
-function AtmRow({ item }: { item: Item }) {
-  const [picked, setPicked] = useState(item.todayOrder !== null);
-  const [, startTransition] = useTransition();
-  return (
-    <button
-      onClick={() => {
-        const next = !picked;
-        setPicked(next);
-        startTransition(async () => {
-          await pickFromAtm(item.id, next);
-        });
-      }}
-      className={clsx(
-        "flex w-full items-center justify-between gap-3 rounded-sm border px-4 py-2.5 text-left transition",
-        picked
-          ? "border-brass bg-brass/10"
-          : "border-vault-line/60 bg-vault-panel/40 hover:border-brass/40",
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <span className="text-ink">{item.title}</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="font-mono text-[11px] text-ink-mute">
-          {item.minutes ?? "—"} min
-        </span>
-        <span
-          className={clsx(
-            "h-5 w-5 rounded-sm border",
-            picked
-              ? "border-brass bg-brass"
-              : "border-brass/40",
-          )}
-        />
-      </div>
-    </button>
   );
 }
 

@@ -23,6 +23,14 @@ function fmtTime(iso: string) {
   return `${h}:${m.toString().padStart(2, "0")} ${ampm}`;
 }
 
+function formatAreaLabel(raw: string): string {
+  return raw
+    .trim()
+    .replace(/__+/g, " & ")
+    .replace(/_/g, " ")
+    .toLowerCase();
+}
+
 // Calmer block: one click marks done. Secondary actions (Start / Pin / Skip)
 // hidden under a quiet "···" — discoverable but not visible at rest.
 export function ScheduleBlock({
@@ -95,7 +103,7 @@ export function ScheduleBlock({
         <div className="mt-0.5 flex items-center gap-2 text-[11px] text-ink-mute">
           {block.area && (
             <span className="font-mono text-[10px] tracking-wider">
-              {block.area.toLowerCase()}
+              {formatAreaLabel(block.area)}
             </span>
           )}
           <span>{block.minutes} min</span>
