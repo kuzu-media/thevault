@@ -1,10 +1,10 @@
-// Wizard: build today — one setup screen (energies + end time), Counter
-// review, ATM picks. Each step persists so refresh keeps your place.
+// Wizard: build today — set end time, clear Drop, review Counter, pick ATM.
 
 import { redirect } from "next/navigation";
 import { getDayInputs, getItemsByBox, getSettings } from "@/lib/data";
 import { defaultDayInputs } from "@/lib/data";
 import { classify } from "@/lib/daily-plan";
+import { getBoxes, getEnergies } from "@/lib/categories";
 import { BuildWizard } from "@/components/build-wizard";
 import type { DayInputs } from "@/lib/types";
 
@@ -22,17 +22,18 @@ export default async function BuildDayPage({
   const date = todayISO();
   let s = Number(stepParam ?? 1);
   if (!Number.isFinite(s) || s < 1) s = 1;
-  if (s > 6) redirect("/");
-  if (s === 5) s = 2;
-  else if (s === 6) s = 3;
-  const step = Math.max(1, Math.min(3, s));
+  const step = Math.max(1, Math.min(4, s));
 
-  const [dayRow, counterItems, atmItems, settings] = await Promise.all([
+  const [dayRow, dropItems, counterItems, atmItems, boxes, energies, settings] =
+    await Promise.all([
     getDayInputs(date),
+    getItemsByBox("DROP"),
     getItemsByBox("COUNTER"),
     getItemsByBox("ATM"),
+    getBoxes(),
+    getEnergies(),
     getSettings(),
-  ]);
+    ]);
 
   const dayRaw = dayRow ?? {
     ...defaultDayInputs(date),
@@ -52,17 +53,21 @@ export default async function BuildDayPage({
   // ones already on today's plan.
   const classified = classify(counterItems, /* todayOnly */ false);
 
-  if (step > 3) redirect("/");
+  if (step > 4) redirect("/");
 
   return (
     <BuildWizard
       step={step}
       inputs={inputs}
+      dropItems={dropItems}
       counterItems={counterItems}
       atmItems={atmItems}
+      boxes={boxes}
+      energies={energies}
       stressors={classified.stressors}
       timeSensitive={classified.timeSensitive}
       mustDo={classified.mustDo}
+      otherAdmin={classified.otherAdmin}
     />
   );
 }

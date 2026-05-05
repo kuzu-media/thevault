@@ -1,51 +1,56 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 import { toast } from "sonner";
-import {
-  formatEndOfDay12h,
-  parseTimeOnDate,
-  pickAtmCandidates,
-} from "@/lib/daily-plan";
+import { formatEndOfDay12h } from "@/lib/daily-plan";
 import { saveDayInputsPartial, pickFromAtm } from "@/lib/actions";
 import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
+import { DropTriageRow } from "@/components/drop-triage-row";
 import { TodayToggle } from "./today-toggle";
 import type { DayInputs, Item } from "@/lib/types";
+import type { Box, EnergyType } from "@/lib/categories";
 import { useShortcut } from "@/lib/shortcuts";
 import { Kbd } from "./kbd";
 
 const STEPS = [
-  { n: 1, title: "Today" },
-  { n: 2, title: "Counter" },
-  { n: 3, title: "ATM" },
+  { n: 1, title: "End Time" },
+  { n: 2, title: "Drop" },
+  { n: 3, title: "Counter" },
+  { n: 4, title: "ATM" },
 ] as const;
 
 export function BuildWizard({
   step,
   inputs,
+  dropItems,
   counterItems,
   atmItems,
+  boxes,
+  energies,
   stressors,
   timeSensitive,
   mustDo,
+  otherAdmin,
 }: {
   step: number;
   inputs: DayInputs;
+  dropItems: Item[];
   counterItems: Item[];
   atmItems: Item[];
+  boxes: Box[];
+  energies: EnergyType[];
   stressors: Item[];
   timeSensitive: Item[];
   mustDo: Item[];
+  otherAdmin: Item[];
 }) {
   void counterItems;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const total = STEPS.length;
-  const isLast = step === total;
-
   function next() {
     router.push(`/build?step=${step + 1}`);
   }
@@ -62,7 +67,7 @@ export function BuildWizard({
     router.push("/");
   }
 
-  // Esc → back. Steps 5 + 6 advance with Enter (no input focus).
+  // Esc → back. Enter advances on steps without editable text fields.
   useShortcut("escape", prev, {
     label: "Back / cancel",
     group: "Build day",
@@ -71,13 +76,13 @@ export function BuildWizard({
   useShortcut(
     "enter",
     () => {
-      if (step === 2) next();
-      else if (step === 3) finish();
+      if (step === 3) next();
+      else if (step === 4) finish();
     },
     {
       label: "Continue",
       group: "Build day",
-      options: { enabled: step === 2 || step === 3 },
+      options: { enabled: step === 3 || step === 4 },
     },
   );
 
@@ -96,15 +101,19 @@ export function BuildWizard({
           />
         )}
         {step === 2 && (
+          <DropStep dropItems={dropItems} boxes={boxes} energies={energies} onNext={next} />
+        )}
+        {step === 3 && (
           <ReviewStep
             stressors={stressors}
             timeSensitive={timeSensitive}
             mustDo={mustDo}
+            otherAdmin={otherAdmin}
             onNext={next}
           />
         )}
-        {step === 3 && (
-          <AtmStep atm={atmItems} inputs={inputs} onFinish={finish} />
+        {step === 4 && (
+          <AtmStep atm={atmItems} onFinish={finish} />
         )}
       </div>
 
@@ -149,7 +158,7 @@ function Progress({ step, total }: { step: number; total: number }) {
   );
 }
 
-// ─── Step 1 — energies + end time (hours come from Settings → General) ─────
+// Step 1: end-of-day time only.
 function DaySetupStep({
   inputs,
   date,
@@ -163,9 +172,6 @@ function DaySetupStep({
   pending: boolean;
   startTransition: (fn: () => Promise<void>) => void;
 }) {
-  const [creative, setCreative] = useState(inputs.creative);
-  const [probSolv, setProbSolv] = useState(inputs.probSolv);
-  const [tie, setTie] = useState(inputs.tieBreak);
   const [endOfDay, setEndOfDay] = useState(() => {
     try {
       return formatEndOfDay12h(inputs.endOfDay, date);
@@ -173,8 +179,6 @@ function DaySetupStep({
       return inputs.endOfDay;
     }
   });
-  const equal = creative === probSolv;
-
   function submit() {
     let normalizedEnd: string;
     try {
@@ -187,9 +191,6 @@ function DaySetupStep({
       try {
         await saveDayInputsPartial({
           date,
-          creative: creative as 1 | 2 | 3 | 4 | 5,
-          prob_solv: probSolv as 1 | 2 | 3 | 4 | 5,
-          tie_break: tie,
           end_of_day: normalizedEnd,
           reference_now: new Date().toISOString(),
         });
@@ -202,44 +203,13 @@ function DaySetupStep({
 
   return (
     <Step
-      title="Set the shape of today"
-      hint="Two scores from 1–5 and when work should end. Your schedule window runs from right now until that end time."
+      title="When does your day end?"
+      hint="Set your end-of-day time first. Next, you will clear The Drop before choosing Counter and ATM items for today."
       pending={pending}
       onSubmit={submit}
       submitLabel="NEXT"
     >
-      <EnergyPicker
-        label="Creative energy"
-        value={creative}
-        onChange={(n) => setCreative(n as DayInputs["creative"])}
-      />
-      <EnergyPicker
-        label="Problem-solving energy"
-        value={probSolv}
-        onChange={(n) => setProbSolv(n as DayInputs["creative"])}
-      />
-      {equal && (
-        <div className="mt-8">
-          <p className="text-[13px] text-ink-dim">
-            Same score — which way should today lean?
-          </p>
-          <div className="mt-3 flex gap-2">
-            <ChoiceButton
-              active={tie === "CREATIVE"}
-              onClick={() => setTie("CREATIVE")}
-            >
-              Creative
-            </ChoiceButton>
-            <ChoiceButton
-              active={tie === "PROB-SOLV"}
-              onClick={() => setTie("PROB-SOLV")}
-            >
-              Problem-solving
-            </ChoiceButton>
-          </div>
-        </div>
-      )}
-      <div className="mt-10">
+      <div className="mt-2">
         <p className="eyebrow">End of your work day</p>
         <input
           type="text"
@@ -254,54 +224,79 @@ function DaySetupStep({
   );
 }
 
-function EnergyPicker({
-  label,
-  value,
-  onChange,
+function DropStep({
+  dropItems,
+  boxes,
+  energies,
+  onNext,
 }: {
-  label: string;
-  value: number;
-  onChange: (n: number) => void;
+  dropItems: Item[];
+  boxes: Box[];
+  energies: EnergyType[];
+  onNext: () => void;
 }) {
+  const router = useRouter();
+  useEffect(() => {
+    function onAdvance() {
+      router.refresh();
+    }
+    window.addEventListener("vault:drop-advance", onAdvance);
+    return () => window.removeEventListener("vault:drop-advance", onAdvance);
+  }, [router]);
+
+  const hasDrop = dropItems.length > 0;
+
   return (
-    <div className="mt-8 first:mt-0">
-      <p className="eyebrow">{label}</p>
-      <p className="mt-1 text-[12px] text-ink-dim">1 = flat · 5 = strong</p>
-      <div className="mt-3 flex gap-2">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            className={clsx(
-              "flex-1 rounded-sm border py-4 font-mono text-[20px] transition",
-              n === value
-                ? "border-brass bg-brass/10 text-brass-bright"
-                : "border-vault-line/60 text-ink-mute hover:border-brass/40 hover:text-brass",
-            )}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
-    </div>
+    <Step
+      title="Clear The Drop first"
+      hint={
+        hasDrop
+          ? "For each Drop item, choose ATM or Counter, set minutes and box/area, then send it (or delete it)."
+          : "The Drop is clear. Continue to choose what is already on your Counter."
+      }
+      submitLabel="ON TO THE COUNTER →"
+      onSubmit={onNext}
+      submitDisabled={hasDrop}
+    >
+      {hasDrop ? (
+        <div className="space-y-2">
+          {dropItems.map((item) => (
+            <DropTriageRow
+              key={item.id}
+              item={item}
+              boxes={boxes}
+              energies={energies}
+            />
+          ))}
+          <p className="pt-2 text-[12px] text-ink-mute">
+            Finish triaging or deleting all Drop items to continue.
+          </p>
+        </div>
+      ) : (
+        <p className="rounded-sm border border-dashed border-vault-line/60 px-4 py-5 text-center text-ink-mute">
+          No pending items in The Drop.
+        </p>
+      )}
+    </Step>
   );
 }
 
-// ─── Step 2 — admin review ─────────────────────────────────────────────────
+// Step 3: Counter review.
 function ReviewStep({
   stressors,
   timeSensitive,
   mustDo,
+  otherAdmin,
   onNext,
 }: {
   stressors: Item[];
   timeSensitive: Item[];
   mustDo: Item[];
+  otherAdmin: Item[];
   onNext: () => void;
 }) {
   const total =
-    stressors.length + timeSensitive.length + mustDo.length;
+    stressors.length + timeSensitive.length + mustDo.length + otherAdmin.length;
   return (
     <Step
       title="What's already on the counter?"
@@ -321,6 +316,9 @@ function ReviewStep({
       </Group>
       <Group label="Must-do" tone="sky">
         {mustDo.length === 0 ? <Empty /> : mustDo.map((it) => <Row key={it.id} item={it} />)}
+      </Group>
+      <Group label="Everything else" tone="brass">
+        {otherAdmin.length === 0 ? <Empty /> : otherAdmin.map((it) => <Row key={it.id} item={it} />)}
       </Group>
     </Step>
   );
@@ -394,20 +392,30 @@ function Empty() {
   return <div className="text-[12px] italic text-ink-mute">(nothing here)</div>;
 }
 
-// ─── Step 3 — ATM withdrawals ────────────────────────────────────────────────
+// Step 4: ATM box-first withdrawals.
 function AtmStep({
   atm,
-  inputs,
   onFinish,
 }: {
   atm: Item[];
-  inputs: DayInputs;
   onFinish: () => void;
 }) {
-  const matched = pickAtmCandidates(atm, inputs).slice(0, 8);
-  const allHaveCategory = matched.some((m) => !!m.category);
+  const categories = Array.from(
+    new Set(
+      atm
+        .map((item) => item.category?.trim())
+        .filter((category): category is string => Boolean(category)),
+    ),
+  );
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    categories[0] ?? "",
+  );
+  const visible =
+    selectedCategory.length > 0
+      ? atm.filter((item) => item.category === selectedCategory)
+      : [];
   const groups = new Map<string, Item[]>();
-  for (const it of matched) {
+  for (const it of visible) {
     const k = (it.category ?? "Pull") as string;
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k)!.push(it);
@@ -415,27 +423,44 @@ function AtmStep({
   return (
     <Step
       title="Withdraw anything from the ATM?"
-      hint="Energy-matched options for today. Pick what feels right — or none."
+      hint="Choose a box first, then mark ATM tasks for today."
       submitLabel="BUILD THE DAY"
       onSubmit={onFinish}
     >
-      {matched.length === 0 ? (
+      {categories.length === 0 ? (
         <p className="rounded-sm border border-dashed border-vault-line/60 px-4 py-6 text-center text-ink-mute">
-          Nothing matches today's energy. That&rsquo;s fine.
+          No ATM boxes found yet.
         </p>
       ) : (
-        [...groups.entries()].map(([cat, rows]) => (
-          <div key={cat} className="mt-5">
-            {allHaveCategory && (
-              <h3 className="eyebrow">— {cat.toLowerCase()} —</h3>
-            )}
-            <div className="mt-2 space-y-2">
-              {rows.map((it) => (
-                <AtmRow key={it.id} item={it} />
-              ))}
-            </div>
+        <>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={clsx(
+                  "rounded-sm border px-3 py-2 text-[12px] transition",
+                  category === selectedCategory
+                    ? "border-brass bg-brass/10 text-brass-bright"
+                    : "border-vault-line/60 text-ink-mute hover:border-brass/40 hover:text-brass",
+                )}
+              >
+                {category}
+              </button>
+            ))}
           </div>
-        ))
+          {[...groups.entries()].map(([cat, rows]) => (
+            <div key={cat} className="mt-5">
+              <h3 className="eyebrow">— {cat.toLowerCase()} —</h3>
+              <div className="mt-2 space-y-2">
+                {rows.map((it) => (
+                  <AtmRow key={it.id} item={it} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
       )}
     </Step>
   );
@@ -461,9 +486,6 @@ function AtmRow({ item }: { item: Item }) {
       )}
     >
       <div className="flex items-center gap-3">
-        <span className="font-mono text-[10px] tracking-wider text-ink-mute">
-          {(item.energy ?? "").toLowerCase()}
-        </span>
         <span className="text-ink">{item.title}</span>
       </div>
       <div className="flex items-center gap-3">
@@ -491,6 +513,7 @@ function Step({
   onSubmit,
   submitLabel = "NEXT",
   pending = false,
+  submitDisabled = false,
 }: {
   title: string;
   hint: string;
@@ -498,6 +521,7 @@ function Step({
   onSubmit: () => void;
   submitLabel?: string;
   pending?: boolean;
+  submitDisabled?: boolean;
 }) {
   return (
     <div>
@@ -509,7 +533,7 @@ function Step({
       <div className="mt-12 flex justify-end">
         <button
           onClick={onSubmit}
-          disabled={pending}
+          disabled={pending || submitDisabled}
           className="brass-button px-8 py-3 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
         >
           {pending ? "SAVING…" : submitLabel}
@@ -519,26 +543,3 @@ function Step({
   );
 }
 
-function ChoiceButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={clsx(
-        "flex-1 rounded-sm border px-4 py-3 transition",
-        active
-          ? "border-brass bg-brass/10 text-brass"
-          : "border-vault-line/60 text-ink-mute hover:border-brass/40",
-      )}
-    >
-      {children}
-    </button>
-  );
-}

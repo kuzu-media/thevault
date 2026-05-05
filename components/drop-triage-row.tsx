@@ -13,7 +13,7 @@ import type { Item } from "@/lib/types";
 // Drop row, two compact lines:
 //
 //   [edge]  [ATM|COUNTER]  Title (editable)              [Box ▼]
-//           ⏱ 30m   energy / urgent / must / should      Delete · Send
+//           ⏱ 30m   urgent / must / should (Counter)     Delete · Send
 //
 // 4-px coloured left edge tracks the destination so a glance reads where
 // each row will land. The destination toggle is the only place the user
@@ -22,7 +22,7 @@ import type { Item } from "@/lib/types";
 export function DropTriageRow({
   item,
   boxes,
-  energies,
+  energies: _energies,
 }: {
   item: Item;
   boxes: Box[];
@@ -37,7 +37,6 @@ export function DropTriageRow({
   const [minutes, setMinutes] = useState<string>(
     item.minutes != null ? String(item.minutes) : "",
   );
-  const [energy, setEnergy] = useState<string>(item.energy ?? "");
   const [urgent, setUrgent] = useState(item.urgent);
   const [must, setMust] = useState(item.must);
   const [should, setShould] = useState(item.should);
@@ -45,7 +44,6 @@ export function DropTriageRow({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const boxSelectRef = useRef<HTMLSelectElement>(null);
   const minutesInputRef = useRef<HTMLInputElement>(null);
-  const energySelectRef = useRef<HTMLSelectElement>(null);
   const [focused, setFocused] = useState(false);
 
   // Track whether the focused element lives inside this row so per-row
@@ -107,15 +105,6 @@ export function DropTriageRow({
     group: "Drop",
     options: { enabled: focused },
   });
-  useShortcut(
-    "e",
-    () => dest === "ATM" && energySelectRef.current?.focus(),
-    {
-      label: "Focus energy",
-      group: "Drop",
-      options: { enabled: focused && dest === "ATM" },
-    },
-  );
   useShortcut("x", () => deleteThought(), {
     label: "Delete thought",
     group: "Drop",
@@ -142,7 +131,7 @@ export function DropTriageRow({
           box_key: boxKey,
           dest,
           minutes: minutes ? Number(minutes) : null,
-          energy: dest === "ATM" ? energy || null : null,
+          energy: null,
           urgent: dest === "COUNTER" ? urgent : false,
           must: dest === "COUNTER" ? must : false,
           should: dest === "COUNTER" ? should : false,
@@ -234,29 +223,6 @@ export function DropTriageRow({
           onChange={setMinutes}
           inputRef={minutesInputRef}
         />
-
-        {dest === "ATM" && (
-          <select
-            ref={energySelectRef}
-            value={energy}
-            onChange={(e) => setEnergy(e.target.value)}
-            className={clsx(
-              "shrink-0 rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-wider outline-none transition focus:border-brass",
-              energy
-                ? "border-brass/40 text-brass"
-                : "border-vault-line text-ink-mute/70",
-            )}
-          >
-            <option value="" className="bg-vault-bg">
-              + energy
-            </option>
-            {energies.map((e) => (
-              <option key={e.key} value={e.key} className="bg-vault-bg">
-                {e.label}
-              </option>
-            ))}
-          </select>
-        )}
 
         {dest === "COUNTER" && (
           <div className="flex items-center gap-1">
