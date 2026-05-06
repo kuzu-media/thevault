@@ -4,8 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
-  classify,
-  buildSchedule,
+  dayScheduleWindow,
   type ScheduledBlock,
 } from "@/lib/daily-plan";
 import type { DayInputs, Item } from "@/lib/types";
@@ -93,16 +92,49 @@ export function DocketSchedule({
         const s = i.state ?? "upcoming";
         return s !== "done" && s !== "skipped";
       });
-      const classified = classify(scheduledCounter);
-      const atmPicks = scheduledAtm
+      const todayItems = [...scheduledCounter, ...scheduledAtm]
         .filter((i) => i.todayOrder !== null)
         .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0));
-      const blocks = buildSchedule({
-        classified,
-        atmPicks,
-        inputs,
-        now: new Date(),
-      });
+      const { dayStart } = dayScheduleWindow(inputs, new Date());
+      const blocks: ScheduledBlock[] = [];
+      let cursor = new Date(dayStart);
+      for (const it of todayItems) {
+        const minutes = it.minutes ?? 0;
+        if (minutes <= 0) continue;
+        const start = new Date(cursor);
+        const end = new Date(start.getTime() + minutes * 60_000);
+        blocks.push({
+          itemId: it.id,
+          title: it.title,
+          bucket:
+            it.box === "ATM"
+              ? "ATM_PICK"
+              : it.urgent && it.must
+                ? "STRESSOR"
+                : it.urgent
+                  ? "TIME_SENSITIVE"
+                  : it.must
+                    ? "MUST_DO"
+                    : "OTHER_ADMIN",
+          minutes,
+          start: start.toISOString(),
+          end: end.toISOString(),
+          pinned: it.pinned,
+          area: it.area ?? it.category,
+        });
+        cursor = end;
+      }
+      // Keep existing pin semantics: pin changes its own block time only.
+      for (const b of blocks) {
+        const src = todayItems.find((i) => i.id === b.itemId);
+        if (src?.pinned && src.scheduledStart) {
+          const s = new Date(src.scheduledStart);
+          const e = new Date(s.getTime() + b.minutes * 60_000);
+          b.start = s.toISOString();
+          b.end = e.toISOString();
+          b.pinned = true;
+        }
+      }
       const stateById = new Map(
         [...counterItems, ...atmItems].map((i) => [
           i.id,
