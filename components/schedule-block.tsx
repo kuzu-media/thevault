@@ -2,7 +2,7 @@
 import clsx from "clsx";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { setItemState, setItemPinned, startItem } from "@/lib/actions";
+import { setItemState, softDeleteItem } from "@/lib/actions";
 import type { ScheduledBlock } from "@/lib/daily-plan";
 
 const BUCKET_COLOR: Record<string, string> = {
@@ -31,7 +31,7 @@ function formatAreaLabel(raw: string): string {
     .toLowerCase();
 }
 
-// Calmer block: one click marks done. Secondary actions (Start / Pin / Skip)
+// Calmer block: one click marks done. Secondary actions (Skip / Delete)
 // hidden under a quiet "···" — discoverable but not visible at rest.
 export function ScheduleBlock({
   block,
@@ -122,26 +122,6 @@ export function ScheduleBlock({
             onClick={() => setMenuOpen(false)}
             className="absolute right-0 top-9 z-10 flex w-32 flex-col gap-px rounded-sm border border-vault-line bg-vault-panel shadow-xl"
           >
-            {state !== "active" && state !== "done" && (
-              <MenuButton
-                onClick={() =>
-                  startTransition(async () => {
-                    await startItem(block.itemId);
-                  })
-                }
-              >
-                Start
-              </MenuButton>
-            )}
-            <MenuButton
-              onClick={() =>
-                startTransition(async () => {
-                  await setItemPinned(block.itemId, !block.pinned);
-                })
-              }
-            >
-              {block.pinned ? "Unpin" : "Pin time"}
-            </MenuButton>
             <MenuButton
               onClick={() =>
                 startTransition(async () => {
@@ -150,6 +130,15 @@ export function ScheduleBlock({
               }
             >
               Skip today
+            </MenuButton>
+            <MenuButton
+              onClick={() =>
+                startTransition(async () => {
+                  await softDeleteItem(block.itemId);
+                })
+              }
+            >
+              Delete
             </MenuButton>
           </div>
         )}
