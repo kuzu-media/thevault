@@ -12,6 +12,7 @@ export function EditableText({
   className,
   placeholder,
   numeric = false,
+  multiline = false,
 }: {
   itemId: string;
   field:
@@ -27,6 +28,7 @@ export function EditableText({
   className?: string;
   placeholder?: string;
   numeric?: boolean;
+  multiline?: boolean;
 }) {
   const [value, setValue] = useState(initial ?? "");
   const [pending, startTransition] = useTransition();
@@ -46,6 +48,28 @@ export function EditableText({
     });
   }
 
+  const sharedClassName = clsx(
+    "bg-transparent outline-none focus:bg-vault-bg/40 focus:ring-1 focus:ring-brass/40 rounded-sm px-1",
+    pending && "opacity-50",
+    className,
+  );
+
+  if (multiline) {
+    return (
+      <textarea
+        value={value as any}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setValue(initial ?? "");
+        }}
+        placeholder={placeholder}
+        rows={2}
+        className={clsx("resize-none", sharedClassName)}
+      />
+    );
+  }
+
   return (
     <input
       value={value as any}
@@ -57,11 +81,7 @@ export function EditableText({
       }}
       placeholder={placeholder}
       type={numeric ? "number" : "text"}
-      className={clsx(
-        "bg-transparent outline-none focus:bg-vault-bg/40 focus:ring-1 focus:ring-brass/40 rounded-sm px-1",
-        pending && "opacity-50",
-        className,
-      )}
+      className={sharedClassName}
     />
   );
 }

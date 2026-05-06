@@ -97,6 +97,7 @@ export function ScheduleBlock({
           itemId={block.itemId}
           field="title"
           initial={block.title}
+          multiline
           className={clsx(
             "vault-task-title w-full whitespace-normal break-words px-0 leading-snug",
             isDone && "line-through text-ink-mute",
