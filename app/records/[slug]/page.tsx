@@ -32,20 +32,20 @@ export default async function RecordPage({
       <div className="mx-auto max-w-[640px] px-10 py-16 text-center">
         <div className="eyebrow">— Record not found —</div>
         <h1 className="serif-h mt-2 text-[28px]">Nothing filed here.</h1>
-        <p className="mt-2 text-[13px] text-ink-mute">
+        <p className="mt-2 text-[15px] text-ink-mute">
           No record category called{" "}
           <span className="font-mono text-brass">{key}</span>.
         </p>
         <div className="mt-6 flex justify-center gap-2">
           <Link
             href="/records"
-            className="rounded-sm border border-vault-line px-4 py-2 font-mono text-[10px] tracking-[0.18em] text-ink-mute hover:border-brass/40 hover:text-brass"
+            className="rounded-sm border border-vault-line px-4 py-2 font-mono text-[11px] tracking-[0.18em] text-ink-mute hover:border-brass/40 hover:text-brass"
           >
             ← BACK TO RECORDS
           </Link>
           <Link
             href="/settings/records"
-            className="rounded-sm border border-brass/40 px-4 py-2 font-mono text-[10px] tracking-[0.18em] text-brass hover:bg-brass/10"
+            className="rounded-sm border border-brass/40 px-4 py-2 font-mono text-[11px] tracking-[0.18em] text-brass hover:bg-brass/10"
           >
             + ADD A RECORD
           </Link>
@@ -62,7 +62,7 @@ export default async function RecordPage({
       <div className="eyebrow">— Record —</div>
       <h1 className="serif-h mt-2 text-[40px] leading-tight">{meta.label}</h1>
       {meta.meta && (
-        <p className="mt-1 text-[13px] text-ink-dim">{meta.meta}</p>
+        <p className="mt-1 text-[15px] text-ink-dim">{meta.meta}</p>
       )}
       <div className="mt-8">
         <RecordsEditor

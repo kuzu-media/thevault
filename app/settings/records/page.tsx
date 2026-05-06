@@ -17,7 +17,7 @@ export default async function RecordsSettingsPage() {
         <SettingsSubnav />
       </div>
 
-      <p className="mt-6 text-ink-dim">
+      <p className="mt-6 text-[18px] text-ink-dim">
         Records are text-first reference — Notes, Measurements, Read &amp;
         Research, Health Ideas. Distinct from boxes (which hold task-shaped
         items). Each record gets a markdown page at{" "}

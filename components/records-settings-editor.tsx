@@ -91,7 +91,7 @@ export function RecordsSettingsEditor({
 
   return (
     <div className="mt-6 space-y-3">
-      <div className="flex flex-wrap items-center gap-2 px-1 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
+      <div className="flex flex-wrap items-center gap-2 px-1 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-mute">
         <span className="w-7" />
         <span className="min-w-[140px] flex-1">Label</span>
         <span className="min-w-[160px] flex-1">Meta</span>
@@ -121,12 +121,12 @@ export function RecordsSettingsEditor({
             value={r.meta ?? ""}
             onChange={(e) => update(i, { meta: e.target.value })}
             placeholder="Subtitle, e.g. Measurements & doses"
-            className="min-w-[160px] flex-1 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[11px] text-ink-mute outline-none focus:border-brass"
+            className="min-w-[160px] flex-1 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[13px] text-ink-mute outline-none focus:border-brass"
           />
           <select
             value={r.folder ?? "misc"}
             onChange={(e) => update(i, { folder: e.target.value as RecordType["folder"] })}
-            className="w-[110px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[10px] text-ink outline-none focus:border-brass"
+            className="w-[110px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[12px] text-ink outline-none focus:border-brass"
           >
             {FOLDERS.map((f) => (
               <option key={f.key} value={f.key}>
@@ -138,11 +138,11 @@ export function RecordsSettingsEditor({
             value={r.key}
             onChange={(e) => changeKey(i, e.target.value)}
             placeholder="auto"
-            className="w-[110px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[10px] text-brass outline-none focus:border-brass"
+            className="w-[110px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[12px] text-brass outline-none focus:border-brass"
           />
           <button
             onClick={() => remove(i)}
-            className="rounded-sm border border-vault-line px-2 py-1 font-mono text-[10px] tracking-wider text-ink-mute hover:border-rust hover:text-rust"
+            className="rounded-sm border border-vault-line px-2 py-1 font-mono text-[11px] tracking-wider text-ink-mute hover:border-rust hover:text-rust"
           >
             REMOVE
           </button>
@@ -150,13 +150,13 @@ export function RecordsSettingsEditor({
       ))}
       <button
         onClick={add}
-        className="w-full rounded-sm border border-dashed border-brass/40 py-3 font-mono text-[10px] tracking-[0.24em] text-brass/70 hover:border-brass"
+        className="w-full rounded-sm border border-dashed border-brass/40 py-3 font-mono text-[11px] tracking-[0.24em] text-brass/70 hover:border-brass"
       >
         + ADD RECORD
       </button>
 
       <div className="flex items-center justify-between pt-3">
-        <span className="font-mono text-[10px] text-ink-mute">
+        <span className="font-mono text-[11px] text-ink-mute">
           {pending && "saving…"}
           {!pending &&
             savedAt &&
@@ -168,7 +168,7 @@ export function RecordsSettingsEditor({
         <button
           onClick={save}
           disabled={pending}
-          className="brass-button px-6 py-2 font-mono text-[10px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
+          className="brass-button px-6 py-2 font-mono text-[11px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
         >
           SAVE RECORDS
         </button>

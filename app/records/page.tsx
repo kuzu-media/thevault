@@ -15,7 +15,7 @@ export default async function RecordsHubPage() {
         Records
       </h1>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <p className="text-[13px] text-ink-dim">
+        <p className="text-[15px] text-ink-dim">
           Reference folders — open a folder to see the records inside.
         </p>
         <CopyTableMarkdownButton />
@@ -57,7 +57,7 @@ function RecordFolderCard({
         </span>
       </div>
       <div className="absolute inset-0 rounded-sm bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(0,0,0,0.02))]" />
-      <div className="absolute bottom-3 right-4 font-mono text-[10px] tracking-[0.16em] text-[#6f5a37]/80">
+      <div className="absolute bottom-3 right-4 font-mono text-[11px] tracking-[0.16em] text-[#6f5a37]/80">
         {count} RECORD{count === 1 ? "" : "S"}
       </div>
     </Link>
@@ -70,7 +70,7 @@ function NewRecordTile({ href, label }: { href: string; label: string }) {
       href={href}
       className="flex h-[140px] w-full flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line text-ink-mute transition hover:border-brass/40 hover:text-brass sm:w-[240px]"
     >
-      <span className="serif-h text-[16px]">{label}</span>
+      <span className="serif-h text-[18px]">{label}</span>
     </Link>
   );
 }

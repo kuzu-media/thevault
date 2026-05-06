@@ -33,7 +33,7 @@ export default async function RecordsFolderPage({
       <h1 className="serif-h mt-2 text-[28px] leading-tight md:text-[36px]">
         {folderMeta.label}
       </h1>
-      <p className="mt-1 text-[13px] text-ink-dim">
+      <p className="mt-1 text-[15px] text-ink-dim">
         {inFolder.length > 0
           ? `Open a record in ${folderMeta.label}.`
           : `No records in ${folderMeta.label} yet.`}
@@ -42,7 +42,7 @@ export default async function RecordsFolderPage({
       <div className="mt-4">
         <Link
           href="/records"
-          className="rounded-sm border border-vault-line px-3 py-1 font-mono text-[10px] tracking-[0.18em] text-ink-mute transition hover:border-brass/40 hover:text-brass"
+          className="rounded-sm border border-vault-line px-3 py-1 font-mono text-[11px] tracking-[0.18em] text-ink-mute transition hover:border-brass/40 hover:text-brass"
         >
           ← BACK TO FOLDERS
         </Link>
@@ -60,7 +60,7 @@ export default async function RecordsFolderPage({
           ))}
         </div>
       ) : (
-        <p className="mt-8 text-[13px] text-ink-mute">
+        <p className="mt-8 text-[15px] text-ink-mute">
           Add records from Settings, then they&apos;ll appear here.
         </p>
       )}
