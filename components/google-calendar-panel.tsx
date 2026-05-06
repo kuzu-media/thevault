@@ -93,10 +93,9 @@ export function GoogleCalendarPanel({
       <div className="rounded-sm border border-vault-line/60 bg-vault-panel/30 p-4 text-[14px] leading-relaxed text-ink-dim">
         <p>
           When this is on, The Vault adds a <strong className="text-ink/90">Drop</strong>{" "}
-          line for each calendar event on <strong className="text-ink/90">that day</strong>{" "}
-          (in the time zone you pick). It runs in the background about every hour, and
-          you can also pull in today&apos;s events with the button below. Each event is
-          only added once per day.
+          line for each calendar event on <strong className="text-ink/90">that day</strong>.
+          It runs in the background at 5 AM, and you can also pull in
+          today&apos;s events with the button below. Each event is only added once per day.
         </p>
       </div>
 
