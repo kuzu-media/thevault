@@ -157,6 +157,11 @@ export function DocketSchedule({
       )}
 
       <div className="mt-8 space-y-2">
+        {orderedBlocks.length > 1 && (
+          <p className="font-mono text-[10px] tracking-[0.18em] text-ink-mute">
+            DRAG <span className="text-brass">⋮⋮</span> TO REORDER TODAY
+          </p>
+        )}
         {orderedBlocks.length === 0 && (
           <p className="rounded-sm border border-dashed border-vault-line/60 bg-vault-panel/20 px-4 py-6 text-center text-ink-mute">
             Nothing scheduled. Add a custom block below, or rebuild the day.
@@ -210,8 +215,9 @@ function SortableScheduleRow({
       <button
         {...attributes}
         {...listeners}
-        title="Drag"
-        className="cursor-grab select-none rounded-sm border border-vault-line/40 bg-vault-panel/30 px-1 font-mono text-[13px] text-ink-dim hover:border-brass/40 hover:text-brass active:cursor-grabbing"
+        title="Drag to reorder"
+        aria-label="Drag to reorder schedule item"
+        className="cursor-grab select-none rounded-sm border border-vault-line/60 bg-vault-panel/45 px-1.5 font-mono text-[14px] leading-none text-brass/80 hover:border-brass/60 hover:text-brass active:cursor-grabbing"
       >
         ⋮⋮
       </button>
