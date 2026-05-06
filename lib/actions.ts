@@ -240,6 +240,25 @@ export async function setItemState(
 ) {
   const { sb } = await requireUser();
   const patch: Record<string, unknown> = { state };
+  if (state === "done") {
+    const { data: cur } = await sb
+      .from("items")
+      .select("today_order")
+      .eq("id", itemId)
+      .maybeSingle();
+    // Keep completed items on Today's plan, but move them to the bottom.
+    if ((cur?.today_order ?? null) !== null) {
+      const { data: max } = await sb
+        .from("items")
+        .select("today_order")
+        .neq("id", itemId)
+        .not("today_order", "is", null)
+        .order("today_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      patch.today_order = (max?.today_order ?? 0) + 1;
+    }
+  }
   if (state === "active") patch.actual_start = new Date().toISOString();
   if (state === "done" || state === "skipped" || state === "overrun") {
     patch.actual_end = new Date().toISOString();

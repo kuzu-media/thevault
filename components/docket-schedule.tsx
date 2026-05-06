@@ -55,6 +55,15 @@ export function DocketSchedule({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
+  const doneTodayItems = useMemo(
+    () =>
+      [...counterItems, ...atmItems]
+        .filter(
+          (i) => (i.todayOrder ?? null) !== null && (i.state ?? "upcoming") === "done",
+        )
+        .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0)),
+    [counterItems, atmItems],
+  );
 
   const { blocks, stateById, overflowMinutes, scheduledMinutes, availableMinutes } =
     useMemo(() => {
@@ -67,8 +76,14 @@ export function DocketSchedule({
           availableMinutes: inputs.hoursAvailable * 60,
         };
       }
-      const classified = classify(counterItems);
-      const atmPicks = atmItems
+      const scheduledCounter = counterItems.filter(
+        (i) => (i.state ?? "upcoming") !== "done",
+      );
+      const scheduledAtm = atmItems.filter(
+        (i) => (i.state ?? "upcoming") !== "done",
+      );
+      const classified = classify(scheduledCounter);
+      const atmPicks = scheduledAtm
         .filter((i) => i.todayOrder !== null)
         .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0));
       const blocks = buildSchedule({
@@ -188,6 +203,26 @@ export function DocketSchedule({
           </SortableContext>
         </DndContext>
         {children}
+        {doneTodayItems.length > 0 && (
+          <div className="mt-6 space-y-2">
+            <p className="font-mono text-[10px] tracking-[0.18em] text-ink-mute">
+              DONE TODAY
+            </p>
+            {doneTodayItems.map((it) => (
+              <div
+                key={it.id}
+                className="rounded-sm border border-vault-line/40 bg-vault-panel/30 px-4 py-3 opacity-60"
+              >
+                <div className="vault-task-title line-through text-ink-mute">
+                  {it.title}
+                </div>
+                <div className="mt-0.5 text-[11px] text-ink-mute">
+                  {it.minutes ?? "—"} min
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );
