@@ -122,14 +122,33 @@ export function DocketSchedule({
     }, [client, counterItems, atmItems, inputs, tick]);
 
   useEffect(() => {
-    const current = orderedBlocks.map((b) => b.itemId).join(",");
-    const incoming = blocks.map((b) => b.itemId).join(",");
-    if (current !== incoming) setOrderedBlocks(blocks);
-    else if (orderedBlocks.length === blocks.length) {
-      const same = orderedBlocks.every((b, i) => b === blocks[i]);
-      if (!same) setOrderedBlocks(blocks);
-    }
-  }, [blocks, orderedBlocks]);
+    setOrderedBlocks((prev) => {
+      if (prev.length === 0) return blocks;
+      const incomingById = new Map(blocks.map((b) => [b.itemId, b]));
+      const prevIds = prev.map((b) => b.itemId);
+      const incomingIds = blocks.map((b) => b.itemId);
+      const sameIdSet =
+        prevIds.length === incomingIds.length &&
+        prevIds.every((id) => incomingById.has(id));
+
+      // Keep user's drag order stable; only refresh each row's latest block data.
+      if (sameIdSet) {
+        return prev.map((b) => incomingById.get(b.itemId) ?? b);
+      }
+
+      // If membership changes (added/removed), preserve existing relative order
+      // for surviving ids, then append genuinely new ids in server order.
+      const merged: ScheduledBlock[] = [];
+      for (const id of prevIds) {
+        const next = incomingById.get(id);
+        if (next) merged.push(next);
+      }
+      for (const b of blocks) {
+        if (!prevIds.includes(b.itemId)) merged.push(b);
+      }
+      return merged;
+    });
+  }, [blocks]);
 
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;

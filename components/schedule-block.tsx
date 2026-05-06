@@ -94,7 +94,7 @@ export function ScheduleBlock({
       <div className="min-w-0 flex-1">
         <div
           className={clsx(
-            "vault-task-title truncate",
+            "vault-task-title whitespace-normal break-words leading-snug",
             isDone && "line-through text-ink-mute",
           )}
         >
