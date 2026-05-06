@@ -26,6 +26,66 @@ async function currentVaultId() {
   return data?.vault_id as string | undefined;
 }
 
+type DailyAnchorSpec = {
+  tag: string;
+  title: string;
+  minutes: number;
+  start: Date;
+  order: number;
+};
+
+async function upsertDailyAnchor(
+  sb: Awaited<ReturnType<typeof supabaseServer>>,
+  opts: {
+    vaultId: string;
+    userId: string;
+    spec: DailyAnchorSpec;
+  },
+) {
+  const { vaultId, userId, spec } = opts;
+  const end = new Date(spec.start.getTime() + spec.minutes * 60_000);
+
+  const patch = {
+    box: "COUNTER",
+    title: spec.title,
+    minutes: spec.minutes,
+    today_order: spec.order,
+    pinned: true,
+    scheduled_start: spec.start.toISOString(),
+    scheduled_end: end.toISOString(),
+    urgent: false,
+    must: false,
+    should: false,
+    area: null,
+    category: null,
+    state: "upcoming" as const,
+    actual_start: null,
+    actual_end: null,
+    notes: spec.tag,
+  };
+
+  const { data: existing } = await sb
+    .from("items")
+    .select("id")
+    .eq("vault_id", vaultId)
+    .eq("notes", spec.tag)
+    .is("deleted_at", null)
+    .order("modified_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.id) {
+    await sb.from("items").update(patch).eq("id", existing.id);
+    return;
+  }
+
+  await sb.from("items").insert({
+    vault_id: vaultId,
+    user_id: userId,
+    ...patch,
+  });
+}
+
 // ─── Day inputs ────────────────────────────────────────────────────────────
 
 const DayInputsSchema = z.object({
@@ -61,7 +121,7 @@ const PartialDayInputs = z.object({
 export async function saveDayInputsPartial(
   patch: z.input<typeof PartialDayInputs>,
 ) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
   const vaultId = await currentVaultId();
   if (!vaultId) throw new Error("No vault");
   const parsed = PartialDayInputs.parse(patch);
@@ -134,6 +194,41 @@ export async function saveDayInputsPartial(
     onConflict: "vault_id,date",
     ignoreDuplicates: false,
   });
+
+  // Daily Anchors: auto-place Morning Workout at day start and Lunch at noon.
+  // They are normal today-plan items, so users can still reorder them on Today.
+  if (isFirstSaveToday) {
+    try {
+      const dayEnd = parseTimeOnDate(mergedEnd, parsed.date);
+      const dayStart = new Date(
+        dayEnd.getTime() - Math.round(hoursVal * 60) * 60_000,
+      );
+      await upsertDailyAnchor(sb, {
+        vaultId,
+        userId: user.id,
+        spec: {
+          tag: "__daily_anchor__:morning-workout",
+          title: "Morning Workout",
+          minutes: 45,
+          start: dayStart,
+          order: 1,
+        },
+      });
+      await upsertDailyAnchor(sb, {
+        vaultId,
+        userId: user.id,
+        spec: {
+          tag: "__daily_anchor__:lunch",
+          title: "Lunch",
+          minutes: 45,
+          start: parseTimeOnDate("12:00 PM", parsed.date),
+          order: 2,
+        },
+      });
+    } catch {
+      // Keep day build resilient if time parsing fails.
+    }
+  }
   revalidatePath("/", "layout");
 }
 
