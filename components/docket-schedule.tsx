@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   dayScheduleWindow,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/daily-plan";
 import type { DayInputs, Item } from "@/lib/types";
 import { ScheduleWithNowLine } from "@/components/now-line";
-import { reorderItems } from "@/lib/actions";
+import { hardDeleteDoneTodayItems, reorderItems } from "@/lib/actions";
 import {
   DndContext,
   PointerSensor,
@@ -25,6 +26,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { toast } from "sonner";
 
 /** Builds timed blocks in the visitor's local TZ — server-side scheduling uses UTC on Vercel and skews labels by offset (e.g. −4h Eastern). */
 export function DocketSchedule({
@@ -38,6 +40,7 @@ export function DocketSchedule({
   inputs: DayInputs;
   children?: ReactNode;
 }) {
+  const router = useRouter();
   // Scheduling uses local wall clock; Vercel SSR is UTC — skip building until mount to avoid wrong first paint + hydration drift.
   const [client, setClient] = useState(false);
   // Bust schedule cache periodically so `now` in buildSchedule advances (same as before when each GET recomputed).
@@ -51,6 +54,7 @@ export function DocketSchedule({
   }, []);
   const [orderedBlocks, setOrderedBlocks] = useState<ScheduledBlock[]>([]);
   const [, startTransition] = useTransition();
+  const [clearPending, startClearTransition] = useTransition();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -267,9 +271,44 @@ export function DocketSchedule({
         {children}
         {doneTodayItems.length > 0 && (
           <div className="mt-6 space-y-2">
-            <p className="font-mono text-[10px] tracking-[0.18em] text-ink-mute">
-              DONE TODAY
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="font-mono text-[10px] tracking-[0.18em] text-ink-mute">
+                DONE TODAY
+              </p>
+              <button
+                type="button"
+                disabled={clearPending}
+                title="Permanently delete every completed task from Counter and ATM"
+                className="shrink-0 rounded-sm border border-vault-line bg-vault-panel/40 px-3 py-1 font-mono text-[10px] tracking-[0.18em] text-ink-mute transition hover:border-rust/50 hover:text-rust disabled:opacity-40"
+                onClick={() => {
+                  const n = doneTodayItems.length;
+                  if (
+                    !confirm(
+                      `Permanently delete all ${n} completed item${n === 1 ? "" : "s"}? This removes them from Counter and ATM and cannot be undone.`,
+                    )
+                  )
+                    return;
+                  startClearTransition(async () => {
+                    try {
+                      const r = await hardDeleteDoneTodayItems(
+                        doneTodayItems.map((it) => it.id),
+                      );
+                      toast.success(
+                        `Permanently deleted ${r.deleted} completed item${r.deleted === 1 ? "" : "s"}.`,
+                      );
+                      router.refresh();
+                    } catch (e: any) {
+                      toast.error(
+                        e?.message ??
+                          "Could not clear completed items. Try again.",
+                      );
+                    }
+                  });
+                }}
+              >
+                {clearPending ? "CLEARING…" : "CLEAR ALL DONE"}
+              </button>
+            </div>
             {doneTodayItems.map((it) => (
               <div
                 key={it.id}

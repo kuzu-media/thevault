@@ -300,6 +300,37 @@ export async function softDeleteItem(itemId: string) {
   revalidatePath("/vault");
 }
 
+/** Permanently deletes rows that match Today’s “Done today” bucket: on today’s plan + state done. Ignores unrelated ids. */
+export async function hardDeleteDoneTodayItems(itemIds: string[]) {
+  const { sb } = await requireUser();
+  if (!itemIds.length) return { ok: true as const, deleted: 0 };
+
+  const { data: rows, error: selErr } = await sb
+    .from("items")
+    .select("id")
+    .in("id", itemIds)
+    .eq("state", "done")
+    .not("today_order", "is", null)
+    .is("deleted_at", null);
+
+  if (selErr) throw new Error(selErr.message);
+
+  const validIds = (rows ?? []).map((r: { id: string }) => r.id);
+  if (!validIds.length) return { ok: true as const, deleted: 0 };
+
+  const { error: delErr } = await sb.from("items").delete().in("id", validIds);
+
+  if (delErr) throw new Error(delErr.message);
+
+  revalidatePath("/");
+  revalidatePath("/atm");
+  revalidatePath("/counter");
+  revalidatePath("/drop");
+  revalidatePath("/vault");
+  revalidatePath("/records");
+  return { ok: true as const, deleted: validIds.length };
+}
+
 /** Permanently removes the row (use sparingly; soft-delete is the default elsewhere). */
 export async function hardDeleteItem(itemId: string) {
   const { sb } = await requireUser();
