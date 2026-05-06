@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { syncAllVaultCalendarsToDrop } from "@/lib/google-calendar-sync";
+import { syncAllVaultCalendarsToDropWithOptions } from "@/lib/google-calendar-sync";
 
 export const runtime = "nodejs";
 
@@ -10,6 +10,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const result = await syncAllVaultCalendarsToDrop();
+  // Cron runs hourly; this gate makes auto-import daily at 5:00 AM local
+  // per vault timezone (including DST shifts).
+  const result = await syncAllVaultCalendarsToDropWithOptions({
+    localHourOnly: 5,
+  });
   return NextResponse.json(result);
 }

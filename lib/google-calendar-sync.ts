@@ -64,6 +64,21 @@ export async function syncAllVaultCalendarsToDrop(): Promise<{
   imported: number;
   errors: string[];
 }> {
+  return syncAllVaultCalendarsToDropWithOptions();
+}
+
+function localHourInTz(tz: string): number {
+  return Number(formatInTimeZone(new Date(), tz, "H"));
+}
+
+export async function syncAllVaultCalendarsToDropWithOptions(opts?: {
+  localHourOnly?: number;
+}): Promise<{
+  ok: boolean;
+  vaults: number;
+  imported: number;
+  errors: string[];
+}> {
   const admin = supabaseAdmin();
   const errors: string[] = [];
   const { data: rows, error } = await admin
@@ -80,6 +95,12 @@ export async function syncAllVaultCalendarsToDrop(): Promise<{
   let imported = 0;
   for (const row of rows as Omit<ConnectionRow, "refresh_token">[]) {
     try {
+      if (
+        typeof opts?.localHourOnly === "number" &&
+        localHourInTz(row.timezone) !== opts.localHourOnly
+      ) {
+        continue;
+      }
       const { data: secret } = await admin
         .from("google_calendar_secrets")
         .select("refresh_token")
