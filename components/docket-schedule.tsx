@@ -2,10 +2,30 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { classify, buildSchedule } from "@/lib/daily-plan";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  classify,
+  buildSchedule,
+  type ScheduledBlock,
+} from "@/lib/daily-plan";
 import type { DayInputs, Item } from "@/lib/types";
 import { ScheduleWithNowLine } from "@/components/now-line";
+import { reorderItems } from "@/lib/actions";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 /** Builds timed blocks in the visitor's local TZ — server-side scheduling uses UTC on Vercel and skews labels by offset (e.g. −4h Eastern). */
 export function DocketSchedule({
@@ -30,6 +50,11 @@ export function DocketSchedule({
     const id = setInterval(() => setTick((n) => n + 1), 30_000);
     return () => clearInterval(id);
   }, []);
+  const [orderedBlocks, setOrderedBlocks] = useState<ScheduledBlock[]>([]);
+  const [, startTransition] = useTransition();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
 
   const { blocks, stateById, overflowMinutes, scheduledMinutes, availableMinutes } =
     useMemo(() => {
@@ -70,6 +95,29 @@ export function DocketSchedule({
       };
     }, [client, counterItems, atmItems, inputs, tick]);
 
+  useEffect(() => {
+    const current = orderedBlocks.map((b) => b.itemId).join(",");
+    const incoming = blocks.map((b) => b.itemId).join(",");
+    if (current !== incoming) setOrderedBlocks(blocks);
+    else if (orderedBlocks.length === blocks.length) {
+      const same = orderedBlocks.every((b, i) => b === blocks[i]);
+      if (!same) setOrderedBlocks(blocks);
+    }
+  }, [blocks, orderedBlocks]);
+
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedBlocks.findIndex((b) => b.itemId === active.id);
+    const newIndex = orderedBlocks.findIndex((b) => b.itemId === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(orderedBlocks, oldIndex, newIndex);
+    setOrderedBlocks(next);
+    startTransition(async () => {
+      await reorderItems(next.map((b) => b.itemId));
+    });
+  }
+
   if (!client) {
     return (
       <div className="mt-8 space-y-2">
@@ -109,22 +157,66 @@ export function DocketSchedule({
       )}
 
       <div className="mt-8 space-y-2">
-        {blocks.length === 0 && (
+        {orderedBlocks.length === 0 && (
           <p className="rounded-sm border border-dashed border-vault-line/60 bg-vault-panel/20 px-4 py-6 text-center text-ink-mute">
             Nothing scheduled. Add a custom block below, or rebuild the day.
           </p>
         )}
-        {blocks.map((b, i) => (
-          <ScheduleWithNowLine
-            key={b.itemId}
-            block={b}
-            nextStart={blocks[i + 1]?.start}
-            state={(stateById.get(b.itemId) as any) ?? "upcoming"}
-          />
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext
+            items={orderedBlocks.map((b) => b.itemId)}
+            strategy={verticalListSortingStrategy}
+          >
+            {orderedBlocks.map((b, i) => (
+              <SortableScheduleRow key={b.itemId} id={b.itemId}>
+                <ScheduleWithNowLine
+                  block={b}
+                  nextStart={orderedBlocks[i + 1]?.start}
+                  state={(stateById.get(b.itemId) as any) ?? "upcoming"}
+                />
+              </SortableScheduleRow>
+            ))}
+          </SortableContext>
+        </DndContext>
         {children}
       </div>
     </>
+  );
+}
+
+function SortableScheduleRow({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.6 : 1,
+      }}
+      className="flex items-stretch gap-2"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        title="Drag"
+        className="cursor-grab select-none rounded-sm border border-vault-line/40 bg-vault-panel/30 px-1 font-mono text-[13px] text-ink-dim hover:border-brass/40 hover:text-brass active:cursor-grabbing"
+      >
+        ⋮⋮
+      </button>
+      <div className="flex-1">{children}</div>
+    </div>
   );
 }
 
