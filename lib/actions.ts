@@ -220,7 +220,7 @@ export async function saveDayInputsPartial(
         spec: {
           tag: "__daily_anchor__:lunch",
           title: "Lunch",
-          minutes: 45,
+          minutes: 30,
           start: parseTimeOnDate("12:00 PM", parsed.date),
           order: 2,
         },
