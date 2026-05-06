@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { setItemState, softDeleteItem } from "@/lib/actions";
+import { EditableText } from "@/components/editable-text";
 import type { ScheduledBlock } from "@/lib/daily-plan";
 
 const BUCKET_COLOR: Record<string, string> = {
@@ -92,14 +93,16 @@ export function ScheduleBlock({
         aria-label="Mark done"
       />
       <div className="min-w-0 flex-1">
-        <div
+        <EditableText
+          itemId={block.itemId}
+          field="title"
+          initial={block.title}
           className={clsx(
-            "vault-task-title whitespace-normal break-words leading-snug",
+            "vault-task-title w-full whitespace-normal break-words px-0 leading-snug",
             isDone && "line-through text-ink-mute",
           )}
-        >
-          {block.title}
-        </div>
+          placeholder="(no title)"
+        />
         <div className="mt-0.5 flex items-center gap-2 text-[11px] text-ink-mute">
           {block.area && (
             <span className="font-mono text-[10px] tracking-wider">
