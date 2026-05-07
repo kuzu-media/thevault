@@ -63,7 +63,7 @@ export default async function DocketPage() {
       <div className="flex items-baseline justify-between">
         <div>
           <div className="serif-h text-[28px] text-ink md:text-[32px]">
-            {greeting}.
+            {greeting}
           </div>
           <DocketDayRange
             date={inputs.date}

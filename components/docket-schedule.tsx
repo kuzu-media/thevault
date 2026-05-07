@@ -10,7 +10,7 @@ import {
 } from "@/lib/daily-plan";
 import type { DayInputs, Item } from "@/lib/types";
 import { ScheduleWithNowLine } from "@/components/now-line";
-import { hardDeleteDoneTodayItems, reorderItems } from "@/lib/actions";
+import { hardDeleteDoneTodayItems, reorderItems, setItemState } from "@/lib/actions";
 import {
   DndContext,
   PointerSensor,
@@ -385,8 +385,25 @@ export function DocketSchedule({
                 <div className="vault-task-title line-through text-ink-mute">
                   {it.title}
                 </div>
-                <div className="mt-0.5 text-[11px] text-ink-mute">
-                  {it.minutes ?? "—"} min
+                <div className="mt-0.5 flex items-center justify-between gap-3 text-[11px] text-ink-mute">
+                  <span>{it.minutes ?? "—"} min</span>
+                  <button
+                    type="button"
+                    className="rounded-sm border border-vault-line/70 px-2 py-0.5 font-mono text-[10px] tracking-[0.14em] text-ink-mute transition hover:border-brass/50 hover:text-brass"
+                    onClick={() => {
+                      startTransition(async () => {
+                        try {
+                          await setItemState(it.id, "upcoming");
+                          toast.success("Moved back to Today.");
+                          router.refresh();
+                        } catch (e: any) {
+                          toast.error(e?.message ?? "Couldn't undo done.");
+                        }
+                      });
+                    }}
+                  >
+                    MARK NOT DONE
+                  </button>
                 </div>
               </div>
             ))}
