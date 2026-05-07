@@ -201,6 +201,8 @@ function DaySetupStep({
           date,
           hours_available: hoursAvailable,
           end_of_day: normalizedEnd,
+          reference_now: new Date().toISOString(),
+          reference_tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
         });
         onNext();
       } catch (e: unknown) {

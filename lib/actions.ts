@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { parse } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 import { parseTimeOnDate } from "@/lib/daily-plan";
 import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
 
@@ -116,6 +118,7 @@ const PartialDayInputs = z.object({
   tie_break: z.enum(["CREATIVE", "PROB-SOLV"]).optional(),
   end_of_day: z.string().optional(),
   reference_now: z.string().optional(),
+  reference_tz: z.string().optional(),
 });
 
 export async function saveDayInputsPartial(
@@ -210,10 +213,20 @@ export async function saveDayInputsPartial(
           tag: "__daily_anchor__:morning-workout",
           title: "Morning Workout",
           minutes: 45,
-          start: dayStart,
+          start:
+            parsed.reference_now && !Number.isNaN(Date.parse(parsed.reference_now))
+              ? new Date(parsed.reference_now)
+              : dayStart,
           order: 1,
         },
       });
+      const lunchStart =
+        parsed.reference_tz && parsed.reference_tz.trim()
+          ? fromZonedTime(
+              parse(`${parsed.date} 12:00:00`, "yyyy-MM-dd HH:mm:ss", new Date()),
+              parsed.reference_tz,
+            )
+          : parseTimeOnDate("12:00 PM", parsed.date);
       await upsertDailyAnchor(sb, {
         vaultId,
         userId: user.id,
@@ -221,7 +234,7 @@ export async function saveDayInputsPartial(
           tag: "__daily_anchor__:lunch",
           title: "Lunch",
           minutes: 30,
-          start: parseTimeOnDate("12:00 PM", parsed.date),
+          start: lunchStart,
           order: 2,
         },
       });

@@ -105,7 +105,13 @@ export function DocketSchedule({
       for (const it of todayItems) {
         const minutes = it.minutes ?? 0;
         if (minutes <= 0) continue;
-        const start = new Date(cursor);
+        let start = new Date(cursor);
+        if (it.pinned && it.scheduledStart) {
+          const pinnedStart = new Date(it.scheduledStart);
+          if (!Number.isNaN(pinnedStart.getTime())) {
+            start = pinnedStart;
+          }
+        }
         const end = new Date(start.getTime() + minutes * 60_000);
         blocks.push({
           itemId: it.id,
@@ -126,18 +132,7 @@ export function DocketSchedule({
           pinned: it.pinned,
           area: it.area ?? it.category,
         });
-        cursor = end;
-      }
-      // Keep existing pin semantics: pin changes its own block time only.
-      for (const b of blocks) {
-        const src = todayItems.find((i) => i.id === b.itemId);
-        if (src?.pinned && src.scheduledStart) {
-          const s = new Date(src.scheduledStart);
-          const e = new Date(s.getTime() + b.minutes * 60_000);
-          b.start = s.toISOString();
-          b.end = e.toISOString();
-          b.pinned = true;
-        }
+        cursor = new Date(Math.max(cursor.getTime(), end.getTime()));
       }
       const stateById = new Map(
         [...counterItems, ...atmItems].map((i) => [
