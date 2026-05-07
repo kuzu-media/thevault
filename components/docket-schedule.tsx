@@ -34,39 +34,95 @@ function buildBlocksFromTodayOrder(
 ): ScheduledBlock[] {
   const { dayStart } = dayScheduleWindow(inputs, new Date());
   const blocks: ScheduledBlock[] = [];
+  const toBucket = (it: Item): ScheduledBlock["bucket"] =>
+    it.box === "ATM"
+      ? "ATM_PICK"
+      : it.urgent && it.must
+        ? "STRESSOR"
+        : it.urgent
+          ? "TIME_SENSITIVE"
+          : it.must
+            ? "MUST_DO"
+            : "OTHER_ADMIN";
+
+  const pinById = new Map<string, Date>();
+  for (const it of todayItems) {
+    if (!it.pinned || !it.scheduledStart) continue;
+    const s = new Date(it.scheduledStart);
+    if (!Number.isNaN(s.getTime())) pinById.set(it.id, s);
+  }
+
+  const pinned = todayItems
+    .filter((it) => pinById.has(it.id) && (it.minutes ?? 0) > 0)
+    .sort(
+      (a, b) =>
+        pinById.get(a.id)!.getTime() - pinById.get(b.id)!.getTime(),
+    );
+
+  const queue = todayItems.filter(
+    (it) => !pinById.has(it.id) && (it.minutes ?? 0) > 0,
+  );
+
+  let q = 0;
   let cursor = new Date(dayStart);
 
-  for (const it of todayItems) {
-    const minutes = it.minutes ?? 0;
-    if (minutes <= 0) continue;
-    let start = new Date(cursor);
-    if (it.pinned && it.scheduledStart) {
-      const pinnedStart = new Date(it.scheduledStart);
-      if (!Number.isNaN(pinnedStart.getTime())) {
-        start = pinnedStart;
-      }
+  for (const p of pinned) {
+    const pStart = pinById.get(p.id)!;
+
+    // Fill open time before this pinned block with non-pinned tasks
+    // in today-order, but only when they fit fully.
+    while (q < queue.length) {
+      const it = queue[q];
+      const minutes = it.minutes ?? 0;
+      const endMs = cursor.getTime() + minutes * 60_000;
+      if (endMs > pStart.getTime()) break;
+      const start = new Date(cursor);
+      const end = new Date(endMs);
+      blocks.push({
+        itemId: it.id,
+        title: it.title,
+        bucket: toBucket(it),
+        minutes,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        pinned: false,
+        area: it.area ?? it.category,
+      });
+      cursor = end;
+      q += 1;
     }
+
+    const minutes = p.minutes ?? 0;
+    const pEnd = new Date(pStart.getTime() + minutes * 60_000);
+    blocks.push({
+      itemId: p.id,
+      title: p.title,
+      bucket: toBucket(p),
+      minutes,
+      start: pStart.toISOString(),
+      end: pEnd.toISOString(),
+      pinned: true,
+      area: p.area ?? p.category,
+    });
+    cursor = new Date(Math.max(cursor.getTime(), pEnd.getTime()));
+  }
+
+  while (q < queue.length) {
+    const it = queue[q++];
+    const minutes = it.minutes ?? 0;
+    const start = new Date(cursor);
     const end = new Date(start.getTime() + minutes * 60_000);
     blocks.push({
       itemId: it.id,
       title: it.title,
-      bucket:
-        it.box === "ATM"
-          ? "ATM_PICK"
-          : it.urgent && it.must
-            ? "STRESSOR"
-            : it.urgent
-              ? "TIME_SENSITIVE"
-              : it.must
-                ? "MUST_DO"
-                : "OTHER_ADMIN",
+      bucket: toBucket(it),
       minutes,
       start: start.toISOString(),
       end: end.toISOString(),
-      pinned: it.pinned,
+      pinned: false,
       area: it.area ?? it.category,
     });
-    cursor = new Date(Math.max(cursor.getTime(), end.getTime()));
+    cursor = end;
   }
 
   return blocks;

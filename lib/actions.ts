@@ -607,7 +607,12 @@ export async function applyAtmBoxBudgets(
       remaining -= minutes;
       const { error: pickErr } = await sb
         .from("items")
-        .update({ today_order: todayOrder })
+        .update({
+          today_order: todayOrder,
+          state: "upcoming",
+          actual_start: null,
+          actual_end: null,
+        })
         .eq("id", row.id);
       if (pickErr) throw new Error(pickErr.message);
       if (remaining <= 0) break;
