@@ -137,8 +137,9 @@ export async function saveDayInputsPartial(
     .eq("vault_id", vaultId)
     .eq("date", parsed.date)
     .maybeSingle();
-  const isFirstSaveToday = !existing;
-  if (isFirstSaveToday) {
+  // Rebuilding the day should always start from a clean "on today" slate,
+  // regardless of whether a day_inputs row already exists.
+  if (parsed.end_of_day !== undefined || parsed.hours_available !== undefined) {
     await sb
       .from("items")
       .update({ today_order: null })
@@ -571,7 +572,18 @@ export async function applyAtmBoxBudgets(
     .eq("box", "ATM")
     .not("today_order", "is", null);
 
-  let todayOrder = 0;
+  const { data: maxToday } = await sb
+    .from("items")
+    .select("today_order")
+    .eq("vault_id", vaultId)
+    .is("deleted_at", null)
+    .not("today_order", "is", null)
+    .order("today_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // ATM picks are intentionally scheduled at the end of the day plan.
+  let todayOrder = Number(maxToday?.today_order ?? 0);
   for (const sel of parsed) {
     let remaining = Math.round(sel.hours * 60);
     if (remaining <= 0) continue;
