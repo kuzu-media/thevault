@@ -198,9 +198,10 @@ export async function saveDayInputsPartial(
     ignoreDuplicates: false,
   });
 
-  // Daily Anchors: auto-place Morning Workout at day start and Lunch at noon.
-  // They are normal today-plan items, so users can still reorder them on Today.
-  if (isFirstSaveToday) {
+  // Daily Anchors: auto-place Morning Workout at current reference time and
+  // Lunch at local noon. Run this whenever step 1 is saved so rebuilding the
+  // day updates anchors even if a day_inputs row already exists.
+  if (parsed.end_of_day !== undefined || parsed.hours_available !== undefined) {
     try {
       const dayEnd = parseTimeOnDate(mergedEnd, parsed.date);
       const dayStart = new Date(

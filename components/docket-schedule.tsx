@@ -28,6 +28,50 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 
+function buildBlocksFromTodayOrder(
+  todayItems: Item[],
+  inputs: DayInputs,
+): ScheduledBlock[] {
+  const { dayStart } = dayScheduleWindow(inputs, new Date());
+  const blocks: ScheduledBlock[] = [];
+  let cursor = new Date(dayStart);
+
+  for (const it of todayItems) {
+    const minutes = it.minutes ?? 0;
+    if (minutes <= 0) continue;
+    let start = new Date(cursor);
+    if (it.pinned && it.scheduledStart) {
+      const pinnedStart = new Date(it.scheduledStart);
+      if (!Number.isNaN(pinnedStart.getTime())) {
+        start = pinnedStart;
+      }
+    }
+    const end = new Date(start.getTime() + minutes * 60_000);
+    blocks.push({
+      itemId: it.id,
+      title: it.title,
+      bucket:
+        it.box === "ATM"
+          ? "ATM_PICK"
+          : it.urgent && it.must
+            ? "STRESSOR"
+            : it.urgent
+              ? "TIME_SENSITIVE"
+              : it.must
+                ? "MUST_DO"
+                : "OTHER_ADMIN",
+      minutes,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      pinned: it.pinned,
+      area: it.area ?? it.category,
+    });
+    cursor = new Date(Math.max(cursor.getTime(), end.getTime()));
+  }
+
+  return blocks;
+}
+
 /** Builds timed blocks in the visitor's local TZ — server-side scheduling uses UTC on Vercel and skews labels by offset (e.g. −4h Eastern). */
 export function DocketSchedule({
   counterItems,
@@ -99,41 +143,7 @@ export function DocketSchedule({
       const todayItems = [...scheduledCounter, ...scheduledAtm]
         .filter((i) => i.todayOrder !== null)
         .sort((a, b) => (a.todayOrder ?? 0) - (b.todayOrder ?? 0));
-      const { dayStart } = dayScheduleWindow(inputs, new Date());
-      const blocks: ScheduledBlock[] = [];
-      let cursor = new Date(dayStart);
-      for (const it of todayItems) {
-        const minutes = it.minutes ?? 0;
-        if (minutes <= 0) continue;
-        let start = new Date(cursor);
-        if (it.pinned && it.scheduledStart) {
-          const pinnedStart = new Date(it.scheduledStart);
-          if (!Number.isNaN(pinnedStart.getTime())) {
-            start = pinnedStart;
-          }
-        }
-        const end = new Date(start.getTime() + minutes * 60_000);
-        blocks.push({
-          itemId: it.id,
-          title: it.title,
-          bucket:
-            it.box === "ATM"
-              ? "ATM_PICK"
-              : it.urgent && it.must
-                ? "STRESSOR"
-                : it.urgent
-                  ? "TIME_SENSITIVE"
-                  : it.must
-                    ? "MUST_DO"
-                    : "OTHER_ADMIN",
-          minutes,
-          start: start.toISOString(),
-          end: end.toISOString(),
-          pinned: it.pinned,
-          area: it.area ?? it.category,
-        });
-        cursor = new Date(Math.max(cursor.getTime(), end.getTime()));
-      }
+      const blocks = buildBlocksFromTodayOrder(todayItems, inputs);
       const stateById = new Map(
         [...counterItems, ...atmItems].map((i) => [
           i.id,
@@ -188,9 +198,16 @@ export function DocketSchedule({
     const newIndex = orderedBlocks.findIndex((b) => b.itemId === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
     const next = arrayMove(orderedBlocks, oldIndex, newIndex);
-    setOrderedBlocks(next);
+    const byId = new Map(
+      [...counterItems, ...atmItems].map((i) => [i.id, i] as const),
+    );
+    const orderedItems = next
+      .map((b) => byId.get(b.itemId))
+      .filter((i): i is Item => !!i);
+    const nextTimed = buildBlocksFromTodayOrder(orderedItems, inputs);
+    setOrderedBlocks(nextTimed);
     startTransition(async () => {
-      await reorderItems(next.map((b) => b.itemId));
+      await reorderItems(nextTimed.map((b) => b.itemId));
     });
   }
 
