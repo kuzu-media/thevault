@@ -43,7 +43,9 @@ export function ScheduleBlock({
 }) {
   const [pending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
   const isDone = state === "done";
+  const doneButtonDisabled = pending || Date.now() < cooldownUntil;
 
   return (
     <div
@@ -71,21 +73,36 @@ export function ScheduleBlock({
             ? "Mark not done"
             : "Mark done — the item stays in your vault"
         }
-        onClick={() =>
+        onClick={() => {
+          if (doneButtonDisabled) return;
+          // Prevent rapid follow-up clicks while rows are reordering.
+          setCooldownUntil(Date.now() + 700);
           startTransition(async () => {
             try {
               await setItemState(
                 block.itemId,
                 isDone ? "upcoming" : "done",
               );
-              if (!isDone) toast.success("Done. Still safe in your vault.");
+              if (!isDone) {
+                toast.success("Done. Still safe in your vault.", {
+                  action: {
+                    label: "Undo",
+                    onClick: () => {
+                      startTransition(async () => {
+                        await setItemState(block.itemId, "upcoming");
+                      });
+                    },
+                  },
+                });
+              }
             } catch (e: any) {
               toast.error(e?.message ?? "Couldn't mark done.");
             }
-          })
-        }
+          });
+        }}
+        disabled={doneButtonDisabled}
         className={clsx(
-          "h-5 w-5 shrink-0 rounded-full border transition",
+          "h-5 w-5 shrink-0 rounded-full border transition disabled:cursor-not-allowed disabled:opacity-60",
           isDone
             ? "border-brass bg-brass"
             : "border-brass/40 hover:border-brass",

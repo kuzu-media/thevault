@@ -20,7 +20,7 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-const DAY_GREETINGS = ["Today", "What we're holding today", "Have fun today"];
+const DAY_GREETINGS = ["Today", "Today is going to be great!", "Have fun today"];
 
 export default async function DocketPage() {
   const date = todayISO();
