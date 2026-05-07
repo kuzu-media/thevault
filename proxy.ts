@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/auth/callback",
   "/auth/reset",
   "/api/capture",
+  "/api/cron/calendar-to-drop",
   "/onboarding",
 ];
 
