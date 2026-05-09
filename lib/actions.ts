@@ -752,6 +752,7 @@ const RecordConfig = BoxConfig.extend({
     .enum([
       "health",
       "books",
+      "home",
       "misc",
       "pcs-projects",
       "qcom-projects",

@@ -15,6 +15,7 @@ function deriveKey(label: string): string {
 const FOLDERS: Array<{ key: NonNullable<RecordType["folder"]>; label: string }> = [
   { key: "health", label: "Health" },
   { key: "books", label: "Books" },
+  { key: "home", label: "HOME" },
   { key: "misc", label: "Misc" },
   { key: "pcs-projects", label: "PCS Projects" },
   { key: "qcom-projects", label: "QCOM Projects" },
