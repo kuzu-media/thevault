@@ -93,11 +93,7 @@ export type RecordType = {
   folder?:
     | "health"
     | "books"
-    | "home"
     | "misc"
-    | "pcs-projects"
-    | "qcom-projects"
-    | "swb-projects"
     | "ecom-ecoship"
     | "friends-family"
     | "home-garden"
@@ -110,11 +106,7 @@ export type RecordType = {
 const RECORD_FOLDERS = new Set([
   "health",
   "books",
-  "home",
   "misc",
-  "pcs-projects",
-  "qcom-projects",
-  "swb-projects",
   "ecom-ecoship",
   "friends-family",
   "home-garden",

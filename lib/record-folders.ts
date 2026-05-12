@@ -3,11 +3,7 @@ import type { RecordType } from "@/lib/categories";
 export type RecordFolderKey =
   | "health"
   | "books"
-  | "home"
   | "misc"
-  | "pcs-projects"
-  | "qcom-projects"
-  | "swb-projects"
   | "ecom-ecoship"
   | "friends-family"
   | "home-garden"
@@ -17,13 +13,9 @@ export type RecordFolderKey =
   | "travel";
 
 export const RECORD_FOLDERS: { key: RecordFolderKey; label: string }[] = [
-  { key: "health", label: "Health" },
-  { key: "books", label: "Books" },
-  { key: "home", label: "HOME" },
+  { key: "health", label: "HEALTH" },
+  { key: "books", label: "BOOKS" },
   { key: "misc", label: "Misc" },
-  { key: "pcs-projects", label: "PCS Projects" },
-  { key: "qcom-projects", label: "QCOM Projects" },
-  { key: "swb-projects", label: "SWB Projects" },
   { key: "ecom-ecoship", label: "ECOM & ECOSHIP" },
   { key: "friends-family", label: "FRIENDS & FAMILY" },
   { key: "home-garden", label: "HOME & GARDEN" },
@@ -41,11 +33,7 @@ export function groupRecordsByFolder(records: RecordType[]): Record<RecordFolder
   const grouped: Record<RecordFolderKey, RecordType[]> = {
     health: [],
     books: [],
-    home: [],
     misc: [],
-    "pcs-projects": [],
-    "qcom-projects": [],
-    "swb-projects": [],
     "ecom-ecoship": [],
     "friends-family": [],
     "home-garden": [],
