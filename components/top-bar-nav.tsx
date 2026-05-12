@@ -15,6 +15,7 @@ const ITEMS = [
     hint: "g e",
     match: (p: string) => p === "/records" || p.startsWith("/records/"),
   },
+  { href: "/calendar", label: "Calendar", hint: "g k", match: (p: string) => p.startsWith("/calendar") },
   { href: "/settings", label: "Settings", hint: "g s", match: (p: string) => p.startsWith("/settings") },
 ];
 

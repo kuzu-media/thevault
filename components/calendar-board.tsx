@@ -1,0 +1,148 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
+import type { Box } from "@/lib/categories";
+import type { CalendarWeek } from "@/lib/calendar-planning";
+import {
+  setWeekProject,
+  setDayProject,
+} from "@/lib/calendar-planning-actions";
+import { CalendarWeekRow } from "@/components/calendar-week-row";
+
+// We pre-compute weeks server-side and pass them in. Locally we apply
+// optimistic updates to the same array; the server actions then revalidate
+// the page, which refreshes initialWeeks on the next navigation. If a
+// server write fails we revert and toast.
+
+export function CalendarBoard({
+  initialWeeks,
+  boxes,
+}: {
+  initialWeeks: CalendarWeek[];
+  boxes: Box[];
+}) {
+  const [weeks, setWeeks] = useState<CalendarWeek[]>(initialWeeks);
+  const [, startTransition] = useTransition();
+  const todayCellRef = useRef<HTMLElement | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Keep local state in sync with fresh server data (e.g. after a route
+  // refresh that pulls a new initialWeeks).
+  useEffect(() => {
+    setWeeks(initialWeeks);
+  }, [initialWeeks]);
+
+  // Scroll today into view on first paint.
+  useEffect(() => {
+    if (scrolled) return;
+    if (todayCellRef.current) {
+      todayCellRef.current.scrollIntoView({
+        block: "center",
+        behavior: "auto",
+      });
+      setScrolled(true);
+    }
+  }, [scrolled]);
+
+  function updateWeekLocal(weekStart: string, boxKey: string | null) {
+    setWeeks((prev) =>
+      prev.map((w) => {
+        if (w.weekStart !== weekStart) return w;
+        const newDays = w.days.map((d) => ({
+          ...d,
+          boxKey: d.overridden ? d.boxKey : boxKey,
+        }));
+        return { ...w, boxKey, days: newDays };
+      }),
+    );
+  }
+
+  function updateDayLocal(date: string, boxKey: string | null) {
+    setWeeks((prev) =>
+      prev.map((w) => {
+        if (!w.days.some((d) => d.date === date)) return w;
+        const newDays = w.days.map((d) => {
+          if (d.date !== date) return d;
+          if (boxKey === null) {
+            return { ...d, overridden: false, boxKey: w.boxKey };
+          }
+          return { ...d, overridden: true, boxKey };
+        });
+        return { ...w, days: newDays };
+      }),
+    );
+  }
+
+  function onSetWeek(weekStart: string, boxKey: string | null) {
+    const snapshot = weeks;
+    updateWeekLocal(weekStart, boxKey);
+    startTransition(async () => {
+      try {
+        await setWeekProject(weekStart, boxKey);
+      } catch (e: unknown) {
+        setWeeks(snapshot);
+        toast.error(
+          e instanceof Error && e.message
+            ? `Couldn't save: ${e.message}`
+            : "Couldn't save week.",
+        );
+      }
+    });
+  }
+
+  function onSetDay(date: string, boxKey: string | null) {
+    const snapshot = weeks;
+    updateDayLocal(date, boxKey);
+    startTransition(async () => {
+      try {
+        await setDayProject(date, boxKey);
+      } catch (e: unknown) {
+        setWeeks(snapshot);
+        toast.error(
+          e instanceof Error && e.message
+            ? `Couldn't save: ${e.message}`
+            : "Couldn't save day.",
+        );
+      }
+    });
+  }
+
+  if (boxes.length === 0) {
+    return (
+      <div className="mt-8 rounded-sm border border-dashed border-vault-line bg-vault-panel/40 p-6 text-center">
+        <p className="text-ink-dim">
+          You haven&apos;t set up any boxes yet — those are the projects you
+          can block out weeks for.
+        </p>
+        <a
+          href="/settings/boxes"
+          className="mt-3 inline-block rounded-sm border border-brass/40 px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] text-brass hover:border-brass"
+        >
+          + ADD BOXES
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 space-y-3">
+      {weeks.map((w) => (
+        <CalendarWeekRow
+          key={w.weekStart}
+          week={w}
+          boxes={boxes}
+          todayRef={
+            w.isCurrentWeek
+              ? (el) => {
+                  todayCellRef.current = el;
+                }
+              : undefined
+          }
+          onSetWeek={(boxKey) => onSetWeek(w.weekStart, boxKey)}
+          onSetDay={onSetDay}
+        />
+      ))}
+    </div>
+  );
+}

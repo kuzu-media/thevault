@@ -1,0 +1,187 @@
+"use client";
+
+import clsx from "clsx";
+import type { Box } from "@/lib/categories";
+import type { CalendarDay, CalendarWeek } from "@/lib/calendar-planning";
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function hexToRgba(hex: string | undefined, alpha: number): string | undefined {
+  if (!hex) return undefined;
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  if (full.length !== 6) return undefined;
+  const n = parseInt(full, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function CalendarWeekRow({
+  week,
+  boxes,
+  todayRef,
+  onSetWeek,
+  onSetDay,
+}: {
+  week: CalendarWeek;
+  boxes: Box[];
+  todayRef?: (el: HTMLElement | null) => void;
+  onSetWeek: (boxKey: string | null) => void;
+  onSetDay: (date: string, boxKey: string | null) => void;
+}) {
+  const boxesByKey = new Map(boxes.map((b) => [b.key, b]));
+  const weekBox = week.boxKey ? boxesByKey.get(week.boxKey) ?? null : null;
+
+  return (
+    <section
+      className={clsx(
+        "rounded-sm border border-vault-line bg-vault-panel/30 px-3 py-3 md:px-4 md:py-4",
+        week.isCurrentWeek && "ring-1 ring-brass/40",
+      )}
+    >
+      <header className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-baseline gap-3">
+          <span className="font-mono text-[11px] tracking-[0.18em] text-ink-mute">
+            {week.weekLabel.toUpperCase()}
+          </span>
+          {week.isCurrentWeek && (
+            <span className="plaque text-[9px]">THIS WEEK</span>
+          )}
+        </div>
+
+        <label className="flex items-center gap-2 text-[11px] text-ink-mute">
+          <span className="font-mono tracking-[0.18em]">PROJECT</span>
+          <select
+            value={week.boxKey ?? ""}
+            onChange={(e) => onSetWeek(e.target.value || null)}
+            className="rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-[12px] text-ink outline-none focus:border-brass"
+            style={{
+              backgroundColor: hexToRgba(weekBox?.color, 0.12),
+              borderColor: hexToRgba(weekBox?.color, 0.5),
+            }}
+          >
+            <option value="">— no project —</option>
+            {boxes.map((b) => (
+              <option key={b.key} value={b.key}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </header>
+
+      <div className="mt-3 grid grid-cols-7 gap-1.5">
+        {week.days.map((day) => (
+          <DayCell
+            key={day.date}
+            day={day}
+            weekBox={weekBox}
+            boxes={boxes}
+            todayRef={day.isToday ? todayRef : undefined}
+            onChange={(boxKey) => onSetDay(day.date, boxKey)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DayCell({
+  day,
+  weekBox,
+  boxes,
+  todayRef,
+  onChange,
+}: {
+  day: CalendarDay;
+  weekBox: Box | null;
+  boxes: Box[];
+  todayRef?: (el: HTMLElement | null) => void;
+  onChange: (boxKey: string | null) => void;
+}) {
+  const boxesByKey = new Map(boxes.map((b) => [b.key, b]));
+  const activeBox = day.boxKey ? boxesByKey.get(day.boxKey) ?? null : null;
+  const color = activeBox?.color;
+  const isWeekend = day.dayOfWeek === 0 || day.dayOfWeek === 6;
+
+  return (
+    <div
+      ref={todayRef ?? undefined}
+      className={clsx(
+        "relative flex min-h-[78px] flex-col gap-1 overflow-hidden rounded-sm border px-2 py-1.5 transition",
+        "hover:border-brass/60",
+        day.isToday ? "border-brass" : "border-vault-line",
+        !activeBox && isWeekend && "bg-vault-bg/40",
+      )}
+      style={
+        activeBox
+          ? {
+              backgroundColor: hexToRgba(color, 0.18),
+              borderColor: day.isToday
+                ? undefined
+                : hexToRgba(color, 0.5),
+            }
+          : undefined
+      }
+    >
+      <div className="flex items-baseline justify-between">
+        <span className="font-mono text-[9px] tracking-[0.16em] text-ink-mute">
+          {DAY_NAMES[day.dayOfWeek].toUpperCase()}
+        </span>
+        <span
+          className={clsx(
+            "font-serif text-[18px] leading-none",
+            day.isToday ? "text-brass" : "text-ink",
+          )}
+        >
+          {day.dayOfMonth}
+        </span>
+      </div>
+
+      <div className="mt-auto min-h-[14px] text-[10px] leading-tight">
+        {activeBox ? (
+          <span
+            className={clsx(
+              "font-mono tracking-[0.06em]",
+              day.overridden ? "text-ink" : "text-ink-dim",
+            )}
+            style={{ color: hexToRgba(color, 0.95) }}
+          >
+            {activeBox.label}
+            {day.overridden && weekBox && (
+              <span className="ml-1 text-ink-mute" title={`Overrides week (${weekBox.label})`}>
+                ✱
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="text-ink-mute/60">—</span>
+        )}
+      </div>
+
+      {/* Native select overlays the cell — tapping anywhere opens the
+          picker. Mobile gets a native wheel for free. */}
+      <select
+        value={day.overridden ? day.boxKey ?? "" : "__inherit__"}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === "__inherit__") onChange(null);
+          else onChange(v || null);
+        }}
+        aria-label={`Project for ${day.date}`}
+        className="absolute inset-0 cursor-pointer appearance-none bg-transparent text-transparent opacity-0"
+      >
+        <option value="__inherit__">
+          {weekBox ? `Same as week — ${weekBox.label}` : "No project"}
+        </option>
+        {boxes.map((b) => (
+          <option key={b.key} value={b.key}>
+            {b.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
