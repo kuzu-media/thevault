@@ -23,10 +23,38 @@ async function requireUserAndVault() {
 
 const YmdSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const BoxKeySchema = z.string().min(1).max(64).nullable();
+const NoteSchema = z.string().max(2000).nullable();
+
+type SupabaseClient = Awaited<ReturnType<typeof supabaseServer>>;
+
+// Drop an entirely-empty week row (no project AND no note) so we don't
+// accumulate ghost rows after the user clears everything.
+async function cleanupEmptyWeek(
+  sb: SupabaseClient,
+  vaultId: string,
+  weekStart: string,
+) {
+  const { data: row } = await sb
+    .from("calendar_week_assignments")
+    .select("box_key, note")
+    .eq("vault_id", vaultId)
+    .eq("week_start", weekStart)
+    .maybeSingle();
+  if (!row) return;
+  const hasBox = !!row.box_key;
+  const hasNote = typeof row.note === "string" && row.note.length > 0;
+  if (!hasBox && !hasNote) {
+    await sb
+      .from("calendar_week_assignments")
+      .delete()
+      .eq("vault_id", vaultId)
+      .eq("week_start", weekStart);
+  }
+}
 
 // Set (or clear) the project for an entire week. Pass boxKey = null to
-// unassign the week. Day overrides for that week are preserved — they
-// continue to show through.
+// unassign the week — the row is kept if the week has a note. Day
+// overrides for that week are preserved either way.
 export async function setWeekProject(
   weekStart: string,
   boxKey: string | null,
@@ -36,25 +64,43 @@ export async function setWeekProject(
   const normalized = sundayOfYmd(ws);
   const { sb, vaultId } = await requireUserAndVault();
 
-  if (bk === null || bk === "") {
-    const { error } = await sb
-      .from("calendar_week_assignments")
-      .delete()
-      .eq("vault_id", vaultId)
-      .eq("week_start", normalized);
-    if (error) throw new Error(error.message);
-  } else {
-    const { error } = await sb.from("calendar_week_assignments").upsert(
-      {
-        vault_id: vaultId,
-        week_start: normalized,
-        box_key: bk,
-        modified_at: new Date().toISOString(),
-      },
-      { onConflict: "vault_id,week_start", ignoreDuplicates: false },
-    );
-    if (error) throw new Error(error.message);
-  }
+  const { error } = await sb.from("calendar_week_assignments").upsert(
+    {
+      vault_id: vaultId,
+      week_start: normalized,
+      box_key: bk && bk !== "" ? bk : null,
+      modified_at: new Date().toISOString(),
+    },
+    { onConflict: "vault_id,week_start", ignoreDuplicates: false },
+  );
+  if (error) throw new Error(error.message);
+
+  if (!bk || bk === "") await cleanupEmptyWeek(sb, vaultId, normalized);
+
+  revalidatePath("/calendar");
+}
+
+// Set (or clear) the note for a week. Pass note = null or "" to clear.
+// Project (if any) is preserved.
+export async function setWeekNote(weekStart: string, note: string | null) {
+  const ws = YmdSchema.parse(weekStart);
+  const n = NoteSchema.parse(note);
+  const normalized = sundayOfYmd(ws);
+  const trimmed = n?.trim() ?? "";
+  const { sb, vaultId } = await requireUserAndVault();
+
+  const { error } = await sb.from("calendar_week_assignments").upsert(
+    {
+      vault_id: vaultId,
+      week_start: normalized,
+      note: trimmed === "" ? null : trimmed,
+      modified_at: new Date().toISOString(),
+    },
+    { onConflict: "vault_id,week_start", ignoreDuplicates: false },
+  );
+  if (error) throw new Error(error.message);
+
+  if (trimmed === "") await cleanupEmptyWeek(sb, vaultId, normalized);
 
   revalidatePath("/calendar");
 }

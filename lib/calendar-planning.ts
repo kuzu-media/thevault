@@ -20,6 +20,7 @@ export type CalendarWeek = {
   weekLabel: string;
   isCurrentWeek: boolean;
   boxKey: string | null;
+  note: string | null;
   days: CalendarDay[];
 };
 
@@ -105,7 +106,8 @@ export async function getCalendarRange(opts: {
   const lastDayInclusive = new Date(lastSunday);
   lastDayInclusive.setDate(lastDayInclusive.getDate() + 6);
 
-  const weekByStart = new Map<string, string>();
+  const weekBoxByStart = new Map<string, string>();
+  const weekNoteByStart = new Map<string, string>();
   const overrideByDate = new Map<string, string>();
 
   if (envReady()) {
@@ -117,7 +119,7 @@ export async function getCalendarRange(opts: {
     const [{ data: weeks }, { data: overrides }] = await Promise.all([
       sb
         .from("calendar_week_assignments")
-        .select("week_start, box_key")
+        .select("week_start, box_key, note")
         .gte("week_start", firstYmd)
         .lte("week_start", lastWeekYmd),
       sb
@@ -128,7 +130,11 @@ export async function getCalendarRange(opts: {
     ]);
 
     for (const w of weeks ?? []) {
-      if (w?.week_start && w?.box_key) weekByStart.set(w.week_start, w.box_key);
+      if (!w?.week_start) continue;
+      if (w.box_key) weekBoxByStart.set(w.week_start, w.box_key);
+      if (typeof w.note === "string" && w.note.length > 0) {
+        weekNoteByStart.set(w.week_start, w.note);
+      }
     }
     for (const o of overrides ?? []) {
       if (o?.date && o?.box_key) overrideByDate.set(o.date, o.box_key);
@@ -140,7 +146,8 @@ export async function getCalendarRange(opts: {
     const ws = new Date(firstSunday);
     ws.setDate(ws.getDate() + 7 * i);
     const wsYmd = ymd(ws);
-    const weekBox = weekByStart.get(wsYmd) ?? null;
+    const weekBox = weekBoxByStart.get(wsYmd) ?? null;
+    const weekNote = weekNoteByStart.get(wsYmd) ?? null;
 
     const days: CalendarDay[] = [];
     for (let d = 0; d < 7; d++) {
@@ -163,6 +170,7 @@ export async function getCalendarRange(opts: {
       weekLabel: formatWeekLabel(ws),
       isCurrentWeek: wsYmd === ymd(currentSunday),
       boxKey: weekBox,
+      note: weekNote,
       days,
     });
   }

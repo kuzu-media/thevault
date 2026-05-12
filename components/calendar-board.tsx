@@ -7,6 +7,7 @@ import type { CalendarWeek } from "@/lib/calendar-planning";
 import {
   setWeekProject,
   setDayProject,
+  setWeekNote,
 } from "@/lib/calendar-planning-actions";
 import { CalendarWeekRow } from "@/components/calendar-week-row";
 
@@ -108,6 +109,29 @@ export function CalendarBoard({
     });
   }
 
+  function updateNoteLocal(weekStart: string, note: string | null) {
+    setWeeks((prev) =>
+      prev.map((w) => (w.weekStart === weekStart ? { ...w, note } : w)),
+    );
+  }
+
+  function onSetNote(weekStart: string, note: string | null) {
+    const snapshot = weeks;
+    updateNoteLocal(weekStart, note);
+    startTransition(async () => {
+      try {
+        await setWeekNote(weekStart, note);
+      } catch (e: unknown) {
+        setWeeks(snapshot);
+        toast.error(
+          e instanceof Error && e.message
+            ? `Couldn't save: ${e.message}`
+            : "Couldn't save note.",
+        );
+      }
+    });
+  }
+
   if (boxes.length === 0) {
     return (
       <div className="mt-8 rounded-sm border border-dashed border-vault-line bg-vault-panel/40 p-6 text-center">
@@ -141,6 +165,7 @@ export function CalendarBoard({
           }
           onSetWeek={(boxKey) => onSetWeek(w.weekStart, boxKey)}
           onSetDay={onSetDay}
+          onSetNote={(note) => onSetNote(w.weekStart, note)}
         />
       ))}
     </div>

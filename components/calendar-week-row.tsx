@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import type { Box } from "@/lib/categories";
 import type { CalendarDay, CalendarWeek } from "@/lib/calendar-planning";
@@ -24,15 +25,30 @@ export function CalendarWeekRow({
   todayRef,
   onSetWeek,
   onSetDay,
+  onSetNote,
 }: {
   week: CalendarWeek;
   boxes: Box[];
   todayRef?: (el: HTMLElement | null) => void;
   onSetWeek: (boxKey: string | null) => void;
   onSetDay: (date: string, boxKey: string | null) => void;
+  onSetNote: (note: string | null) => void;
 }) {
   const boxesByKey = new Map(boxes.map((b) => [b.key, b]));
   const weekBox = week.boxKey ? boxesByKey.get(week.boxKey) ?? null : null;
+
+  // Local draft so typing feels instant; we flush to the server on blur.
+  const [noteDraft, setNoteDraft] = useState<string>(week.note ?? "");
+  useEffect(() => {
+    setNoteDraft(week.note ?? "");
+  }, [week.note]);
+
+  function commitNote() {
+    const next = noteDraft.trim();
+    const current = (week.note ?? "").trim();
+    if (next === current) return;
+    onSetNote(next === "" ? null : next);
+  }
 
   return (
     <section
@@ -42,7 +58,7 @@ export function CalendarWeekRow({
       )}
     >
       <header className="flex flex-wrap items-center gap-3">
-        <div className="flex min-w-0 flex-1 items-baseline gap-3">
+        <div className="flex shrink-0 items-baseline gap-3">
           <span className="font-mono text-[11px] tracking-[0.18em] text-ink-mute">
             {week.weekLabel.toUpperCase()}
           </span>
@@ -50,6 +66,21 @@ export function CalendarWeekRow({
             <span className="plaque text-[9px]">THIS WEEK</span>
           )}
         </div>
+
+        <input
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          onBlur={commitNote}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              (e.currentTarget as HTMLInputElement).blur();
+            }
+          }}
+          placeholder="Notes for the week…"
+          aria-label={`Notes for ${week.weekLabel}`}
+          className="min-w-[140px] flex-1 rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 text-[13px] italic text-ink-dim outline-none placeholder:text-ink-mute/50 focus:border-brass focus:not-italic focus:text-ink"
+        />
 
         <label className="flex items-center gap-2 text-[11px] text-ink-mute">
           <span className="font-mono tracking-[0.18em]">PROJECT</span>
