@@ -7,6 +7,23 @@ import type { CalendarDay, CalendarWeek } from "@/lib/calendar-planning";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Boxes the user doesn't want offered as week/day projects on the calendar.
+// They still exist on Counter/ATM/Vault — this only hides them from the
+// calendar's pickers. Matched on label, case-insensitive, whitespace-collapsed.
+const CALENDAR_HIDDEN_BOX_LABELS = new Set(["health", "read / watch"]);
+
+function normalizeLabel(label: string): string {
+  return label.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function pickableBoxesFor(boxes: Box[], keepKey: string | null): Box[] {
+  return boxes.filter(
+    (b) =>
+      !CALENDAR_HIDDEN_BOX_LABELS.has(normalizeLabel(b.label)) ||
+      b.key === keepKey,
+  );
+}
+
 function hexToRgba(hex: string | undefined, alpha: number): string | undefined {
   if (!hex) return undefined;
   const h = hex.replace("#", "");
@@ -36,6 +53,7 @@ export function CalendarWeekRow({
 }) {
   const boxesByKey = new Map(boxes.map((b) => [b.key, b]));
   const weekBox = week.boxKey ? boxesByKey.get(week.boxKey) ?? null : null;
+  const weekPickableBoxes = pickableBoxesFor(boxes, week.boxKey);
 
   // Local draft so typing feels instant; we flush to the server on blur.
   const [noteDraft, setNoteDraft] = useState<string>(week.note ?? "");
@@ -94,7 +112,7 @@ export function CalendarWeekRow({
             }}
           >
             <option value="">— no project —</option>
-            {boxes.map((b) => (
+            {weekPickableBoxes.map((b) => (
               <option key={b.key} value={b.key}>
                 {b.label}
               </option>
@@ -136,6 +154,10 @@ function DayCell({
   const activeBox = day.boxKey ? boxesByKey.get(day.boxKey) ?? null : null;
   const color = activeBox?.color;
   const isWeekend = day.dayOfWeek === 0 || day.dayOfWeek === 6;
+  const dayPickableBoxes = pickableBoxesFor(
+    boxes,
+    day.overridden ? day.boxKey : null,
+  );
 
   return (
     <div
@@ -207,7 +229,7 @@ function DayCell({
         <option value="__inherit__">
           {weekBox ? `Same as week — ${weekBox.label}` : "No project"}
         </option>
-        {boxes.map((b) => (
+        {dayPickableBoxes.map((b) => (
           <option key={b.key} value={b.key}>
             {b.label}
           </option>
