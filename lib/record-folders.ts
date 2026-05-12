@@ -15,7 +15,7 @@ export type RecordFolderKey =
 export const RECORD_FOLDERS: { key: RecordFolderKey; label: string }[] = [
   { key: "health", label: "HEALTH" },
   { key: "books", label: "BOOKS" },
-  { key: "misc", label: "Misc" },
+  { key: "misc", label: "MISC" },
   { key: "ecom-ecoship", label: "ECOM & ECOSHIP" },
   { key: "friends-family", label: "FRIENDS & FAMILY" },
   { key: "home-garden", label: "HOME & GARDEN" },
