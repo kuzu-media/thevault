@@ -97,7 +97,14 @@ export type RecordType = {
     | "misc"
     | "pcs-projects"
     | "qcom-projects"
-    | "swb-projects";
+    | "swb-projects"
+    | "ecom-ecoship"
+    | "friends-family"
+    | "home-garden"
+    | "stonewater-books"
+    | "leisure"
+    | "writing"
+    | "travel";
 };
 
 const RECORD_FOLDERS = new Set([
@@ -108,6 +115,13 @@ const RECORD_FOLDERS = new Set([
   "pcs-projects",
   "qcom-projects",
   "swb-projects",
+  "ecom-ecoship",
+  "friends-family",
+  "home-garden",
+  "stonewater-books",
+  "leisure",
+  "writing",
+  "travel",
 ]);
 
 function normalizeRecord(raw: any): RecordType | null {

@@ -20,6 +20,13 @@ const FOLDERS: Array<{ key: NonNullable<RecordType["folder"]>; label: string }> 
   { key: "pcs-projects", label: "PCS Projects" },
   { key: "qcom-projects", label: "QCOM Projects" },
   { key: "swb-projects", label: "SWB Projects" },
+  { key: "ecom-ecoship", label: "ECOM & ECOSHIP" },
+  { key: "friends-family", label: "FRIENDS & FAMILY" },
+  { key: "home-garden", label: "HOME & GARDEN" },
+  { key: "stonewater-books", label: "STONEWATER BOOKS" },
+  { key: "leisure", label: "LEISURE" },
+  { key: "writing", label: "WRITING" },
+  { key: "travel", label: "TRAVEL" },
 ];
 
 export function RecordsSettingsEditor({

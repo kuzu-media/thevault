@@ -757,6 +757,13 @@ const RecordConfig = BoxConfig.extend({
       "pcs-projects",
       "qcom-projects",
       "swb-projects",
+      "ecom-ecoship",
+      "friends-family",
+      "home-garden",
+      "stonewater-books",
+      "leisure",
+      "writing",
+      "travel",
     ])
     .optional(),
 });

@@ -7,7 +7,14 @@ export type RecordFolderKey =
   | "misc"
   | "pcs-projects"
   | "qcom-projects"
-  | "swb-projects";
+  | "swb-projects"
+  | "ecom-ecoship"
+  | "friends-family"
+  | "home-garden"
+  | "stonewater-books"
+  | "leisure"
+  | "writing"
+  | "travel";
 
 export const RECORD_FOLDERS: { key: RecordFolderKey; label: string }[] = [
   { key: "health", label: "Health" },
@@ -17,6 +24,13 @@ export const RECORD_FOLDERS: { key: RecordFolderKey; label: string }[] = [
   { key: "pcs-projects", label: "PCS Projects" },
   { key: "qcom-projects", label: "QCOM Projects" },
   { key: "swb-projects", label: "SWB Projects" },
+  { key: "ecom-ecoship", label: "ECOM & ECOSHIP" },
+  { key: "friends-family", label: "FRIENDS & FAMILY" },
+  { key: "home-garden", label: "HOME & GARDEN" },
+  { key: "stonewater-books", label: "STONEWATER BOOKS" },
+  { key: "leisure", label: "LEISURE" },
+  { key: "writing", label: "WRITING" },
+  { key: "travel", label: "TRAVEL" },
 ];
 
 export function folderForRecord(record: RecordType): RecordFolderKey {
@@ -32,6 +46,13 @@ export function groupRecordsByFolder(records: RecordType[]): Record<RecordFolder
     "pcs-projects": [],
     "qcom-projects": [],
     "swb-projects": [],
+    "ecom-ecoship": [],
+    "friends-family": [],
+    "home-garden": [],
+    "stonewater-books": [],
+    leisure: [],
+    writing: [],
+    travel: [],
   };
   for (const r of records) grouped[folderForRecord(r)].push(r);
   return grouped;
