@@ -9,7 +9,7 @@ import { CalendarBoard } from "@/components/calendar-board";
 export default async function CalendarPage() {
   const [boxes, weeks] = await Promise.all([
     getBoxes(),
-    getCalendarRange({ weeksBefore: 2, weeksAfter: 16 }),
+    getCalendarRange({ weeksBefore: 13, weeksAfter: 16 }),
   ]);
 
   return (
