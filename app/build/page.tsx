@@ -7,11 +7,7 @@ import { classify } from "@/lib/daily-plan";
 import { getBoxes, getEnergies } from "@/lib/categories";
 import { BuildWizard } from "@/components/build-wizard";
 import type { DayInputs } from "@/lib/types";
-
-function todayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+import { vaultTodayYmd } from "@/lib/vault-day";
 
 export default async function BuildDayPage({
   searchParams,
@@ -19,7 +15,7 @@ export default async function BuildDayPage({
   searchParams: Promise<{ step?: string }>;
 }) {
   const { step: stepParam } = await searchParams;
-  const date = todayISO();
+  const date = vaultTodayYmd();
   let s = Number(stepParam ?? 1);
   if (!Number.isFinite(s) || s < 1) s = 1;
   const step = Math.max(1, Math.min(4, s));

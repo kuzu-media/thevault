@@ -14,16 +14,12 @@ import { UnsealGlow } from "@/components/unseal-glow";
 import type { DayInputs } from "@/lib/types";
 import { VAULT_SKIP_DROP_LANDING_COOKIE } from "@/lib/vault-nav";
 import { BuildPromptGreeting } from "@/components/build-prompt-greeting";
-
-function todayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+import { vaultTodayYmd, vaultZonedDayOfMonth } from "@/lib/vault-day";
 
 const DAY_GREETINGS = ["Today", "Today is going to be great!", "Have fun today"];
 
 export default async function DocketPage() {
-  const date = todayISO();
+  const date = vaultTodayYmd();
   const cookieStore = await cookies();
   const skipDropLanding =
     cookieStore.get(VAULT_SKIP_DROP_LANDING_COOKIE)?.value === "1";
@@ -55,7 +51,8 @@ export default async function DocketPage() {
     endOfDay: dayRow.end_of_day,
   };
 
-  const greeting = DAY_GREETINGS[new Date().getDate() % DAY_GREETINGS.length];
+  const greeting =
+    DAY_GREETINGS[vaultZonedDayOfMonth() % DAY_GREETINGS.length];
 
   return (
     <div className="mx-auto max-w-[820px] px-4 py-6 md:px-10 md:py-10">
