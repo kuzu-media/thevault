@@ -5,6 +5,13 @@ import clsx from "clsx";
 import type { Box } from "@/lib/categories";
 import type { CalendarDay, CalendarWeek } from "@/lib/calendar-planning";
 
+// Three intents the day picker can express. The board fans these out to
+// different server actions.
+export type DayChange =
+  | { kind: "inherit" }
+  | { kind: "unassigned" }
+  | { kind: "box"; boxKey: string };
+
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Boxes the user doesn't want offered as week/day projects on the calendar.
@@ -48,7 +55,7 @@ export function CalendarWeekRow({
   boxes: Box[];
   todayRef?: (el: HTMLElement | null) => void;
   onSetWeek: (boxKey: string | null) => void;
-  onSetDay: (date: string, boxKey: string | null) => void;
+  onSetDay: (date: string, action: DayChange) => void;
   onSetNote: (note: string | null) => void;
 }) {
   const boxesByKey = new Map(boxes.map((b) => [b.key, b]));
@@ -129,7 +136,7 @@ export function CalendarWeekRow({
             weekBox={weekBox}
             boxes={boxes}
             todayRef={day.isToday ? todayRef : undefined}
-            onChange={(boxKey) => onSetDay(day.date, boxKey)}
+            onChange={(action) => onSetDay(day.date, action)}
           />
         ))}
       </div>
@@ -148,12 +155,13 @@ function DayCell({
   weekBox: Box | null;
   boxes: Box[];
   todayRef?: (el: HTMLElement | null) => void;
-  onChange: (boxKey: string | null) => void;
+  onChange: (action: DayChange) => void;
 }) {
   const boxesByKey = new Map(boxes.map((b) => [b.key, b]));
   const activeBox = day.boxKey ? boxesByKey.get(day.boxKey) ?? null : null;
   const color = activeBox?.color;
   const isWeekend = day.dayOfWeek === 0 || day.dayOfWeek === 6;
+  const explicitlyUnassigned = day.overridden && day.boxKey === null;
   const dayPickableBoxes = pickableBoxesFor(
     boxes,
     day.overridden ? day.boxKey : null,
@@ -165,7 +173,11 @@ function DayCell({
       className={clsx(
         "relative flex min-h-[78px] flex-col gap-1 overflow-hidden rounded-sm border px-2 py-1.5 transition",
         "hover:border-brass/60",
-        day.isToday ? "border-brass" : "border-vault-line",
+        day.isToday
+          ? "border-brass"
+          : explicitlyUnassigned
+            ? "border-dashed border-vault-line-2"
+            : "border-vault-line",
         !activeBox && isWeekend && "bg-vault-bg/40",
       )}
       style={
@@ -209,6 +221,13 @@ function DayCell({
               </span>
             )}
           </span>
+        ) : explicitlyUnassigned && weekBox ? (
+          <span
+            className="font-mono tracking-[0.06em] text-ink-mute"
+            title={`Off — overrides week (${weekBox.label})`}
+          >
+            — <span className="ml-0.5">✱</span>
+          </span>
         ) : (
           <span className="text-ink-mute/60">—</span>
         )}
@@ -217,11 +236,18 @@ function DayCell({
       {/* Native select overlays the cell — tapping anywhere opens the
           picker. Mobile gets a native wheel for free. */}
       <select
-        value={day.overridden ? day.boxKey ?? "" : "__inherit__"}
+        value={
+          !day.overridden
+            ? "__inherit__"
+            : explicitlyUnassigned
+              ? "__unassigned__"
+              : (day.boxKey ?? "__inherit__")
+        }
         onChange={(e) => {
           const v = e.target.value;
-          if (v === "__inherit__") onChange(null);
-          else onChange(v || null);
+          if (v === "__inherit__") onChange({ kind: "inherit" });
+          else if (v === "__unassigned__") onChange({ kind: "unassigned" });
+          else onChange({ kind: "box", boxKey: v });
         }}
         aria-label={`Project for ${day.date}`}
         className="absolute inset-0 cursor-pointer appearance-none bg-transparent text-transparent opacity-0"
@@ -229,6 +255,9 @@ function DayCell({
         <option value="__inherit__">
           {weekBox ? `Same as week — ${weekBox.label}` : "No project"}
         </option>
+        {weekBox && (
+          <option value="__unassigned__">No project — just this day</option>
+        )}
         {dayPickableBoxes.map((b) => (
           <option key={b.key} value={b.key}>
             {b.label}

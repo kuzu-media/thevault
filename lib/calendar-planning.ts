@@ -111,6 +111,9 @@ export async function getCalendarRange(opts: {
   const weekBoxByStart = new Map<string, string>();
   const weekNoteByStart = new Map<string, string>();
   const overrideByDate = new Map<string, string>();
+  // Days with an override row whose box_key is NULL — i.e. "off, just this
+  // day" even when the surrounding week has a project.
+  const unassignedOverrideDates = new Set<string>();
 
   if (envReady()) {
     const sb = await supabaseServer();
@@ -139,7 +142,9 @@ export async function getCalendarRange(opts: {
       }
     }
     for (const o of overrides ?? []) {
-      if (o?.date && o?.box_key) overrideByDate.set(o.date, o.box_key);
+      if (!o?.date) continue;
+      if (o.box_key) overrideByDate.set(o.date, o.box_key);
+      else unassignedOverrideDates.add(o.date);
     }
   }
 
@@ -156,14 +161,17 @@ export async function getCalendarRange(opts: {
       const day = new Date(ws);
       day.setDate(day.getDate() + d);
       const dYmd = ymd(day);
-      const override = overrideByDate.get(dYmd) ?? null;
+      const boxOverride = overrideByDate.get(dYmd) ?? null;
+      const explicitlyUnassigned = unassignedOverrideDates.has(dYmd);
+      const overridden = explicitlyUnassigned || boxOverride !== null;
+      const boxKey = explicitlyUnassigned ? null : (boxOverride ?? weekBox);
       days.push({
         date: dYmd,
         dayOfMonth: day.getDate(),
         dayOfWeek: day.getDay(),
         isToday: dYmd === todayYmd,
-        boxKey: override ?? weekBox,
-        overridden: override !== null,
+        boxKey,
+        overridden,
       });
     }
 

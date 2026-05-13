@@ -7,9 +7,14 @@ import type { CalendarWeek } from "@/lib/calendar-planning";
 import {
   setWeekProject,
   setDayProject,
+  clearDayOverride,
+  setDayUnassigned,
   setWeekNote,
 } from "@/lib/calendar-planning-actions";
-import { CalendarWeekRow } from "@/components/calendar-week-row";
+import {
+  CalendarWeekRow,
+  type DayChange,
+} from "@/components/calendar-week-row";
 import { CalendarCounts } from "@/components/calendar-counts";
 
 // We pre-compute weeks server-side and pass them in. Locally we apply
@@ -70,16 +75,19 @@ export function CalendarBoard({
     );
   }
 
-  function updateDayLocal(date: string, boxKey: string | null) {
+  function updateDayLocal(date: string, action: DayChange) {
     setWeeks((prev) =>
       prev.map((w) => {
         if (!w.days.some((d) => d.date === date)) return w;
         const newDays = w.days.map((d) => {
           if (d.date !== date) return d;
-          if (boxKey === null) {
+          if (action.kind === "inherit") {
             return { ...d, overridden: false, boxKey: w.boxKey };
           }
-          return { ...d, overridden: true, boxKey };
+          if (action.kind === "unassigned") {
+            return { ...d, overridden: true, boxKey: null };
+          }
+          return { ...d, overridden: true, boxKey: action.boxKey };
         });
         return { ...w, days: newDays };
       }),
@@ -103,12 +111,14 @@ export function CalendarBoard({
     });
   }
 
-  function onSetDay(date: string, boxKey: string | null) {
+  function onSetDay(date: string, action: DayChange) {
     const snapshot = weeks;
-    updateDayLocal(date, boxKey);
+    updateDayLocal(date, action);
     startTransition(async () => {
       try {
-        await setDayProject(date, boxKey);
+        if (action.kind === "inherit") await clearDayOverride(date);
+        else if (action.kind === "unassigned") await setDayUnassigned(date);
+        else await setDayProject(date, action.boxKey);
       } catch (e: unknown) {
         setWeeks(snapshot);
         toast.error(

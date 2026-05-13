@@ -105,32 +105,58 @@ export async function setWeekNote(weekStart: string, note: string | null) {
   revalidatePath("/calendar");
 }
 
-// Override a single day's project. Pass boxKey = null to remove the
-// override — the day will then inherit from its week.
-export async function setDayProject(date: string, boxKey: string | null) {
+// Override a single day to a specific box. Use this when you want this
+// one day to differ from the week's project.
+export async function setDayProject(date: string, boxKey: string) {
   const d = YmdSchema.parse(date);
-  const bk = BoxKeySchema.parse(boxKey);
+  const bk = z.string().min(1).max(64).parse(boxKey);
   const { sb, vaultId } = await requireUserAndVault();
 
-  if (bk === null || bk === "") {
-    const { error } = await sb
-      .from("calendar_day_overrides")
-      .delete()
-      .eq("vault_id", vaultId)
-      .eq("date", d);
-    if (error) throw new Error(error.message);
-  } else {
-    const { error } = await sb.from("calendar_day_overrides").upsert(
-      {
-        vault_id: vaultId,
-        date: d,
-        box_key: bk,
-        modified_at: new Date().toISOString(),
-      },
-      { onConflict: "vault_id,date", ignoreDuplicates: false },
-    );
-    if (error) throw new Error(error.message);
-  }
+  const { error } = await sb.from("calendar_day_overrides").upsert(
+    {
+      vault_id: vaultId,
+      date: d,
+      box_key: bk,
+      modified_at: new Date().toISOString(),
+    },
+    { onConflict: "vault_id,date", ignoreDuplicates: false },
+  );
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/calendar");
+}
+
+// Drop any per-day override so the day inherits from its week again.
+export async function clearDayOverride(date: string) {
+  const d = YmdSchema.parse(date);
+  const { sb, vaultId } = await requireUserAndVault();
+
+  const { error } = await sb
+    .from("calendar_day_overrides")
+    .delete()
+    .eq("vault_id", vaultId)
+    .eq("date", d);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/calendar");
+}
+
+// Mark a single day as explicitly "no project" — distinct from inheriting,
+// so it stays unassigned even when the surrounding week has a project.
+export async function setDayUnassigned(date: string) {
+  const d = YmdSchema.parse(date);
+  const { sb, vaultId } = await requireUserAndVault();
+
+  const { error } = await sb.from("calendar_day_overrides").upsert(
+    {
+      vault_id: vaultId,
+      date: d,
+      box_key: null,
+      modified_at: new Date().toISOString(),
+    },
+    { onConflict: "vault_id,date", ignoreDuplicates: false },
+  );
+  if (error) throw new Error(error.message);
 
   revalidatePath("/calendar");
 }
