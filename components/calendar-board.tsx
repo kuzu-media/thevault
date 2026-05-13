@@ -10,6 +10,7 @@ import {
   setWeekNote,
 } from "@/lib/calendar-planning-actions";
 import { CalendarWeekRow } from "@/components/calendar-week-row";
+import { CalendarCounts } from "@/components/calendar-counts";
 
 // We pre-compute weeks server-side and pass them in. Locally we apply
 // optimistic updates to the same array; the server actions then revalidate
@@ -52,12 +53,9 @@ export function CalendarBoard({
   // e.g. fixture mode), treat everything as future.
   const currentIdx = weeks.findIndex((w) => w.isCurrentWeek);
   const pastWeeks = currentIdx > 0 ? weeks.slice(0, currentIdx) : [];
+  const futureWeeks = currentIdx >= 0 ? weeks.slice(currentIdx) : weeks;
   const visibleWeeks =
-    currentIdx >= 0
-      ? showPast
-        ? weeks
-        : weeks.slice(currentIdx)
-      : weeks;
+    currentIdx >= 0 ? (showPast ? weeks : futureWeeks) : weeks;
 
   function updateWeekLocal(weekStart: string, boxKey: string | null) {
     setWeeks((prev) =>
@@ -164,6 +162,7 @@ export function CalendarBoard({
 
   return (
     <div className="mt-6 space-y-3">
+      <CalendarCounts weeks={futureWeeks} boxes={boxes} />
       {pastWeeks.length > 0 && (
         <button
           type="button"
