@@ -27,6 +27,7 @@ export function CalendarBoard({
   const [, startTransition] = useTransition();
   const todayCellRef = useRef<HTMLElement | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [showPast, setShowPast] = useState(false);
 
   // Keep local state in sync with fresh server data (e.g. after a route
   // refresh that pulls a new initialWeeks).
@@ -34,17 +35,29 @@ export function CalendarBoard({
     setWeeks(initialWeeks);
   }, [initialWeeks]);
 
-  // Scroll today into view on first paint.
+  // Scroll today into view on first paint, and any time past weeks are
+  // toggled (so the current week stays roughly anchored under the toggle).
   useEffect(() => {
-    if (scrolled) return;
+    if (scrolled && !showPast) return;
     if (todayCellRef.current) {
       todayCellRef.current.scrollIntoView({
-        block: "center",
-        behavior: "auto",
+        block: showPast ? "center" : "start",
+        behavior: scrolled ? "smooth" : "auto",
       });
       setScrolled(true);
     }
-  }, [scrolled]);
+  }, [scrolled, showPast]);
+
+  // Split into past vs current+future. If today's week isn't found (defensive,
+  // e.g. fixture mode), treat everything as future.
+  const currentIdx = weeks.findIndex((w) => w.isCurrentWeek);
+  const pastWeeks = currentIdx > 0 ? weeks.slice(0, currentIdx) : [];
+  const visibleWeeks =
+    currentIdx >= 0
+      ? showPast
+        ? weeks
+        : weeks.slice(currentIdx)
+      : weeks;
 
   function updateWeekLocal(weekStart: string, boxKey: string | null) {
     setWeeks((prev) =>
@@ -151,7 +164,18 @@ export function CalendarBoard({
 
   return (
     <div className="mt-6 space-y-3">
-      {weeks.map((w) => (
+      {pastWeeks.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowPast((v) => !v)}
+          className="block w-full rounded-sm border border-dashed border-vault-line bg-vault-panel/20 px-3 py-2 font-mono text-[10px] tracking-[0.18em] text-ink-mute hover:border-brass/40 hover:text-brass"
+        >
+          {showPast
+            ? `▴  HIDE EARLIER WEEKS (${pastWeeks.length})`
+            : `◂  SHOW EARLIER WEEKS (${pastWeeks.length})`}
+        </button>
+      )}
+      {visibleWeeks.map((w) => (
         <CalendarWeekRow
           key={w.weekStart}
           week={w}
