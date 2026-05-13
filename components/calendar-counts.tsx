@@ -77,7 +77,7 @@ export function CalendarCounts({
               {chip.label}
             </span>
             <span className="font-mono text-[11px] text-ink-dim">
-              {chip.count}d
+              {chip.count}
             </span>
           </span>
         ))}
@@ -87,7 +87,7 @@ export function CalendarCounts({
               Unassigned
             </span>
             <span className="font-mono text-[11px] text-ink-mute">
-              {unassignedCount}d
+              {unassignedCount}
             </span>
           </span>
         )}
