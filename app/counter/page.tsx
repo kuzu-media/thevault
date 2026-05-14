@@ -11,6 +11,7 @@ import {
 } from "@/components/counter-sectioned-lists";
 import type { SortableItem } from "@/components/sortable-list";
 import { TodayToggle } from "@/components/today-toggle";
+import { CounterDoneButton } from "@/components/counter-done-button";
 import { DeleteItemButton } from "@/components/delete-item-button";
 import type { Item } from "@/lib/types";
 
@@ -388,6 +389,7 @@ function CounterRow({
             />
           </div>
           <TodayToggle itemId={item.id} on={onToday} size="sm" />
+          <CounterDoneButton itemId={item.id} />
           <DeleteItemButton itemId={item.id} />
         </div>
       </div>
