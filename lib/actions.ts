@@ -771,7 +771,23 @@ export async function saveDocumentConfig(
   const vaultId = await currentVaultId();
   if (!vaultId) throw new Error("No vault");
   const parsed = documents.map((d) => DocumentConfig.parse(d));
-  await sb.from("settings").upsert({ vault_id: vaultId, documents: parsed });
+
+  const { data: row } = await sb
+    .from("settings")
+    .select("*")
+    .eq("vault_id", vaultId)
+    .maybeSingle();
+  const rowObj = row as Record<string, unknown> | null;
+  const patch: Record<string, unknown> = { vault_id: vaultId };
+  if (rowObj && "documents" in rowObj) {
+    patch.documents = parsed;
+  } else if (rowObj && "records" in rowObj) {
+    patch.records = parsed;
+  } else {
+    patch.documents = parsed;
+  }
+
+  await sb.from("settings").upsert(patch);
   revalidatePath("/", "layout");
   revalidatePath("/documents", "layout");
   revalidatePath("/settings/documents", "layout");

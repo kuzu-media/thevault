@@ -129,11 +129,11 @@ function normalizeDocument(raw: any): DocumentType | null {
 
 export async function getDocuments(): Promise<DocumentType[]> {
   const sb = await supabaseServer();
-  const { data } = await sb
-    .from("settings")
-    .select("documents")
-    .maybeSingle();
-  const raw = (data?.documents as any[]) ?? null;
+  // Prefer `documents` (post-migration); fall back to legacy `records` so the
+  // app works if migration 0015 has not been applied to this database yet.
+  const { data } = await sb.from("settings").select("*").maybeSingle();
+  const row = data as { documents?: unknown; records?: unknown } | null;
+  const raw = (row?.documents ?? row?.records) as unknown;
   if (!raw || !Array.isArray(raw)) return [];
   return raw.map(normalizeDocument).filter((d): d is DocumentType => d !== null);
 }
