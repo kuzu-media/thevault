@@ -58,7 +58,7 @@ export function CalendarCounts({
       className="rounded-sm border border-vault-line bg-vault-panel/30 px-3 py-3 md:px-4 md:py-3"
     >
       <div className="mb-2 font-mono text-[10px] tracking-[0.18em] text-ink-mute">
-        FROM THIS WEEK FORWARD
+        FROM THIS WEEK FORWARD (17 weeks shown)
       </div>
       <div className="flex flex-wrap gap-1.5">
         {projectChips.map((chip) => (
