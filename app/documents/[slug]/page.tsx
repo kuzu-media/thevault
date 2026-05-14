@@ -71,9 +71,13 @@ export default async function DocumentPage({
         </Link>
       </div>
       <div className="eyebrow">— Document —</div>
-      <h1 className="serif-h mt-2 text-[40px] leading-tight">{meta.label}</h1>
+      <h1 className="mt-2 font-sans text-[32px] font-semibold leading-tight tracking-tight text-ink md:text-[36px]">
+        {meta.label}
+      </h1>
       {meta.meta && (
-        <p className="mt-1 text-[15px] text-ink-dim">{meta.meta}</p>
+        <p className="mt-1 font-sans text-[16px] leading-snug text-ink-dim">
+          {meta.meta}
+        </p>
       )}
       <div className="mt-8">
         <DocumentsEditor

@@ -65,7 +65,18 @@ export function DocumentsEditor({
       </div>
 
       {mode === "read" ? (
-        <article className="prose prose-headings:font-serif prose-table:text-[15px] prose-th:text-[14px] prose-td:text-[15px] max-w-none text-ink">
+        <article
+          className={clsx(
+            "prose prose-lg max-w-none font-sans text-ink",
+            "prose-headings:font-sans prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-ink",
+            "prose-p:text-[17px] prose-p:leading-[1.75] prose-li:text-[17px] prose-li:leading-[1.75]",
+            "prose-blockquote:text-ink-dim prose-blockquote:border-brass/35",
+            "prose-code:rounded-sm prose-code:bg-vault-panel prose-code:px-1 prose-code:font-mono prose-code:text-[0.9em] prose-code:before:content-none prose-code:after:content-none",
+            "prose-pre:bg-vault-panel/80 prose-pre:border prose-pre:border-vault-line/80 prose-pre:font-mono prose-pre:text-[14px]",
+            "prose-table:text-[15px] prose-th:text-[14px] prose-td:text-[15px]",
+            "prose-a:text-brass prose-a:underline prose-a:decoration-brass/40 prose-a:underline-offset-2",
+          )}
+        >
           {body.trim() ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
           ) : (
@@ -82,7 +93,7 @@ export function DocumentsEditor({
             onBlur={save}
             rows={24}
             spellCheck
-            className="w-full rounded-sm border border-vault-line bg-vault-panel/40 p-4 font-mono text-[15px] leading-relaxed text-ink outline-none focus:border-brass"
+            className="w-full rounded-sm border border-vault-line bg-vault-panel/40 p-4 font-sans text-[16px] leading-[1.7] text-ink outline-none focus:border-brass"
             placeholder="# Start writing in markdown…"
           />
           <details className="rounded-sm border border-vault-line bg-vault-panel/30 px-4 py-3">
