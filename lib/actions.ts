@@ -770,13 +770,32 @@ const DocumentConfig = BoxConfig.extend({
     .optional(),
 });
 
+export type DocumentKeyMigration = { from: string; to: string };
+
+function isTrustedDocumentKeyMigration(
+  from: string,
+  to: string,
+  prevKeys: Set<string>,
+  nextKeys: Set<string>,
+): boolean {
+  if (!from || !to || from === to) return false;
+  if (RESERVED_BOX_KEYS.has(from) || RESERVED_BOX_KEYS.has(to)) return false;
+  if (!prevKeys.has(from) || nextKeys.has(from)) return false;
+  if (!nextKeys.has(to)) return false;
+  return true;
+}
+
 export async function saveDocumentConfig(
   documents: z.input<typeof DocumentConfig>[],
+  keyMigrations?: DocumentKeyMigration[],
 ) {
   const { sb } = await requireUser();
   const vaultId = await currentVaultId();
   if (!vaultId) throw new Error("No vault");
+  const prevDocs = await getDocuments();
+  const prevKeys = new Set(prevDocs.map((d) => d.key));
   const parsed = documents.map((d) => DocumentConfig.parse(d));
+  const nextKeys = new Set(parsed.map((d) => d.key));
 
   const { data: row } = await sb
     .from("settings")
@@ -794,6 +813,25 @@ export async function saveDocumentConfig(
   }
 
   await sb.from("settings").upsert(patch);
+
+  const seenFrom = new Set<string>();
+  for (const m of keyMigrations ?? []) {
+    if (!m || typeof m.from !== "string" || typeof m.to !== "string") continue;
+    const from = m.from.trim();
+    const to = m.to.trim();
+    if (!isTrustedDocumentKeyMigration(from, to, prevKeys, nextKeys)) continue;
+    if (seenFrom.has(from)) continue;
+    seenFrom.add(from);
+
+    const { error } = await sb
+      .from("items")
+      .update({ box: to })
+      .eq("vault_id", vaultId)
+      .eq("box", from)
+      .is("deleted_at", null);
+    if (error) throw new Error(error.message);
+  }
+
   revalidatePath("/", "layout");
   revalidatePath("/documents", "layout");
   revalidatePath("/settings/documents", "layout");

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import type { DocumentKeyMigration } from "@/lib/actions";
 import type { DocumentType } from "@/lib/categories";
 
 function deriveKey(label: string): string {
@@ -30,12 +31,22 @@ export function DocumentsSettingsEditor({
   onSave,
 }: {
   initial: DocumentType[];
-  onSave: (rows: DocumentType[]) => Promise<unknown>;
+  onSave: (rows: DocumentType[], keyMigrations?: DocumentKeyMigration[]) => Promise<unknown>;
 }) {
   const [rows, setRows] = useState<DocumentType[]>(initial);
+  /** Document key for each row at last successful save (or server load). Drives items.box renames. */
+  const [keyAtLastSave, setKeyAtLastSave] = useState(() =>
+    initial.map((d) => d.key),
+  );
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const manualKeys = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    setRows(initial);
+    setKeyAtLastSave(initial.map((d) => d.key));
+    manualKeys.current.clear();
+  }, [initial]);
 
   function update(i: number, patch: Partial<DocumentType>) {
     setRows(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -61,6 +72,7 @@ export function DocumentsSettingsEditor({
       ...rows,
       { key: "", label: "", meta: "", color: "#b5853a", folder: "misc" },
     ]);
+    setKeyAtLastSave([...keyAtLastSave, ""]);
   }
 
   function remove(i: number) {
@@ -71,6 +83,7 @@ export function DocumentsSettingsEditor({
     )
       return;
     setRows(rows.filter((_, idx) => idx !== i));
+    setKeyAtLastSave(keyAtLastSave.filter((_, idx) => idx !== i));
     const next = new Set<number>();
     for (const idx of manualKeys.current) {
       if (idx < i) next.add(idx);
@@ -85,10 +98,17 @@ export function DocumentsSettingsEditor({
       key: r.key || deriveKey(r.label) || "DOCUMENT",
       folder: r.folder ?? "misc",
     }));
+    const keyMigrations: DocumentKeyMigration[] = [];
+    for (let i = 0; i < cleaned.length; i++) {
+      const from = (keyAtLastSave[i] ?? "").trim();
+      const to = cleaned[i]!.key.trim();
+      if (from && to && from !== to) keyMigrations.push({ from, to });
+    }
     setRows(cleaned);
     startTransition(async () => {
       try {
-        await onSave(cleaned);
+        await onSave(cleaned, keyMigrations);
+        setKeyAtLastSave(cleaned.map((d) => d.key));
         setSavedAt(Date.now());
       } catch (e: any) {
         toast.error(
