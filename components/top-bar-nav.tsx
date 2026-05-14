@@ -10,10 +10,11 @@ const ITEMS = [
   { href: "/counter", label: "Counter", hint: "g c", match: (p: string) => p.startsWith("/counter") },
   { href: "/atm", label: "ATM", hint: "g a", match: (p: string) => p.startsWith("/atm") },
   {
-    href: "/records",
-    label: "RECORDS",
+    href: "/documents",
+    label: "DOCUMENTS",
     hint: "g e",
-    match: (p: string) => p === "/records" || p.startsWith("/records/"),
+    match: (p: string) =>
+      p === "/documents" || p.startsWith("/documents/"),
   },
   { href: "/calendar", label: "Calendar", hint: "g k", match: (p: string) => p.startsWith("/calendar") },
   { href: "/settings", label: "Settings", hint: "g s", match: (p: string) => p.startsWith("/settings") },

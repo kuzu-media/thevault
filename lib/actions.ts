@@ -342,7 +342,7 @@ export async function hardDeleteDoneTodayItems(itemIds: string[]) {
   revalidatePath("/counter");
   revalidatePath("/drop");
   revalidatePath("/vault");
-  revalidatePath("/records");
+  revalidatePath("/documents");
   return { ok: true as const, deleted: validIds.length };
 }
 
@@ -355,7 +355,7 @@ export async function hardDeleteItem(itemId: string) {
   revalidatePath("/counter");
   revalidatePath("/drop");
   revalidatePath("/vault");
-  revalidatePath("/records");
+  revalidatePath("/documents");
 }
 
 // Triage a Drop item. Destination is explicit — Till is for energy-matched
@@ -653,8 +653,8 @@ export async function addCustomBlock(opts: {
   revalidatePath("/");
 }
 
-// Records: write markdown body for the single record row in a Records box.
-export async function saveRecord(box: string, body: string, title?: string) {
+// Documents: write markdown body for the single document row in a document box.
+export async function saveDocument(box: string, body: string, title?: string) {
   const { sb, user } = await requireUser();
   const vaultId = await currentVaultId();
   if (!vaultId) throw new Error("No vault");
@@ -684,7 +684,7 @@ export async function saveRecord(box: string, body: string, title?: string) {
       pinned: false,
     });
   }
-  revalidatePath(`/records`, "layout");
+  revalidatePath(`/documents`, "layout");
 }
 
 // Vault & box config.
@@ -747,7 +747,7 @@ export async function saveEnergyConfig(
   revalidatePath("/", "layout");
 }
 
-const RecordConfig = BoxConfig.extend({
+const DocumentConfig = BoxConfig.extend({
   folder: z
     .enum([
       "health",
@@ -764,15 +764,17 @@ const RecordConfig = BoxConfig.extend({
     .optional(),
 });
 
-export async function saveRecordConfig(
-  records: z.input<typeof RecordConfig>[],
+export async function saveDocumentConfig(
+  documents: z.input<typeof DocumentConfig>[],
 ) {
   const { sb } = await requireUser();
   const vaultId = await currentVaultId();
   if (!vaultId) throw new Error("No vault");
-  const parsed = records.map((r) => RecordConfig.parse(r));
-  await sb.from("settings").upsert({ vault_id: vaultId, records: parsed });
+  const parsed = documents.map((d) => DocumentConfig.parse(d));
+  await sb.from("settings").upsert({ vault_id: vaultId, documents: parsed });
   revalidatePath("/", "layout");
+  revalidatePath("/documents", "layout");
+  revalidatePath("/settings/documents", "layout");
 }
 
 // Capture token — generated, persisted on the settings row, surfaced in /settings.

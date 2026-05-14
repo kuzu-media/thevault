@@ -1,47 +1,47 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRecords } from "@/lib/categories";
+import { getDocuments } from "@/lib/categories";
 import { BoxCard } from "@/components/box-card";
 import {
-  RECORD_FOLDERS,
-  groupRecordsByFolder,
-  slugifyRecordKey,
-  type RecordFolderKey,
-} from "@/lib/record-folders";
+  DOCUMENT_FOLDERS,
+  groupDocumentsByFolder,
+  slugifyDocumentKey,
+  type DocumentFolderKey,
+} from "@/lib/document-folders";
 
-const VALID_FOLDERS = new Set<RecordFolderKey>(
-  RECORD_FOLDERS.map((f) => f.key),
+const VALID_FOLDERS = new Set<DocumentFolderKey>(
+  DOCUMENT_FOLDERS.map((f) => f.key),
 );
 
-export default async function RecordsFolderPage({
+export default async function DocumentsFolderPage({
   params,
 }: {
   params: Promise<{ folder: string }>;
 }) {
   const { folder } = await params;
-  if (!VALID_FOLDERS.has(folder as RecordFolderKey)) notFound();
+  if (!VALID_FOLDERS.has(folder as DocumentFolderKey)) notFound();
 
-  const folderKey = folder as RecordFolderKey;
-  const records = await getRecords();
-  const grouped = groupRecordsByFolder(records);
+  const folderKey = folder as DocumentFolderKey;
+  const documents = await getDocuments();
+  const grouped = groupDocumentsByFolder(documents);
   const inFolder = grouped[folderKey];
-  const folderMeta = RECORD_FOLDERS.find((f) => f.key === folderKey)!;
+  const folderMeta = DOCUMENT_FOLDERS.find((f) => f.key === folderKey)!;
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
-      <div className="eyebrow">— Records Folder —</div>
+      <div className="eyebrow">— Folder —</div>
       <h1 className="serif-h mt-2 text-[28px] leading-tight md:text-[36px]">
         {folderMeta.label}
       </h1>
       <p className="mt-1 text-[15px] text-ink-dim">
         {inFolder.length > 0
-          ? `Open a record in ${folderMeta.label}.`
-          : `No records in ${folderMeta.label} yet.`}
+          ? `Open a document in ${folderMeta.label}.`
+          : `No documents in ${folderMeta.label} yet.`}
       </p>
 
       <div className="mt-4">
         <Link
-          href="/records"
+          href="/documents"
           className="rounded-sm border border-vault-line px-3 py-1 font-mono text-[11px] tracking-[0.18em] text-ink-mute transition hover:border-brass/40 hover:text-brass"
         >
           ← BACK TO FOLDERS
@@ -50,18 +50,18 @@ export default async function RecordsFolderPage({
 
       {inFolder.length > 0 ? (
         <div className="mt-8 flex flex-wrap gap-4">
-          {inFolder.map((r) => (
+          {inFolder.map((d) => (
             <BoxCard
-              key={r.key}
-              title={r.label}
-              meta={r.meta || "reference"}
-              href={`/records/${slugifyRecordKey(r.key)}`}
+              key={d.key}
+              title={d.label}
+              meta={d.meta || "reference"}
+              href={`/documents/${slugifyDocumentKey(d.key)}`}
             />
           ))}
         </div>
       ) : (
         <p className="mt-8 text-[15px] text-ink-mute">
-          Add records from Settings, then they&apos;ll appear here.
+          Add documents from Settings, then they&apos;ll appear here.
         </p>
       )}
     </div>

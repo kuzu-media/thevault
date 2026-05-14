@@ -21,7 +21,7 @@ export function GlobalShortcuts() {
   useShortcut("g r", go("/drop"), { label: "Drop", group: "Navigate" });
   useShortcut("g c", go("/counter"), { label: "Counter", group: "Navigate" });
   useShortcut("g a", go("/atm"), { label: "ATM", group: "Navigate" });
-  useShortcut("g e", go("/records"), { label: "RECORDS", group: "Navigate" });
+  useShortcut("g e", go("/documents"), { label: "DOCUMENTS", group: "Navigate" });
   useShortcut("g k", go("/calendar"), { label: "Calendar", group: "Navigate" });
   useShortcut("g s", go("/settings"), { label: "Settings", group: "Navigate" });
   useShortcut("g b", go("/build?step=1"), { label: "Build day", group: "Navigate" });

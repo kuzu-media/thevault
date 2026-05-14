@@ -1,6 +1,6 @@
-import type { RecordType } from "@/lib/categories";
+import type { DocumentType } from "@/lib/categories";
 
-export type RecordFolderKey =
+export type DocumentFolderKey =
   | "health"
   | "books"
   | "misc"
@@ -12,7 +12,7 @@ export type RecordFolderKey =
   | "writing"
   | "travel";
 
-export const RECORD_FOLDERS: { key: RecordFolderKey; label: string }[] = [
+export const DOCUMENT_FOLDERS: { key: DocumentFolderKey; label: string }[] = [
   { key: "health", label: "HEALTH" },
   { key: "books", label: "BOOKS" },
   { key: "misc", label: "MISC" },
@@ -25,12 +25,14 @@ export const RECORD_FOLDERS: { key: RecordFolderKey; label: string }[] = [
   { key: "travel", label: "TRAVEL" },
 ];
 
-export function folderForRecord(record: RecordType): RecordFolderKey {
-  return record.folder ?? "misc";
+export function folderForDocument(doc: DocumentType): DocumentFolderKey {
+  return doc.folder ?? "misc";
 }
 
-export function groupRecordsByFolder(records: RecordType[]): Record<RecordFolderKey, RecordType[]> {
-  const grouped: Record<RecordFolderKey, RecordType[]> = {
+export function groupDocumentsByFolder(
+  documents: DocumentType[],
+): Record<DocumentFolderKey, DocumentType[]> {
+  const grouped: Record<DocumentFolderKey, DocumentType[]> = {
     health: [],
     books: [],
     misc: [],
@@ -42,10 +44,10 @@ export function groupRecordsByFolder(records: RecordType[]): Record<RecordFolder
     writing: [],
     travel: [],
   };
-  for (const r of records) grouped[folderForRecord(r)].push(r);
+  for (const d of documents) grouped[folderForDocument(d)].push(d);
   return grouped;
 }
 
-export function slugifyRecordKey(key: string): string {
+export function slugifyDocumentKey(key: string): string {
   return key.toLowerCase().replace(/_/g, "-").replace(/\//g, "-");
 }

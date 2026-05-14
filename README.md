@@ -1,6 +1,6 @@
 # The Vault
 
-ADHD-friendly task manager built around a banking metaphor: **drop** thoughts in, triage to **boxes**, withdraw from the **ATM**, work through the **counter**, file **records** for reference. Replaces a 14-tab Google Sheet + Python pipeline with a single Next.js app.
+ADHD-friendly task manager built around a banking metaphor: **drop** thoughts in, triage to **boxes**, withdraw from the **ATM**, work through the **counter**, file **documents** for reference. Replaces a 14-tab Google Sheet + Python pipeline with a single Next.js app.
 
 ## Quick start
 
@@ -32,7 +32,7 @@ lib/
   daily-plan.ts     classify + buildSchedule (the schedule logic)
   actions.ts        Server Actions
   data.ts           Read-side helpers
-  categories.ts     Boxes / Records / Energies (configured per-vault)
+  categories.ts     Boxes / Documents / Energies (configured per-vault)
   shortcuts.tsx     Keyboard shortcut hook + cheat sheet
   supabase/         Server + client helpers
   types.ts          Domain types
@@ -48,7 +48,7 @@ docs/SPEC.md              Original app spec (historical)
 1. **Supabase** — create a project, run every migration in `supabase/migrations/` in order, drop the URL / anon key / service-role key into `.env.local`.
 2. **Sign in once** at the deployed URL to seed the `auth.users` row, grab the uid.
 3. **Migrate the Sheet** — `npm run migrate:sheet <userId>`. Clean resync by default, no duplicates on re-run.
-4. **Review settings** — `/settings/boxes`, `/settings/records`, `/settings/energies` — rename labels as needed.
+4. **Review settings** — `/settings/boxes`, `/settings/documents`, `/settings/energies` — rename labels as needed.
 5. **Configure the day** — `/settings` for default hours / end-of-day.
 6. **Connect devices** — `/settings/connect` walks through iPhone Siri, Mac dock, and the bookmarklet.
 

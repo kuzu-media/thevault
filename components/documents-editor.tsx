@@ -3,9 +3,9 @@ import { useState, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import clsx from "clsx";
-import { saveRecord } from "@/lib/actions";
+import { saveDocument } from "@/lib/actions";
 
-export function RecordsEditor({
+export function DocumentsEditor({
   box,
   initial,
   title,
@@ -23,7 +23,7 @@ export function RecordsEditor({
 
   function save() {
     startTransition(async () => {
-      await saveRecord(box, body, title);
+      await saveDocument(box, body, title);
       setSavedAt(Date.now());
     });
   }
@@ -70,7 +70,7 @@ export function RecordsEditor({
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
           ) : (
             <p className="italic text-ink-mute">
-              Empty record. Switch to EDIT to start writing.
+              Empty document. Switch to EDIT to start writing.
             </p>
           )}
         </article>

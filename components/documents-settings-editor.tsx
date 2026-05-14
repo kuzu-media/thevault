@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import type { RecordType } from "@/lib/categories";
+import type { DocumentType } from "@/lib/categories";
 
 function deriveKey(label: string): string {
   return label
@@ -12,7 +12,7 @@ function deriveKey(label: string): string {
     .slice(0, 40);
 }
 
-const FOLDERS: Array<{ key: NonNullable<RecordType["folder"]>; label: string }> = [
+const FOLDERS: Array<{ key: NonNullable<DocumentType["folder"]>; label: string }> = [
   { key: "health", label: "HEALTH" },
   { key: "books", label: "BOOKS" },
   { key: "misc", label: "MISC" },
@@ -25,25 +25,25 @@ const FOLDERS: Array<{ key: NonNullable<RecordType["folder"]>; label: string }> 
   { key: "travel", label: "TRAVEL" },
 ];
 
-export function RecordsSettingsEditor({
+export function DocumentsSettingsEditor({
   initial,
   onSave,
 }: {
-  initial: RecordType[];
-  onSave: (rows: RecordType[]) => Promise<unknown>;
+  initial: DocumentType[];
+  onSave: (rows: DocumentType[]) => Promise<unknown>;
 }) {
-  const [records, setRecords] = useState<RecordType[]>(initial);
+  const [rows, setRows] = useState<DocumentType[]>(initial);
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const manualKeys = useRef<Set<number>>(new Set());
 
-  function update(i: number, patch: Partial<RecordType>) {
-    setRecords(records.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  function update(i: number, patch: Partial<DocumentType>) {
+    setRows(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   }
 
   function changeLabel(i: number, label: string) {
-    setRecords(
-      records.map((r, idx) => {
+    setRows(
+      rows.map((r, idx) => {
         if (idx !== i) return r;
         const key = manualKeys.current.has(i) ? r.key : deriveKey(label);
         return { ...r, label, key };
@@ -57,15 +57,20 @@ export function RecordsSettingsEditor({
   }
 
   function add() {
-    setRecords([
-      ...records,
+    setRows([
+      ...rows,
       { key: "", label: "", meta: "", color: "#b5853a", folder: "misc" },
     ]);
   }
 
   function remove(i: number) {
-    if (!confirm("Remove this record? Items already filed under it stay safe.")) return;
-    setRecords(records.filter((_, idx) => idx !== i));
+    if (
+      !confirm(
+        "Remove this document? Items already filed under it stay safe.",
+      )
+    )
+      return;
+    setRows(rows.filter((_, idx) => idx !== i));
     const next = new Set<number>();
     for (const idx of manualKeys.current) {
       if (idx < i) next.add(idx);
@@ -75,19 +80,19 @@ export function RecordsSettingsEditor({
   }
 
   function save() {
-    const cleaned = records.map((r) => ({
+    const cleaned = rows.map((r) => ({
       ...r,
-      key: r.key || deriveKey(r.label) || "RECORD",
+      key: r.key || deriveKey(r.label) || "DOCUMENT",
       folder: r.folder ?? "misc",
     }));
-    setRecords(cleaned);
+    setRows(cleaned);
     startTransition(async () => {
       try {
         await onSave(cleaned);
         setSavedAt(Date.now());
       } catch (e: any) {
         toast.error(
-          e?.message ? `Couldn't save: ${e.message}` : "Couldn't save records.",
+          e?.message ? `Couldn't save: ${e.message}` : "Couldn't save documents.",
         );
       }
     });
@@ -103,7 +108,7 @@ export function RecordsSettingsEditor({
         <span className="w-[110px]">Key</span>
         <span className="w-[80px]" />
       </div>
-      {records.map((r, i) => (
+      {rows.map((r, i) => (
         <div
           key={i}
           className="flex flex-wrap items-center gap-2 rounded-sm border border-vault-line bg-vault-panel/40 px-4 py-3"
@@ -129,7 +134,9 @@ export function RecordsSettingsEditor({
           />
           <select
             value={r.folder ?? "misc"}
-            onChange={(e) => update(i, { folder: e.target.value as RecordType["folder"] })}
+            onChange={(e) =>
+              update(i, { folder: e.target.value as DocumentType["folder"] })
+            }
             className="w-[110px] rounded-sm border border-vault-line bg-vault-bg/60 px-2 py-1 font-mono text-[12px] text-ink outline-none focus:border-brass"
           >
             {FOLDERS.map((f) => (
@@ -156,7 +163,7 @@ export function RecordsSettingsEditor({
         onClick={add}
         className="w-full rounded-sm border border-dashed border-brass/40 py-3 font-mono text-[11px] tracking-[0.24em] text-brass/70 hover:border-brass"
       >
-        + ADD RECORD
+        + ADD DOCUMENT
       </button>
 
       <div className="flex items-center justify-between pt-3">
@@ -174,7 +181,7 @@ export function RecordsSettingsEditor({
           disabled={pending}
           className="brass-button px-6 py-2 font-mono text-[11px] tracking-[0.24em] text-[#2a1c08] disabled:opacity-50"
         >
-          SAVE RECORDS
+          SAVE DOCUMENTS
         </button>
       </div>
     </div>

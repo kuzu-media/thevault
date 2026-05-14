@@ -91,12 +91,12 @@ app/
   atm/                    Energy-matched optional pulls
   counter/                Obligations
   vault/, vault/[box]/    Long-term storage
-  records/[slug]/         Markdown records (Notes, Measurements, etc.)
+  documents/[slug]/       Markdown documents (Notes, Measurements, etc.)
   build/                  Morning wizard
   sealed/                 Closing-of-the-vault ceremonial state
   settings/               Settings hub
     boxes/                User-configured box list
-    records/              User-configured record list
+    documents/            User-configured document list
     energies/             User-configured energy list
     members/              Vault membership (invite / role / remove)
     connect/              iPhone + Mac setup walkthrough
@@ -107,7 +107,7 @@ lib/
   actions.ts              Every Server Action
   data.ts                 Read-side helpers
   daily-plan.ts           classify + buildSchedule (THE schedule logic)
-  categories.ts           getBoxes / getRecords / getEnergies + types
+  categories.ts           getBoxes / getDocuments / getEnergies + types
   shortcuts.tsx           Keyboard shortcut hook + cheat-sheet registry
   types.ts                Domain types
 scripts/
@@ -123,7 +123,7 @@ docs/
 ## Invariants — DO NOT BREAK these
 
 1. **Settings is the source of truth for labels.**
-   - Pages must look up labels in `settings.boxes` / `settings.records` / `settings.energies`. If the lookup misses, render "Uncategorized" or a not-found page. **Do not** prettify keys on the page side to fabricate a label.
+   - Pages must look up labels in `settings.boxes` / `settings.documents` / `settings.energies`. If the lookup misses, render "Uncategorized" or a not-found page. **Do not** prettify keys on the page side to fabricate a label.
    - All the "what's a category" lists come from settings — none hardcoded anywhere in the app.
 
 2. **Reserved counter-station keys never appear in user-configurable lists.**
@@ -145,7 +145,7 @@ docs/
    - `tsx scripts/migrate-from-sheet.ts <userId>` wipes and re-imports — no duplicates. `--no-clean` for the rare additive case. Captures and day-level settings (`default_hours`, `default_end_of_day`, `stressor_anchor_minutes`) are preserved.
 
 8. **No "Tracy"-style copy or hardcoded data.**
-   - The app should work for any user out of the box. Box keys, records, energies, day defaults are all configurable per-vault.
+   - The app should work for any user out of the box. Box keys, documents, energies, day defaults are all configurable per-vault.
 
 ---
 
@@ -175,8 +175,8 @@ type Item = {
   tag?: string | null
   notes?: string | null
 
-  // Records (text-first content)
-  body?: string | null             // markdown when item is a Record
+  // Documents (text-first content)
+  body?: string | null             // markdown when item is a document category
 
   // Schedule placement (set when on today's plan)
   scheduledStart?: string | null
@@ -192,7 +192,7 @@ type Item = {
 }
 ```
 
-`settings` row holds `boxes`, `records`, `energies` (all jsonb arrays of `{key, label, ...}`), plus `default_hours`, `default_end_of_day`, `stressor_anchor_minutes`, `capture_token`, `sealed`.
+`settings` row holds `boxes`, `documents`, `energies` (all jsonb arrays of `{key, label, ...}`), plus `default_hours`, `default_end_of_day`, `stressor_anchor_minutes`, `capture_token`, `sealed`.
 
 ---
 
@@ -219,7 +219,7 @@ Changing this logic requires a deliberate, named change. Don't tweak for cosmeti
 1. Create Supabase project; run every migration in `supabase/migrations/` in order.
 2. User signs in once at the deployed URL — captures their `auth.uid`.
 3. Run `npm run migrate:sheet <their-uid>` to import their sheet (or skip; they can start fresh).
-4. They review **Settings → Boxes / Records / Energies**, rename labels.
+4. They review **Settings → Boxes / Documents / Energies**, rename labels.
 5. They set **Settings → General** (default hours, end of day).
 6. They walk through **Settings → Connect** to wire iPhone Siri / Mac dock / bookmarklet.
 
@@ -251,13 +251,13 @@ The user's words are deliberate; map them back to code precisely.
 
 | User says | In the app |
 |---|---|
-| **The vault** | The whole app, also `/vault` (the storage interior). Boxes + Records live here. |
+| **The vault** | The whole app, also `/vault` (the storage interior). Boxes + documents live here. |
 | **The drop** | `/drop`. Untriaged inbox. New captures land here as `box: 'DROP'`. |
 | **The counter** | `/counter`. Obligations — `box: 'COUNTER'`, with `urgent` / `must` flags. |
 | **The ATM** | `/atm`. Energy-matched optional pulls — `box: 'ATM'`, with `energy` + `category`. |
 | **The docket** / **today** | `/` (home). Today's timed schedule. |
 | **A box** | A user-configured category (`settings.boxes`). The same box can hold both Counter and ATM items. |
-| **A record** | A user-configured text-first category (`settings.records`). Routed to `/records/<slug>`. |
+| **A document** | A user-configured text-first category (`settings.documents`). Routed to `/documents/<slug>`. |
 | **An energy** | A user-configured tag on ATM items (`settings.energies`) — Creative, Prob-Solv, etc. |
 | **Build the day** / **build today** | The morning wizard at `/build` (5–6 questions). Persists to `day_inputs`. |
 | **Seal it** / **close the vault** | Set `settings.sealed = true`. The Sealed page hides daily surfaces; deposit slot stays open. |
@@ -323,7 +323,7 @@ Pattern is in `components/drop-triage-row.tsx` — copy if extending to Counter 
 
 ### Settings dictates the view
 
-If you find yourself writing `prettify(key)` in a page component as a label fallback, **stop**. Look up the label in `settings.boxes` / `settings.records` / `settings.energies`. If it's not there, render "Uncategorized" (and don't link). Pages display data; settings own labels; the import seeds settings.
+If you find yourself writing `prettify(key)` in a page component as a label fallback, **stop**. Look up the label in `settings.boxes` / `settings.documents` / `settings.energies`. If it's not there, render "Uncategorized" (and don't link). Pages display data; settings own labels; the import seeds settings.
 
 ### Confirm before destructive things — except where speed matters
 

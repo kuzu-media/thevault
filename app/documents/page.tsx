@@ -1,43 +1,43 @@
-// Records hub — folder view for configured records.
+// Documents hub — folder view for configured documents.
 
 import Link from "next/link";
-import { getRecords } from "@/lib/categories";
+import { getDocuments } from "@/lib/categories";
 import { CopyTableMarkdownButton } from "@/components/copy-table-markdown-button";
-import { RECORD_FOLDERS, groupRecordsByFolder } from "@/lib/record-folders";
+import { DOCUMENT_FOLDERS, groupDocumentsByFolder } from "@/lib/document-folders";
 
-export default async function RecordsHubPage() {
-  const records = await getRecords();
-  const grouped = groupRecordsByFolder(records);
+export default async function DocumentsHubPage() {
+  const documents = await getDocuments();
+  const grouped = groupDocumentsByFolder(documents);
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 md:px-10">
       <h1 className="serif-h text-[28px] leading-tight md:text-[36px]">
-        Records
+        Documents
       </h1>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <p className="text-[15px] text-ink-dim">
-          Reference folders — open a folder to see the records inside.
+          Reference folders — open a folder to see the documents inside.
         </p>
         <CopyTableMarkdownButton />
       </div>
 
       <div className="mt-10 eyebrow text-ink-mute">— Open a folder —</div>
       <div className="mt-4 flex flex-wrap gap-4">
-        {RECORD_FOLDERS.map((folder) => (
-          <RecordFolderCard
+        {DOCUMENT_FOLDERS.map((folder) => (
+          <DocumentFolderCard
             key={folder.key}
             title={folder.label}
             count={grouped[folder.key].length}
-            href={`/records/folders/${folder.key}`}
+            href={`/documents/folders/${folder.key}`}
           />
         ))}
-        <NewRecordTile href="/settings/records" label="+ New record" />
+        <NewDocumentTile href="/settings/documents" label="+ New document" />
       </div>
     </div>
   );
 }
 
-function RecordFolderCard({
+function DocumentFolderCard({
   title,
   count,
   href,
@@ -58,13 +58,13 @@ function RecordFolderCard({
       </div>
       <div className="absolute inset-0 rounded-sm bg-[linear-gradient(180deg,rgba(255,255,255,0.2),rgba(0,0,0,0.02))]" />
       <div className="absolute bottom-3 right-4 font-mono text-[11px] tracking-[0.16em] text-[#6f5a37]/80">
-        {count} RECORD{count === 1 ? "" : "S"}
+        {count} DOCUMENT{count === 1 ? "" : "S"}
       </div>
     </Link>
   );
 }
 
-function NewRecordTile({ href, label }: { href: string; label: string }) {
+function NewDocumentTile({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}

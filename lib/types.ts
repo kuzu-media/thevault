@@ -7,7 +7,7 @@ export type Energy = string;
 export type CounterStation = "DROP" | "DOCKET" | "ATM" | "COUNTER";
 
 // The four counter-station keys are reserved for daily-action surfaces;
-// every other box key is user-defined via settings.boxes / settings.records.
+// every other box key is user-defined via settings.boxes / settings.documents.
 // `string & {}` keeps the literal-completion hint without forcing a closed
 // union — so any user key like "GROCERIES" types fine.
 export type BoxKey =

@@ -4,11 +4,11 @@
  *
  * Reads service-account JSON via GOOGLE_APPLICATION_CREDENTIALS, pulls each
  * tab with the appropriate column mapping, inserts into `items` for the
- * supplied user_id (an auth.uid), and seeds settings.boxes / records /
+ * supplied user_id (an auth.uid), and seeds settings.boxes / documents /
  * energies so the Vault renders without manual setup afterward.
  *
  * Default mode is **clean resync**: deletes every existing item in the
- * target vault and resets settings.{boxes,records,energies} before
+ * target vault and resets settings.{boxes,documents,energies} before
  * inserting. Run repeatedly without duplicating items. Captures stay
  * (their item_id is set null on delete). Members, day_inputs, and
  * day-level settings (default_hours, etc.) are untouched.
@@ -108,7 +108,7 @@ const baseFlags = {
 } as const;
 
 // Reserved keys for the daily-action surfaces. Must never appear in
-// settings.boxes or settings.records. Mirrors RESERVED_BOX_KEYS in
+// settings.boxes or settings.documents. Mirrors RESERVED_BOX_KEYS in
 // lib/categories.ts so the runtime guard there is moot for fresh imports.
 const RESERVED_KEYS = new Set(["DROP", "ATM", "COUNTER", "DOCKET"]);
 
@@ -125,7 +125,7 @@ function deriveKey(label: string): string | null {
 }
 
 // First-seen original-cased label per key, populated as inserts are built.
-// Used to seed settings.{boxes,records,energies} with the user's actual
+// Used to seed settings.{boxes,documents,energies} with the user's actual
 // language ("PCS Delegation"), not a key-prettified guess ("Pcs Delegation").
 const observedLabel = new Map<string, string>();
 function rememberLabel(key: string | null, label: string) {
@@ -237,7 +237,7 @@ function fromGenericList(rows: Row[], box: string, label: string): Insert[] {
 }
 
 function fromRecord(rows: Row[], title: string, box: string): Insert {
-  // Whole-tab → single Record row, body = TSV preserving structure.
+  // Whole-tab → single document row, body = TSV preserving structure.
   rememberLabel(box, title);
   const body = rows.map((r) => r.join("\t")).join("\n");
   return {
@@ -252,7 +252,7 @@ function fromRecord(rows: Row[], title: string, box: string): Insert {
 
 let vaultId = "";
 
-// Clean resync: wipe items + reset settings.{boxes,records,energies}.
+// Clean resync: wipe items + reset settings.{boxes,documents,energies}.
 // captures.item_id is `on delete set null`, so capture history stays.
 // day_inputs and day-level settings (default_hours, end_of_day, etc.)
 // are explicitly preserved.
@@ -277,14 +277,14 @@ async function wipeVault() {
     .upsert({
       vault_id: vaultId,
       boxes: [],
-      records: [],
+      documents: [],
       energies: [],
     });
   if (setErr) {
     console.error("Settings reset failed:", setErr);
     process.exit(1);
   }
-  console.log("Cleared settings.boxes / records / energies.");
+  console.log("Cleared settings.boxes / documents / energies.");
 }
 
 async function resolveVault() {
@@ -376,25 +376,25 @@ async function main() {
     process.exit(1);
   }
 
-  // The Vault page only renders configured boxes / records (settings.boxes
-  // and settings.records). Derive both from the items we just inserted so
+  // The Vault page only renders configured boxes / documents (settings.boxes
+  // and settings.documents). Derive both from the items we just inserted so
   // the user lands on a populated Vault, not an empty shell.
   await seedSettingsFromItems(inserts);
 
   console.log("Done.");
 }
 
-// Record-shaped tabs: each became a single Insert with `body`. Box-shaped
+// Document-shaped tabs: each became a single Insert with `body`. Box-shaped
 // tabs got many Inserts with `title`. We walk the Insert list, partition
 // by that signal, and dedupe.
 async function seedSettingsFromItems(inserts: Insert[]) {
-  const recordKeys = new Set<string>();
+  const documentKeys = new Set<string>();
   const boxKeys = new Set<string>();
   const energySet = new Set<string>();
 
   for (const it of inserts) {
     if (it.body) {
-      recordKeys.add(it.box);
+      documentKeys.add(it.box);
     } else if (!RESERVED_KEYS.has(it.box)) {
       boxKeys.add(it.box);
     }
@@ -418,7 +418,7 @@ async function seedSettingsFromItems(inserts: Insert[]) {
   const boxes = Array.from(boxKeys)
     .sort()
     .map((key) => ({ key, label: labelFor(key) }));
-  const records = Array.from(recordKeys)
+  const documents = Array.from(documentKeys)
     .sort()
     .map((key) => ({ key, label: labelFor(key) }));
   const energies = Array.from(energySet)
@@ -428,7 +428,7 @@ async function seedSettingsFromItems(inserts: Insert[]) {
   const { error } = await sb.from("settings").upsert({
     vault_id: vaultId,
     boxes,
-    records,
+    documents,
     energies,
   });
   if (error) {
@@ -436,7 +436,7 @@ async function seedSettingsFromItems(inserts: Insert[]) {
     return;
   }
   console.log(
-    `Seeded settings: ${boxes.length} boxes, ${records.length} records, ${energies.length} energies.`,
+    `Seeded settings: ${boxes.length} boxes, ${documents.length} documents, ${energies.length} energies.`,
   );
 }
 

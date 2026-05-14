@@ -7,7 +7,7 @@
 //   ATM     — energy-matched pulls; carries `category`, `energy`, `minutes`
 //   COUNTER — obligations; carries `area`, `urgent`, `must`, `minutes`
 //
-// Boxes, records, and energies all live in `settings` JSONB so they're
+// Boxes, documents, and energies all live in `settings` JSONB so they're
 // editable from the Settings UI. No defaults — vaults start empty.
 
 import { supabaseServer } from "./supabase/server";
@@ -21,7 +21,7 @@ export type Box = {
 
 // Reserved keys for the daily-action surfaces (top-level pages, not
 // categories). Stored on item.box but never valid as a settings.boxes
-// or settings.records entry.
+// or settings.documents entry.
 export const RESERVED_BOX_KEYS = new Set(["DROP", "ATM", "COUNTER", "DOCKET"]);
 
 function normalize(raw: any): Box | null {
@@ -81,11 +81,11 @@ export async function getEnergies(): Promise<EnergyType[]> {
     .filter((e): e is EnergyType => e !== null);
 }
 
-// Records are text-first storage categories (Notes, Measurements, Read &
+// Documents are text-first storage categories (Notes, Measurements, Read &
 // Research, Health Ideas…) — separately configured from Boxes. Same shape;
 // kept distinct so the Vault page can render them in their own section and
-// route them through /records/<slug> instead of /vault/<slug>.
-export type RecordType = {
+// route them through /documents/<slug> instead of /vault/<slug>.
+export type DocumentType = {
   key: string;
   label: string;
   color?: string;
@@ -103,7 +103,7 @@ export type RecordType = {
     | "travel";
 };
 
-const RECORD_FOLDERS = new Set([
+const DOCUMENT_FOLDER_KEYS = new Set([
   "health",
   "books",
   "misc",
@@ -116,21 +116,24 @@ const RECORD_FOLDERS = new Set([
   "travel",
 ]);
 
-function normalizeRecord(raw: any): RecordType | null {
+function normalizeDocument(raw: any): DocumentType | null {
   const n = normalize(raw);
   if (!n) return null;
   const folderRaw = typeof raw?.folder === "string" ? raw.folder.toLowerCase() : undefined;
-  const folder = folderRaw && RECORD_FOLDERS.has(folderRaw) ? (folderRaw as RecordType["folder"]) : undefined;
+  const folder =
+    folderRaw && DOCUMENT_FOLDER_KEYS.has(folderRaw)
+      ? (folderRaw as DocumentType["folder"])
+      : undefined;
   return { ...n, folder };
 }
 
-export async function getRecords(): Promise<RecordType[]> {
+export async function getDocuments(): Promise<DocumentType[]> {
   const sb = await supabaseServer();
   const { data } = await sb
     .from("settings")
-    .select("records")
+    .select("documents")
     .maybeSingle();
-  const raw = (data?.records as any[]) ?? null;
+  const raw = (data?.documents as any[]) ?? null;
   if (!raw || !Array.isArray(raw)) return [];
-  return raw.map(normalizeRecord).filter((r): r is RecordType => r !== null);
+  return raw.map(normalizeDocument).filter((d): d is DocumentType => d !== null);
 }

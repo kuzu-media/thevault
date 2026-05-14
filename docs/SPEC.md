@@ -53,7 +53,7 @@ Critical distinction Tracy called out: not every tab in her current sheet is the
 
 1. **The Counter (4 stations, fixed):** **The Drop · The Docket · The Till · The Drawer.** Each has a distinct dedicated view. The Drop is triage. The Docket is today's timed schedule. The Till is energy-matched options to pull onto the day. The Drawer is the filtered ADMIN view (urgent / must / today / quick / by-area) — the legacy macros made interactive. The Drawer is *not* a Box drilldown; it's an action lens onto admin obligations.
 2. **The Boxes (variable):** task backlog by category. PCS Ideas, PCS Delegation, Read & Research, Health Ideas, Misc Ideas, Ron's Queue, etc. Tracy adds / removes / renames. Items don't auto-feed Today — she manually moves them into The Docket or works straight from the box.
-3. **The Records (variable):** Notes, Measurements, Lifting, PCS Misc, SWB Plan, plus anything Tracy adds. **All Records are one shape: text-first / markdown.** Whatever structure (table, list, matrix, calendar) is just markdown she writes herself. Don't roll up into Today's plan. See §4D.5.
+3. **The Documents (variable):** Notes, Measurements, Lifting, PCS Misc, SWB Plan, plus anything Tracy adds. **All documents are one shape: text-first / markdown.** Whatever structure (table, list, matrix, calendar) is just markdown she writes herself. Don't roll up into Today's plan. See §4D.5.
 
 Vault Interior (§4C) renders these as three labeled zones — they look different and behave differently.
 
@@ -170,8 +170,8 @@ Cards show count + a status indicator (e.g. The Drop `3 NEW`, The Docket `STRESS
 **Zone 2 — Deposit Boxes** (middle, accent brass): variable task collections.
 Cards show count + last-edited. `+ NEW BOX` tile in the row. Click → opens the generic Drawer view (Surface D).
 
-**Zone 3 — The Records** (bottom, accent patina): Notes, Measurements, Lifting, PCS Misc, SWB Plan, + anything Tracy adds.
-Visually slightly dimmer / less prominent than the task zones. All Records share the same text-first shape — click → opens the unified Records view (D.5).
+**Zone 3 — Documents** (bottom, accent patina): Notes, Measurements, Lifting, PCS Misc, SWB Plan, + anything Tracy adds.
+Visually slightly dimmer / less prominent than the task zones. All documents share the same text-first shape — click → opens the unified Documents view (D.5).
 
 Search bar across the top spans all three zones.
 
@@ -185,20 +185,20 @@ Search bar across the top spans all three zones.
 
 **D.4 Generic Box view (deposit boxes)** — list of items in the box's native schema. PCS Ideas keeps its richer 5-column shape (Potential stars / Time / Person / Tag / Category / Task). Filter chips appropriate to that box's schema. Each row has a `→ DOCKET` promote action. Designed using PCS Ideas as the example; generalizes to all Boxes.
 
-**D.5 Records view** — **one shape: text-first, like Notes.** No type picker. No per-Record bespoke schemas. Tracy names a Record and types whatever she needs into it: prose, markdown lists, markdown tables, dated section breaks, whatever structure she imposes herself. Same parchment-page shell with a left-side entry index, regardless of what the Record contains.
+**D.5 Documents view** — **one shape: text-first, like Notes.** No type picker. No per-document bespoke schemas. Tracy names a document and types whatever she needs into it: prose, markdown lists, markdown tables, dated section breaks, whatever structure she imposes herself. Same parchment-page shell with a left-side entry index, regardless of what the document contains.
 
 This means:
-- Records are infinitely extensible — `+ NEW RECORD` is just "name it, start typing."
+- Documents are infinitely extensible — `+ NEW DOCUMENT` is just "name it, start typing."
 - One view to maintain. One pattern.
-- Existing Records (Measurements / Lifting / PCS Misc / SWB Plan / Notes) all import as text. The structure that's there gets preserved as markdown.
-- If Tracy ever wants a Record to *compute* (e.g. body-comp deltas), that's a deliberate one-off code change for that Record — not a framework decision.
+- Existing documents (Measurements / Lifting / PCS Misc / SWB Plan / Notes) all import as text. The structure that's there gets preserved as markdown.
+- If Tracy ever wants a document to *compute* (e.g. body-comp deltas), that's a deliberate one-off code change for that document — not a framework decision.
 
-**Per-Record metadata Tracy can set:**
+**Per-document metadata Tracy can set:**
 - Name (any string)
 - Optional small icon / color (purely cosmetic)
-- Pinned / unpinned in the Records zone
+- Pinned / unpinned in the Documents zone
 
-**SWB Plan note:** SWB Plan items are *strategic backlog*, not pure prose. If she wants to promote a specific cell into The Docket as a real task, the Records view has a `→ DOCKET` action available on selected text (works for any Record). She doesn't need a special matrix view to do this — markdown formatting preserves the 4-column structure just fine.
+**SWB Plan note:** SWB Plan items are *strategic backlog*, not pure prose. If she wants to promote a specific cell into The Docket as a real task, the Documents view has a `→ DOCKET` action available on selected text (works for any document). She doesn't need a special matrix view to do this — markdown formatting preserves the 4-column structure just fine.
 
 ### E. Settings
 Everything tunable. See §11.
@@ -408,7 +408,7 @@ Tracy's 14-tab Sheet maps to boxes:
 |---|---|---|
 | ADMIN | **Admin** | The active obligation pile |
 | MENU | **Till** | Renamed |
-| SWB PLAN | **SWB Plan** | **Imports into The Records as text.** Markdown preserves the 4-column structure. Cells can be promoted to The Docket. |
+| SWB PLAN | **SWB Plan** | **Imports into Documents as text.** Markdown preserves the 4-column structure. Cells can be promoted to The Docket. |
 | PCS DELEGATION | **PCS Delegation** | |
 | PCS IDEAS | **PCS Ideas** | Keeps the 5-column richer schema (Potential / Time / Person / Tag / Category) |
 | READ/RESEARCH | **Read & Research** | |

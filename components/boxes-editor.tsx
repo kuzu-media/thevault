@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import { saveBoxConfig } from "@/lib/actions";
 import type { Box } from "@/lib/categories";
 
-// The Records editor reuses this same component — same shape, same UX,
-// just routed to a different `onSave`. See app/settings/records/page.tsx.
+// The Documents settings editor reuses this same component — same shape, same UX,
+// just routed to a different `onSave`. See app/settings/documents/page.tsx.
 
 // Auto-derived key from a label: uppercase, spaces → underscores, strip
 // punctuation. Mirrors the manual transform users were typing themselves.

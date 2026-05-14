@@ -1,14 +1,14 @@
 "use client";
 
 import { toast } from "sonner";
-import { RECORD_TABLE_MARKDOWN } from "@/lib/record-table-template";
+import { DOCUMENT_TABLE_MARKDOWN } from "@/lib/document-table-template";
 
 export function CopyTableMarkdownButton() {
   function copy() {
     void navigator.clipboard
-      .writeText(RECORD_TABLE_MARKDOWN)
+      .writeText(DOCUMENT_TABLE_MARKDOWN)
       .then(() =>
-        toast.success("Copied. Open a record, tap EDIT, and paste."),
+        toast.success("Copied. Open a document, tap EDIT, and paste."),
       )
       .catch(() => toast.error("Couldn't copy."));
   }

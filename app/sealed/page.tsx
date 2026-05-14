@@ -21,7 +21,7 @@ export default async function SealedPage({
   const [settings, items] = await Promise.all([getSettings(), getAllItems()]);
   const sealed = !!settings?.sealed;
 
-  // Count only items filed in storage boxes / records.
+  // Count only items filed in storage boxes / documents.
   const inStorage = items.filter((i) => !COUNTER_STATIONS.has(i.box)).length;
 
   async function unseal() {

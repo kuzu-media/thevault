@@ -3,7 +3,7 @@
 // put away.
 //
 // Strictly configured-only: boxes = settings.boxes (and only those).
-// Record categories live on /records; items whose `box` isn't a configured
+// Document categories live on /documents; items whose `box` isn't a configured
 // box key are not shown here. Edit boxes under Settings → Boxes.
 
 import { getAllItems } from "@/lib/data";
