@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getDocuments } from "@/lib/categories";
 import { CopyTableMarkdownButton } from "@/components/copy-table-markdown-button";
 import { DOCUMENT_FOLDERS, groupDocumentsByFolder } from "@/lib/document-folders";
+import { NewDocumentRow } from "@/components/new-document-row";
 
 export default async function DocumentsHubPage() {
   const documents = await getDocuments();
@@ -21,6 +22,19 @@ export default async function DocumentsHubPage() {
         <CopyTableMarkdownButton />
       </div>
 
+      <div className="mt-6">
+        <NewDocumentRow />
+        <p className="mt-2 text-[13px] text-ink-dim">
+          <Link
+            href="/settings/documents"
+            className="text-brass hover:underline"
+          >
+            Rename, keys, colors, or remove
+          </Link>{" "}
+          documents in Settings.
+        </p>
+      </div>
+
       <div className="mt-10 eyebrow text-ink-mute">— Open a folder —</div>
       <div className="mt-4 flex flex-wrap gap-4">
         {DOCUMENT_FOLDERS.map((folder) => (
@@ -31,7 +45,6 @@ export default async function DocumentsHubPage() {
             href={`/documents/folders/${folder.key}`}
           />
         ))}
-        <NewDocumentTile href="/settings/documents" label="+ New document" />
       </div>
     </div>
   );
@@ -60,17 +73,6 @@ function DocumentFolderCard({
       <div className="absolute bottom-3 right-4 font-mono text-[11px] tracking-[0.16em] text-[#6f5a37]/80">
         {count} DOCUMENT{count === 1 ? "" : "S"}
       </div>
-    </Link>
-  );
-}
-
-function NewDocumentTile({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex h-[140px] w-full flex-col items-center justify-center gap-1 rounded-sm border border-dashed border-vault-line text-ink-mute transition hover:border-brass/40 hover:text-brass sm:w-[240px]"
-    >
-      <span className="serif-h text-[18px]">{label}</span>
     </Link>
   );
 }

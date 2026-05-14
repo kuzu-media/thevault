@@ -7,6 +7,12 @@ import { parse } from "date-fns";
 import { fromZonedTime } from "date-fns-tz";
 import { parseTimeOnDate } from "@/lib/daily-plan";
 import { supabaseServer, supabaseAdmin } from "@/lib/supabase/server";
+import { DOCUMENT_FOLDERS } from "@/lib/document-folders";
+import {
+  getDocuments,
+  RESERVED_BOX_KEYS,
+  type DocumentType,
+} from "@/lib/categories";
 
 async function requireUser() {
   const sb = await supabaseServer();
@@ -791,6 +797,58 @@ export async function saveDocumentConfig(
   revalidatePath("/", "layout");
   revalidatePath("/documents", "layout");
   revalidatePath("/settings/documents", "layout");
+}
+
+function deriveDocumentKeyFromLabel(label: string): string {
+  return label
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Z0-9_/-]/g, "")
+    .slice(0, 40);
+}
+
+function nextUniqueDocumentKey(label: string, used: Set<string>): string {
+  let base = deriveDocumentKeyFromLabel(label);
+  if (!base || RESERVED_BOX_KEYS.has(base)) base = "DOCUMENT";
+  let candidate = base;
+  let n = 2;
+  while (used.has(candidate)) {
+    const tail = `_${n}`;
+    candidate = (base.slice(0, Math.max(1, 40 - tail.length)) + tail).slice(
+      0,
+      40,
+    );
+    n++;
+    if (n > 500) break;
+  }
+  return candidate;
+}
+
+const DOCUMENT_FOLDER_KEYS = new Set<string>(
+  DOCUMENT_FOLDERS.map((f) => f.key),
+);
+
+/** Add one document category from the Documents hub (label + folder). */
+export async function appendDocument(labelRaw: string, folderKey: string) {
+  const label = labelRaw.trim();
+  if (!label) throw new Error("Enter a name for the document.");
+  if (!DOCUMENT_FOLDER_KEYS.has(folderKey)) {
+    throw new Error("Choose a folder.");
+  }
+
+  const docs = await getDocuments();
+  const used = new Set(docs.map((d) => d.key));
+  const key = nextUniqueDocumentKey(label, used);
+
+  const row: DocumentType = {
+    key,
+    label,
+    meta: "reference",
+    color: "#b5853a",
+    folder: folderKey as DocumentType["folder"],
+  };
+
+  await saveDocumentConfig([...docs, row]);
 }
 
 // Capture token — generated, persisted on the settings row, surfaced in /settings.
