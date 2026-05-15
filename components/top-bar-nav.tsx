@@ -39,13 +39,6 @@ function buildItems(fiftyFdHref: string): NavItem[] {
       match: (p) => p.startsWith("/atm"),
     },
     {
-      href: fiftyFdHref,
-      label: "50FD",
-      hint: "",
-      title: "Next Steps in all areas: 50 First Dates Tape",
-      match: (p) => p === fiftyFdHref || p.startsWith(`${fiftyFdHref}/`),
-    },
-    {
       href: "/documents",
       label: "DOCUMENTS",
       hint: "g e",
@@ -64,6 +57,13 @@ function buildItems(fiftyFdHref: string): NavItem[] {
       label: "Settings",
       hint: "g s",
       match: (p) => p.startsWith("/settings"),
+    },
+    {
+      href: fiftyFdHref,
+      label: "50FD",
+      hint: "",
+      title: "Next Steps in all areas: 50 First Dates Tape",
+      match: (p) => p === fiftyFdHref || p.startsWith(`${fiftyFdHref}/`),
     },
   ];
 }
