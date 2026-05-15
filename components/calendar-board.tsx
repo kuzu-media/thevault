@@ -192,6 +192,7 @@ export function CalendarBoard({
         <CalendarCounts
           weeks={pastWeeks}
           boxes={boxes}
+          assignedOnly
           heading={`EARLIER WEEKS (${pastWeeks.length} weeks shown)`}
         />
       )}

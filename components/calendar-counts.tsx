@@ -30,14 +30,18 @@ export function CalendarCounts({
   weeks,
   boxes,
   heading,
+  /** Earlier-weeks block: only assigned days count; no unassigned chip. */
+  assignedOnly = false,
 }: {
   weeks: CalendarWeek[];
   boxes: Box[];
   heading: string;
+  assignedOnly?: boolean;
 }) {
   const counts = new Map<string, number>();
   for (const w of weeks) {
     for (const d of w.days) {
+      if (assignedOnly && d.boxKey == null) continue;
       const key = d.boxKey ?? UNASSIGNED;
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
@@ -56,8 +60,10 @@ export function CalendarCounts({
         count,
       };
     });
-  const unassignedCount = counts.get(UNASSIGNED) ?? 0;
-  const totalDays = weeks.reduce((sum, w) => sum + w.days.length, 0);
+  const unassignedCount = assignedOnly ? 0 : (counts.get(UNASSIGNED) ?? 0);
+  const totalDays = assignedOnly
+    ? projectChips.reduce((sum, c) => sum + c.count, 0)
+    : weeks.reduce((sum, w) => sum + w.days.length, 0);
 
   if (projectChips.length === 0 && unassignedCount === 0) return null;
 
