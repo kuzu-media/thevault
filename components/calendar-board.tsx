@@ -172,7 +172,11 @@ export function CalendarBoard({
 
   return (
     <div className="mt-6 space-y-3">
-      <CalendarCounts weeks={futureWeeks} boxes={boxes} />
+      <CalendarCounts
+        weeks={futureWeeks}
+        boxes={boxes}
+        heading={`FROM THIS WEEK FORWARD (${futureWeeks.length} weeks shown)`}
+      />
       {pastWeeks.length > 0 && (
         <button
           type="button"
@@ -183,6 +187,13 @@ export function CalendarBoard({
             ? `▴  HIDE EARLIER WEEKS (${pastWeeks.length})`
             : `◂  SHOW EARLIER WEEKS (${pastWeeks.length})`}
         </button>
+      )}
+      {showPast && pastWeeks.length > 0 && (
+        <CalendarCounts
+          weeks={pastWeeks}
+          boxes={boxes}
+          heading={`EARLIER WEEKS (${pastWeeks.length} weeks shown)`}
+        />
       )}
       {visibleWeeks.map((w) => (
         <CalendarWeekRow

@@ -5,6 +5,12 @@ import type { CalendarWeek } from "@/lib/calendar-planning";
 
 const UNASSIGNED = "__unassigned__";
 
+function formatDayStat(count: number, totalDays: number): string {
+  if (totalDays <= 0) return `${count}d - 0%`;
+  const pct = Math.round((count / totalDays) * 100);
+  return `${count}d - ${pct}%`;
+}
+
 function hexToRgba(hex: string | undefined, alpha: number): string | undefined {
   if (!hex) return undefined;
   const h = hex.replace("#", "");
@@ -23,9 +29,11 @@ function hexToRgba(hex: string | undefined, alpha: number): string | undefined {
 export function CalendarCounts({
   weeks,
   boxes,
+  heading,
 }: {
   weeks: CalendarWeek[];
   boxes: Box[];
+  heading: string;
 }) {
   const counts = new Map<string, number>();
   for (const w of weeks) {
@@ -49,16 +57,17 @@ export function CalendarCounts({
       };
     });
   const unassignedCount = counts.get(UNASSIGNED) ?? 0;
+  const totalDays = weeks.reduce((sum, w) => sum + w.days.length, 0);
 
   if (projectChips.length === 0 && unassignedCount === 0) return null;
 
   return (
     <section
-      aria-label="Project counts for current and upcoming weeks"
+      aria-label={heading}
       className="rounded-sm border border-vault-line bg-vault-panel/30 px-3 py-3 md:px-4 md:py-3"
     >
       <div className="mb-2 font-mono text-[10px] tracking-[0.18em] text-ink-mute">
-        FROM THIS WEEK FORWARD (17 weeks shown)
+        {heading}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {projectChips.map((chip) => (
@@ -77,7 +86,7 @@ export function CalendarCounts({
               {chip.label}
             </span>
             <span className="font-mono text-[11px] text-ink-dim">
-              {chip.count}
+              {formatDayStat(chip.count, totalDays)}
             </span>
           </span>
         ))}
@@ -87,7 +96,7 @@ export function CalendarCounts({
               Unassigned
             </span>
             <span className="font-mono text-[11px] text-ink-mute">
-              {unassignedCount}
+              {formatDayStat(unassignedCount, totalDays)}
             </span>
           </span>
         )}
