@@ -4,33 +4,85 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { markPreferTodayOverDropLanding } from "@/lib/vault-nav-client";
 
-const ITEMS = [
-  { href: "/", label: "Today", hint: "g d", match: (p: string) => p === "/" || p.startsWith("/build") },
-  { href: "/drop", label: "Drop", hint: "g r", match: (p: string) => p.startsWith("/drop") },
-  { href: "/counter", label: "Counter", hint: "g c", match: (p: string) => p.startsWith("/counter") },
-  { href: "/atm", label: "ATM", hint: "g a", match: (p: string) => p.startsWith("/atm") },
-  {
-    href: "/documents",
-    label: "DOCUMENTS",
-    hint: "g e",
-    match: (p: string) =>
-      p === "/documents" || p.startsWith("/documents/"),
-  },
-  { href: "/calendar", label: "Calendar", hint: "g k", match: (p: string) => p.startsWith("/calendar") },
-  { href: "/settings", label: "Settings", hint: "g s", match: (p: string) => p.startsWith("/settings") },
-];
+type NavItem = {
+  href: string;
+  label: string;
+  hint: string;
+  match: (p: string) => boolean;
+  title?: string;
+};
 
-export function TopBarNav() {
+function buildItems(fiftyFdHref: string): NavItem[] {
+  return [
+    {
+      href: "/",
+      label: "Today",
+      hint: "g d",
+      match: (p) => p === "/" || p.startsWith("/build"),
+    },
+    {
+      href: "/drop",
+      label: "Drop",
+      hint: "g r",
+      match: (p) => p.startsWith("/drop"),
+    },
+    {
+      href: "/counter",
+      label: "Counter",
+      hint: "g c",
+      match: (p) => p.startsWith("/counter"),
+    },
+    {
+      href: "/atm",
+      label: "ATM",
+      hint: "g a",
+      match: (p) => p.startsWith("/atm"),
+    },
+    {
+      href: fiftyFdHref,
+      label: "50FD",
+      hint: "",
+      title: "Next Steps in all areas: 50 First Dates Tape",
+      match: (p) => p === fiftyFdHref || p.startsWith(`${fiftyFdHref}/`),
+    },
+    {
+      href: "/documents",
+      label: "DOCUMENTS",
+      hint: "g e",
+      match: (p) =>
+        p === "/documents" ||
+        (p.startsWith("/documents/") && !p.startsWith(fiftyFdHref)),
+    },
+    {
+      href: "/calendar",
+      label: "Calendar",
+      hint: "g k",
+      match: (p) => p.startsWith("/calendar"),
+    },
+    {
+      href: "/settings",
+      label: "Settings",
+      hint: "g s",
+      match: (p) => p.startsWith("/settings"),
+    },
+  ];
+}
+
+export function TopBarNav({ fiftyFdHref }: { fiftyFdHref: string }) {
   const path = usePathname();
+  const items = buildItems(fiftyFdHref);
+
   return (
     <nav className="flex min-w-0 flex-1 items-center justify-center gap-3 overflow-x-auto eyebrow md:gap-7">
-      {ITEMS.map((item) => {
+      {items.map((item) => {
         const active = item.match(path);
+        const title =
+          item.title ?? (item.hint ? `Press ${item.hint}` : undefined);
         return (
           <Link
             key={item.href}
             href={item.href}
-            title={`Press ${item.hint}`}
+            title={title}
             className={clsx(
               "group shrink-0 whitespace-nowrap pb-3 -mb-3 transition",
               active

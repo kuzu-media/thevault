@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getDocuments } from "@/lib/categories";
+import { fiftyFdDocumentHref } from "@/lib/document-folders";
 import { getSettings } from "@/lib/data";
 import { VaultHomeLink } from "@/components/vault-home-link";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -24,8 +26,12 @@ export async function TopBar() {
     .maybeSingle();
   if (!membership) return null;
 
-  const settings = await getSettings();
+  const [settings, documents] = await Promise.all([
+    getSettings(),
+    getDocuments(),
+  ]);
   const sealed = !!settings?.sealed;
+  const fiftyFdHref = fiftyFdDocumentHref(documents);
 
   return (
     <header className="relative z-10 flex items-center justify-between gap-3 border-b border-vault-line/50 bg-vault-bg/85 px-4 py-3 backdrop-blur md:px-10 md:py-4">
@@ -39,7 +45,7 @@ export async function TopBar() {
         </span>
       </VaultHomeLink>
 
-      <TopBarNav />
+      <TopBarNav fiftyFdHref={fiftyFdHref} />
 
       <div className="flex shrink-0 items-center gap-2">
         <Link

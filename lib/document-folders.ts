@@ -51,3 +51,29 @@ export function groupDocumentsByFolder(
 export function slugifyDocumentKey(key: string): string {
   return key.toLowerCase().replace(/_/g, "-").replace(/\//g, "-");
 }
+
+/** Matches documents-settings-editor `deriveKey`. */
+export function deriveDocumentKey(label: string): string {
+  return label
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Z0-9_/-]/g, "")
+    .slice(0, 40);
+}
+
+export function documentHrefForKey(key: string): string {
+  return `/documents/${slugifyDocumentKey(key)}`;
+}
+
+export const FIFTY_FD_DOCUMENT_LABEL =
+  "Next Steps in all areas: 50 First Dates Tape";
+
+export function fiftyFdDocumentHref(
+  documents: { key: string; label: string }[],
+): string {
+  const label = FIFTY_FD_DOCUMENT_LABEL;
+  const doc = documents.find(
+    (d) => d.label.trim().toLowerCase() === label.toLowerCase(),
+  );
+  return documentHrefForKey(doc?.key ?? deriveDocumentKey(label));
+}
