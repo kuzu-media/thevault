@@ -55,17 +55,31 @@ export async function GET() {
   oauth2.setCredentials({ refresh_token: secret.refresh_token });
   const calendar = google.calendar({ version: "v3", auth: oauth2 });
 
-  const list = await calendar.calendarList.list({
-    minAccessRole: "reader",
-    maxResults: 250,
-  });
+  try {
+    const list = await calendar.calendarList.list({
+      minAccessRole: "reader",
+      maxResults: 250,
+    });
 
-  const calendars =
-    list.data.items?.map((c) => ({
-      id: c.id ?? "",
-      summary: c.summary ?? c.id ?? "Calendar",
-      primary: !!c.primary,
-    })) ?? [];
+    const calendars =
+      list.data.items?.map((c) => ({
+        id: c.id ?? "",
+        summary: c.summary ?? c.id ?? "Calendar",
+        primary: !!c.primary,
+      })) ?? [];
 
-  return NextResponse.json({ calendars: calendars.filter((c) => c.id) });
+    return NextResponse.json({ calendars: calendars.filter((c) => c.id) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/invalid_grant|token has been expired|token has been revoked/i.test(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "Google access expired. Disconnect Google Calendar below, then use Re-connect Google.",
+        },
+        { status: 401 },
+      );
+    }
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

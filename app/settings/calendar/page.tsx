@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getCurrentVault } from "@/lib/data";
 import { SettingsSubnav } from "@/components/settings-subnav";
+import { CalendarOAuthSetupNote } from "@/components/calendar-oauth-setup-note";
 import { GoogleCalendarPanel } from "@/components/google-calendar-panel";
 
 export default async function CalendarSettingsPage() {
@@ -44,13 +45,7 @@ export default async function CalendarSettingsPage() {
         </Suspense>
       </div>
 
-      <p className="mt-10 text-[12px] text-ink-mute">
-        Google sign-in needs your public site URL set as{" "}
-        <span className="font-mono">NEXT_PUBLIC_SITE_URL</span> (for example{" "}
-        <span className="font-mono">https://your-app.vercel.app</span>) and the
-        same callback registered in Google Cloud. See{" "}
-        <span className="font-mono">.env.local.example</span>.
-      </p>
+      <CalendarOAuthSetupNote />
     </div>
   );
 }

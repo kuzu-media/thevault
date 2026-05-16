@@ -65,13 +65,19 @@ export function GoogleCalendarPanel({
     if (!connected) return;
     let cancelled = false;
     void fetch("/api/google-calendar/calendars")
-      .then((r) => {
-        if (!r.ok) throw new Error("Couldn't list calendars");
-        return r.json() as Promise<{ calendars: Cal[] }>;
+      .then(async (r) => {
+        const body = (await r.json().catch(() => ({}))) as {
+          calendars?: Cal[];
+          error?: string;
+        };
+        if (!r.ok) {
+          throw new Error(body.error ?? "Couldn't list calendars");
+        }
+        return body;
       })
       .then((j) => {
         if (!cancelled) {
-          setCalendars(j.calendars);
+          setCalendars(j.calendars ?? []);
           setLoadErr(null);
         }
       })
@@ -115,7 +121,15 @@ export function GoogleCalendarPanel({
       ) : (
         <>
           {loadErr && (
-            <p className="text-[13px] text-rust">{loadErr}</p>
+            <div className="rounded-sm border border-rust/40 bg-rust/5 px-3 py-2.5 text-[13px] leading-relaxed text-rust">
+              <p>{loadErr}</p>
+              {/expired|invalid_grant|re-connect/i.test(loadErr) ? (
+                <p className="mt-2 text-[12px] text-ink-dim">
+                  Use <strong className="text-ink/80">Disconnect</strong>, then{" "}
+                  <strong className="text-ink/80">Re-connect Google</strong>.
+                </p>
+              ) : null}
+            </div>
           )}
           <form
             className="space-y-4"
