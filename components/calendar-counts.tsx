@@ -2,6 +2,7 @@
 
 import type { Box } from "@/lib/categories";
 import type { CalendarWeek } from "@/lib/calendar-planning";
+import { calendarWorkLifeGroup } from "@/lib/calendar-work-life";
 
 const UNASSIGNED = "__unassigned__";
 
@@ -61,9 +62,21 @@ export function CalendarCounts({
       };
     });
   const unassignedCount = assignedOnly ? 0 : (counts.get(UNASSIGNED) ?? 0);
+  const assignedTotal = projectChips.reduce((sum, c) => sum + c.count, 0);
   const totalDays = assignedOnly
-    ? projectChips.reduce((sum, c) => sum + c.count, 0)
+    ? assignedTotal
     : weeks.reduce((sum, w) => sum + w.days.length, 0);
+
+  let workCount = 0;
+  let otherCount = 0;
+  for (const [key, count] of counts.entries()) {
+    if (key === UNASSIGNED) continue;
+    const box = boxesByKey.get(key);
+    if (!box) continue;
+    const group = calendarWorkLifeGroup(box);
+    if (group === "work") workCount += count;
+    else if (group === "other") otherCount += count;
+  }
 
   if (projectChips.length === 0 && unassignedCount === 0) return null;
 
@@ -107,6 +120,33 @@ export function CalendarCounts({
           </span>
         )}
       </div>
+      {assignedTotal > 0 && (
+        <div className="mt-3 border-t border-vault-line/80 pt-3">
+          <div className="mb-2 font-mono text-[10px] tracking-[0.18em] text-ink-mute">
+            Work/Life Balance
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                { label: "Work", count: workCount },
+                { label: "Other", count: otherCount },
+              ] as const
+            ).map((chip) => (
+              <span
+                key={chip.label}
+                className="inline-flex items-baseline gap-2 rounded-sm border border-vault-line bg-vault-panel/50 px-2 py-1 text-[12px]"
+              >
+                <span className="font-mono tracking-[0.06em] text-ink">
+                  {chip.label}
+                </span>
+                <span className="font-mono text-[11px] text-ink-dim">
+                  {formatDayStat(chip.count, assignedTotal)}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
