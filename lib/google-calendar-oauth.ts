@@ -4,10 +4,16 @@ export const CALENDAR_READONLY_SCOPE =
   "https://www.googleapis.com/auth/calendar.readonly";
 
 export function getOAuthClient(redirectUri: string) {
-  const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_CALENDAR_CLIENT_SECRET?.trim();
+  const clientId =
+    process.env.GOOGLE_CALENDAR_CLIENT_ID?.trim() ??
+    process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret =
+    process.env.GOOGLE_CALENDAR_CLIENT_SECRET?.trim() ??
+    process.env.GOOGLE_CLIENT_SECRET?.trim();
   if (!clientId || !clientSecret) {
-    throw new Error("Missing GOOGLE_CALENDAR_CLIENT_ID or GOOGLE_CALENDAR_CLIENT_SECRET");
+    throw new Error(
+      "Missing GOOGLE_CALENDAR_CLIENT_ID/SECRET (or GOOGLE_CLIENT_ID/SECRET)",
+    );
   }
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 }
