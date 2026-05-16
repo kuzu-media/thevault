@@ -1,5 +1,33 @@
 /** Public base URL for OAuth redirects (no trailing slash). */
 
+/** Previous Vercel deployment hostnames → redirect to the current app. */
+const LEGACY_VAULT_HOSTS = new Set([
+  "thevault-rachel-higleys-projects.vercel.app",
+]);
+
+const DEFAULT_CANONICAL_ORIGIN = "https://the-vault-gray-five.vercel.app";
+
+function normalizeOrigin(value: string): string {
+  const trimmed = value.trim().replace(/\/$/, "");
+  if (!trimmed) return DEFAULT_CANONICAL_ORIGIN;
+  return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+}
+
+/** Runtime canonical URL (set VAULT_SITE_URL in Vercel — no rebuild required). */
+export function getCanonicalSiteUrl(): string | null {
+  const raw = process.env.VAULT_SITE_URL?.trim();
+  if (!raw) return null;
+  return normalizeOrigin(raw);
+}
+
+export function getDefaultCanonicalSiteUrl(): string {
+  return getCanonicalSiteUrl() ?? DEFAULT_CANONICAL_ORIGIN;
+}
+
+export function isLegacyVaultHost(host: string): boolean {
+  return LEGACY_VAULT_HOSTS.has(host.toLowerCase());
+}
+
 function hostFromHeaders(h: { get(name: string): string | null }): string | null {
   const raw = h.get("x-forwarded-host") ?? h.get("host");
   if (!raw) return null;
@@ -9,10 +37,13 @@ function hostFromHeaders(h: { get(name: string): string | null }): string | null
 }
 
 /**
- * Prefer the host from the incoming request so OAuth matches the URL you are
- * actually using. Falls back to NEXT_PUBLIC_SITE_URL for local dev / cron.
+ * OAuth and calendar setup use VAULT_SITE_URL when set, else the request host,
+ * else NEXT_PUBLIC_SITE_URL (may be stale until the next build).
  */
 export function getSiteUrlFromHeaders(h: { get(name: string): string | null }): string {
+  const canonical = getCanonicalSiteUrl();
+  if (canonical) return canonical;
+
   const host = hostFromHeaders(h);
   if (host) {
     const proto =
@@ -26,8 +57,5 @@ export function getSiteUrlFromHeaders(h: { get(name: string): string | null }): 
 
 /** Env-only URL (cron / background jobs with no request host). */
 export function getSiteUrlFromEnv(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "").trim() ??
-    "http://localhost:3000"
-  );
+  return getCanonicalSiteUrl() ?? getDefaultCanonicalSiteUrl();
 }

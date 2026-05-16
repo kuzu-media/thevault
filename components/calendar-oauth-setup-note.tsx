@@ -1,10 +1,20 @@
 import { headers } from "next/headers";
-import { getSiteUrlFromHeaders } from "@/lib/site-url";
+import {
+  getDefaultCanonicalSiteUrl,
+  getSiteUrlFromHeaders,
+  isLegacyVaultHost,
+} from "@/lib/site-url";
 
-/** Collapsed setup reference — uses the URL from your current visit, not stale build env. */
+/** Collapsed setup reference — uses canonical / current URL for OAuth. */
 export async function CalendarOAuthSetupNote() {
   const h = await headers();
-  const siteUrl = getSiteUrlFromHeaders(h);
+  const requestHost = (h.get("x-forwarded-host") ?? h.get("host") ?? "")
+    .split(",")[0]
+    ?.trim();
+  const onLegacyHost = requestHost ? isLegacyVaultHost(requestHost) : false;
+  const siteUrl = onLegacyHost
+    ? getDefaultCanonicalSiteUrl()
+    : getSiteUrlFromHeaders(h);
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "").trim();
   const envMismatch =
     !!envUrl && envUrl.toLowerCase() !== siteUrl.toLowerCase();
@@ -27,6 +37,16 @@ export async function CalendarOAuthSetupNote() {
         GOOGLE OAUTH SETUP REFERENCE (not an error)
       </summary>
       <div className="mt-3 space-y-2 leading-relaxed">
+        {onLegacyHost ? (
+          <p className="rounded-sm border border-rust/40 bg-rust/5 px-2 py-1.5 text-rust">
+            You are on an old project URL ({requestHost}). Use{" "}
+            <a href={siteUrl} className="font-mono underline">
+              {siteUrl}
+            </a>{" "}
+            instead — bookmarks to the old hostname will redirect automatically
+            after the latest deploy.
+          </p>
+        ) : null}
         {envMismatch ? (
           <p className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-amber-900">
             <span className="font-mono">NEXT_PUBLIC_SITE_URL</span> in Vercel is

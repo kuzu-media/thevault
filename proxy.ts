@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import {
+  getDefaultCanonicalSiteUrl,
+  isLegacyVaultHost,
+} from "@/lib/site-url";
 
 const PUBLIC_PATHS = [
   "/login",
@@ -11,6 +15,15 @@ const PUBLIC_PATHS = [
 ];
 
 export async function proxy(req: NextRequest) {
+  const host = (req.headers.get("host") ?? req.nextUrl.host).split(":")[0];
+  if (isLegacyVaultHost(host)) {
+    const target = new URL(
+      `${req.nextUrl.pathname}${req.nextUrl.search}`,
+      getDefaultCanonicalSiteUrl(),
+    );
+    return NextResponse.redirect(target, 308);
+  }
+
   let res = NextResponse.next({ request: req });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
