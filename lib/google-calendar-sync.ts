@@ -20,8 +20,6 @@ export function calendarOAuthRedirectUri(baseUrl: string): string {
 
 /** OAuth redirect URI for Calendar API calls (cron uses env only; UI may use request host). */
 export async function resolveCalendarOAuthRedirectUri(): Promise<string> {
-  const env = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "").trim();
-  if (env) return calendarOAuthRedirectUri(env);
   const h = await headers();
   return calendarOAuthRedirectUri(getSiteUrlFromHeaders(h));
 }

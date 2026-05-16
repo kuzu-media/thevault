@@ -6,6 +6,8 @@ import { SettingsSubnav } from "@/components/settings-subnav";
 import { CalendarOAuthSetupNote } from "@/components/calendar-oauth-setup-note";
 import { GoogleCalendarPanel } from "@/components/google-calendar-panel";
 
+export const dynamic = "force-dynamic";
+
 export default async function CalendarSettingsPage() {
   const vault = await getCurrentVault();
   if (!vault) redirect("/onboarding");

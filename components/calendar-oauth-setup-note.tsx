@@ -1,6 +1,14 @@
-/** Collapsed setup reference — not an error banner. */
-export function CalendarOAuthSetupNote() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "").trim();
+import { headers } from "next/headers";
+import { getSiteUrlFromHeaders } from "@/lib/site-url";
+
+/** Collapsed setup reference — uses the URL from your current visit, not stale build env. */
+export async function CalendarOAuthSetupNote() {
+  const h = await headers();
+  const siteUrl = getSiteUrlFromHeaders(h);
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "").trim();
+  const envMismatch =
+    !!envUrl && envUrl.toLowerCase() !== siteUrl.toLowerCase();
+
   const hasGoogleCreds =
     !!(
       process.env.GOOGLE_CALENDAR_CLIENT_ID?.trim() ||
@@ -11,17 +19,6 @@ export function CalendarOAuthSetupNote() {
       process.env.GOOGLE_CLIENT_SECRET?.trim()
     );
 
-  if (!siteUrl) {
-    return (
-      <p className="mt-10 rounded-sm border border-rust/40 bg-rust/5 px-3 py-2 text-[12px] text-rust">
-        Server misconfiguration: set{" "}
-        <span className="font-mono">NEXT_PUBLIC_SITE_URL</span> in Vercel (e.g.{" "}
-        <span className="font-mono">https://the-vault-gray-five.vercel.app</span>
-        ), then redeploy.
-      </p>
-    );
-  }
-
   const callback = `${siteUrl}/api/google-calendar/callback`;
 
   return (
@@ -30,6 +27,15 @@ export function CalendarOAuthSetupNote() {
         GOOGLE OAUTH SETUP REFERENCE (not an error)
       </summary>
       <div className="mt-3 space-y-2 leading-relaxed">
+        {envMismatch ? (
+          <p className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-amber-900">
+            <span className="font-mono">NEXT_PUBLIC_SITE_URL</span> in Vercel is
+            still <span className="font-mono">{envUrl}</span> but you are on{" "}
+            <span className="font-mono">{siteUrl}</span>. OAuth below uses this
+            visit&apos;s URL. Update the env var in Vercel and redeploy when you
+            can.
+          </p>
+        ) : null}
         {!hasGoogleCreds ? (
           <p className="text-rust">
             Missing Google OAuth credentials on the server (
@@ -47,8 +53,7 @@ export function CalendarOAuthSetupNote() {
         <p>
           Open The Vault at{" "}
           <span className="font-mono text-ink/80">{siteUrl}</span> when you
-          connect — not an old <span className="font-mono">*.vercel.app</span>{" "}
-          URL from a previous project.
+          connect.
         </p>
       </div>
     </details>
