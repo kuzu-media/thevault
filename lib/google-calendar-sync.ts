@@ -46,32 +46,8 @@ type GCalEvent = {
   start?: { date?: string | null; dateTime?: string | null } | null;
 };
 
-function normalizeCalendarName(v: string | null | undefined): string {
-  return (v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function shouldIncludeTimePrefix(calendarName: string | null | undefined): boolean {
-  // For the misc task capture calendar, import just the task title.
-  return normalizeCalendarName(calendarName) !== "misc tasks google calendar";
-}
-
-function eventToTitle(
-  event: GCalEvent,
-  tz: string,
-  opts?: { includeTimePrefix?: boolean },
-): string {
-  const includeTimePrefix = opts?.includeTimePrefix ?? true;
-  const summary = (event.summary || "").trim() || "(No title)";
-  if (!includeTimePrefix) return summary;
-  if (event.start?.date) {
-    return `${summary} (all day)`;
-  }
-  const startIso = event.start?.dateTime;
-  if (startIso) {
-    const t = formatInTimeZone(new Date(startIso), tz, "h:mm a");
-    return `${t} — ${summary}`;
-  }
-  return summary;
+function eventToTitle(event: GCalEvent): string {
+  return (event.summary || "").trim() || "(No title)";
 }
 
 /**
@@ -168,14 +144,6 @@ export async function syncOneVaultForDate(
   const oauth2 = getOAuthClient(redirectUri);
   oauth2.setCredentials({ refresh_token: row.refresh_token });
   const calendar = google.calendar({ version: "v3", auth: oauth2 });
-  let connectedCalendarName: string | null = null;
-  try {
-    const calMeta = await calendar.calendars.get({ calendarId: row.calendar_id });
-    connectedCalendarName = calMeta.data.summary ?? null;
-  } catch {
-    // If metadata lookup fails, keep the default title formatting.
-  }
-  const includeTimePrefix = shouldIncludeTimePrefix(connectedCalendarName);
 
   const { start, end } = localDayBoundsUtc(ymd, row.timezone);
   const listRes = await calendar.events.list({
@@ -211,10 +179,7 @@ export async function syncOneVaultForDate(
 
     if (existing) continue;
 
-    const title = eventToTitle(event, row.timezone, { includeTimePrefix }).slice(
-      0,
-      200,
-    );
+    const title = eventToTitle(event).slice(0, 200);
 
     const { data: item, error: itemErr } = await admin
       .from("items")
