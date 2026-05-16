@@ -1,8 +1,10 @@
 import { google } from "googleapis";
 import { formatInTimeZone } from "date-fns-tz";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { localDayBoundsUtc, todayYmdInTz } from "@/lib/calendar-day-bounds";
 import { getOAuthClient } from "@/lib/google-calendar-oauth";
+import { getSiteUrlFromHeaders } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 type ConnectionRow = {
@@ -12,13 +14,33 @@ type ConnectionRow = {
   timezone: string;
 };
 
-function redirectUriForOAuth(): string {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "").trim() ?? "";
-  if (!base) {
-    throw new Error("Set NEXT_PUBLIC_SITE_URL for Google Calendar");
+export function calendarOAuthRedirectUri(baseUrl: string): string {
+  return `${baseUrl.replace(/\/$/, "")}/api/google-calendar/callback`;
+}
+
+/** OAuth redirect URI for Calendar API calls (cron uses env only; UI may use request host). */
+export async function resolveCalendarOAuthRedirectUri(): Promise<string> {
+  const env = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "").trim();
+  if (env) return calendarOAuthRedirectUri(env);
+  const h = await headers();
+  return calendarOAuthRedirectUri(getSiteUrlFromHeaders(h));
+}
+
+function formatGoogleSyncError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/invalid_grant|token has been expired|token has been revoked/i.test(msg)) {
+    return "Google access expired. Re-connect Google Calendar in Settings.";
   }
-  return `${base}/api/google-calendar/callback`;
+  if (/Missing GOOGLE_CALENDAR_CLIENT/i.test(msg)) {
+    return "Google Calendar is not configured on the server.";
+  }
+  if (/Missing Supabase admin/i.test(msg)) {
+    return "Server misconfiguration (Supabase service role).";
+  }
+  if (/NEXT_PUBLIC_SITE_URL/i.test(msg)) {
+    return "Set NEXT_PUBLIC_SITE_URL on the server for Google Calendar.";
+  }
+  return msg;
 }
 
 type GCalEvent = {
@@ -79,7 +101,17 @@ export async function syncAllVaultCalendarsToDropWithOptions(opts?: {
   imported: number;
   errors: string[];
 }> {
-  const admin = supabaseAdmin();
+  let admin;
+  try {
+    admin = supabaseAdmin();
+  } catch (e) {
+    return {
+      ok: false,
+      vaults: 0,
+      imported: 0,
+      errors: [formatGoogleSyncError(e)],
+    };
+  }
   const errors: string[] = [];
   const { data: rows, error } = await admin
     .from("google_calendar_connections")
@@ -124,7 +156,6 @@ export async function syncAllVaultCalendarsToDropWithOptions(opts?: {
 
   if (imported > 0) {
     revalidatePath("/drop");
-    revalidatePath("/", "layout");
   }
 
   return { ok: errors.length === 0, vaults: rows.length, imported, errors };
@@ -135,7 +166,8 @@ export async function syncOneVaultForDate(
   ymd: string,
 ): Promise<number> {
   const admin = supabaseAdmin();
-  const oauth2 = getOAuthClient(redirectUriForOAuth());
+  const redirectUri = await resolveCalendarOAuthRedirectUri();
+  const oauth2 = getOAuthClient(redirectUri);
   oauth2.setCredentials({ refresh_token: row.refresh_token });
   const calendar = google.calendar({ version: "v3", auth: oauth2 });
   let connectedCalendarName: string | null = null;

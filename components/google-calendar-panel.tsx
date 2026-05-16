@@ -94,7 +94,7 @@ export function GoogleCalendarPanel({
         <p>
           When this is on, The Vault adds a <strong className="text-ink/90">Drop</strong>{" "}
           line for each calendar event on <strong className="text-ink/90">that day</strong>.
-          It runs in the background at 5 AM, and you can also pull in
+          It runs automatically once each morning, and you can also pull in
           today&apos;s events with the button below. Each event is only added once per day.
         </p>
       </div>
@@ -195,18 +195,16 @@ export function GoogleCalendarPanel({
                 onClick={() => {
                   startSync(() => {
                     void (async () => {
-                      try {
-                        const r = await syncGoogleCalendarForMyVaultNow();
-                        toast.success(
-                          r.imported === 0
-                            ? "No new events to add (or nothing on today’s calendar)."
-                            : `Added ${r.imported} to the Drop.`,
-                        );
-                      } catch (e) {
-                        toast.error(
-                          e instanceof Error ? e.message : "Couldn't sync.",
-                        );
+                      const r = await syncGoogleCalendarForMyVaultNow();
+                      if (!r.ok) {
+                        toast.error(r.error);
+                        return;
                       }
+                      toast.success(
+                        r.imported === 0
+                          ? "No new events to add (or nothing on today’s calendar)."
+                          : `Added ${r.imported} to the Drop.`,
+                      );
                     })();
                   });
                 }}

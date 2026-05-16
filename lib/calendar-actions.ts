@@ -94,31 +94,54 @@ export async function disconnectGoogleCalendar() {
   revalidatePath("/settings/calendar");
 }
 
-export async function syncGoogleCalendarForMyVaultNow() {
-  const { vaultId } = await requireUserAndVault();
-  const admin = supabaseAdmin();
-  const { data: conn } = await admin
-    .from("google_calendar_connections")
-    .select("vault_id, calendar_id, timezone")
-    .eq("vault_id", vaultId)
-    .maybeSingle();
+export async function syncGoogleCalendarForMyVaultNow(): Promise<
+  { ok: true; imported: number } | { ok: false; error: string }
+> {
+  try {
+    const { vaultId } = await requireUserAndVault();
+    let admin;
+    try {
+      admin = supabaseAdmin();
+    } catch {
+      return {
+        ok: false,
+        error:
+          "Server misconfiguration: Supabase service role key is missing.",
+      };
+    }
 
-  const { data: secret } = await admin
-    .from("google_calendar_secrets")
-    .select("refresh_token")
-    .eq("vault_id", vaultId)
-    .maybeSingle();
+    const { data: conn } = await admin
+      .from("google_calendar_connections")
+      .select("vault_id, calendar_id, timezone")
+      .eq("vault_id", vaultId)
+      .maybeSingle();
 
-  if (!conn || !secret?.refresh_token) {
-    throw new Error("Connect Google Calendar first.");
+    const { data: secret } = await admin
+      .from("google_calendar_secrets")
+      .select("refresh_token")
+      .eq("vault_id", vaultId)
+      .maybeSingle();
+
+    if (!conn || !secret?.refresh_token) {
+      return { ok: false, error: "Connect Google Calendar first." };
+    }
+
+    const ymd = todayYmdInTz(conn.timezone);
+    const n = await syncOneVaultForDate(
+      { ...conn, refresh_token: secret.refresh_token },
+      ymd,
+    );
+    revalidatePath("/drop");
+    revalidatePath("/settings/calendar");
+    return { ok: true, imported: n };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/invalid_grant|token has been expired|token has been revoked/i.test(msg)) {
+      return {
+        ok: false,
+        error: "Google access expired. Use Re-connect Google below.",
+      };
+    }
+    return { ok: false, error: msg || "Couldn't sync calendar." };
   }
-
-  const ymd = todayYmdInTz(conn.timezone);
-  const n = await syncOneVaultForDate(
-    { ...conn, refresh_token: secret.refresh_token },
-    ymd,
-  );
-  revalidatePath("/drop");
-  revalidatePath("/", "layout");
-  return { imported: n };
 }
